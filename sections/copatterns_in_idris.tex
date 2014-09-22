@@ -1,2 +1,47 @@
 %!TEX root = ../copatterns-thesis.tex
-\chapter{Copatterns in Idris}
+\chapter{Implementation}
+
+\section{Desugaring}
+% Why do we want to desugar?
+Codata definitions and record definitions with projections, along with function definitions described with copatterns, can all be written using existing Idris constructs. In particular, we consider a function such as \texttt{dup} given in Figure\,\ref{fig:dup_copatterns} to be syntactic sugar for the definition given in Figure\,\ref{fig:dup_desugared}. Likewise, the definition of the coinductively defined Stream type with projections is desugared into a constructor-based definition with exactly one constructor.
+
+\begin{figure}
+\begin{lstlisting}
+codata Stream : Type -> Type where
+  head : Stream a -> a
+  tail : Stream a -> Stream a
+
+dup : Stream a -> Stream a
+head       (dup s)  = head s
+head (tail (dup s)) = head s
+tail (tail (dup s)) = dup (tail s)
+\end{lstlisting}
+\caption{A duplication function \textit{dup} on streams, defined with copatterns.}
+\label{fig:dup_copatterns}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}
+codata Stream : Type -> Type where
+  mkStream : a -> Stream a -> Stream a
+
+dup s = mkStream (head s) (mkStream (head s) (dup (tail s)))
+\end{lstlisting}
+\caption{A desugared version of the program described in Figure \ref{fig:dup_copatterns}.}
+\label{fig:dup_desugared}
+\end{figure}
+
+In order to define the desugaring mechanism which allows us to straightforwardly transform programs from a projection-based form to a constructor-based form, we recall that each projection in a type definition defines an elimination rule for that type. For a general coinductive type $\nu A. B_1 \times B_2 \times \ldots \times B_n$ where $A$ may occur in any of the types $B_i$ (for $0 \leq i \leq n$), we can define \textit{n} elimination rules in the style of Harper\,\cite{Harper:2012} as shown in Figure\,\ref{fig:nuA_elim_rules}.
+
+\begin{figure}
+\caption{Elimination rules $\pi_1, \pi_2 \ldots \pi_n$ for a type $\nu A. B_1 \times B_2 \times \ldots \times B_n$.}
+\label{fig:nuA_elim_rules}
+\end{figure}
+
+\subsection{Desugaring (co)data}
+
+
+\subsection{Desugaring left-hand side projections}
+
+
+\subsection{Desugaring right-hand side projections}
