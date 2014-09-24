@@ -7,16 +7,21 @@ Codata definitions and record definitions with projections, along with function 
 
 \begin{figure}
 \begin{lstlisting}
-codata Stream : Type -> Type where
+corecord Stream : Type -> Type where
   head : Stream a -> a
   tail : Stream a -> Stream a
+  constructor mkStream
 
-dup : Stream a -> Stream a
-head       (dup s)  = head s
-head (tail (dup s)) = head s
-tail (tail (dup s)) = dup (tail s)
+--| dupNth s n m duplicates every nth element of s, 
+--| starting with the mth element
+dupNth : Stream a -> Nat -> Nat -> Stream a
+head       (dupNth s n m)       = head s
+head (tail (dupNth s n Z))      = head s
+head (tail (dupNth s n (S m'))) = head (tail s)
+tail (tail (dupNth s n Z))      = tail (dupNth s n n)
+tail (tail (dupNth s n (S m'))) = tail (dupNth (tail s) n m')
 \end{lstlisting}
-\caption{A duplication function \textit{dup} on streams, defined with copatterns.}
+\caption{A duplication function on streams, defined with copatterns.}
 \label{fig:dup_copatterns}
 \end{figure}
 
@@ -25,23 +30,177 @@ tail (tail (dup s)) = dup (tail s)
 codata Stream : Type -> Type where
   mkStream : a -> Stream a -> Stream a
 
-dup s = mkStream (head s) (mkStream (head s) (dup (tail s)))
+head : Stream a -> a
+head (mkStream h _) = h
+
+tail : Stream a -> a
+tail (mkStream _ t) = t
+
+dupNth : Stream a -> Nat -> Nat -> Stream a
+dupNth s n Z      =
+  mkStream (head s)
+           (mkStream (head s)
+                     (tail (dupNth s n n)))
+dupNth s n (S m') =
+  mkStream (head s)
+           (mkStream (head (tail s))
+                     (tail (dupNth (tail s) n m')))
 \end{lstlisting}
 \caption{A desugared version of the program described in Figure \ref{fig:dup_copatterns}.}
 \label{fig:dup_desugared}
 \end{figure}
 
-In order to define the desugaring mechanism which allows us to straightforwardly transform programs from a projection-based form to a constructor-based form, we recall that each projection in a type definition defines an elimination rule for that type. For a general coinductive type $\nu A. B_1 \times B_2 \times \ldots \times B_n$ where $A$ may occur in any of the types $B_i$ (for $0 \leq i \leq n$), we can define \textit{n} elimination rules in the style of Harper\,\cite{Harper:2012} as shown in Figure\,\ref{fig:nuA_elim_rules}.
+In order to define the desugaring mechanism which allows us to straightforwardly transform programs from a projection-based form to a constructor-based form, we recall that each projection in a type definition defines an elimination rule for that type. For a general coinductive type with product structure $\nu A. B_1 \times B_2 \times \cdots \times B_n$ where $A$ may occur in any of the types $B_i$ (for $1 \leq i \leq n$), we can define \textit{n} elimination rules in the style of Harper\,\cite[Ch. 15]{Harper:2012} as shown in Figure\,\ref{fig:nuA_elim_rules}. Since these rules define all of the ways we can eliminate a value of the given type, we can synthesize them into a single introduction rule which has \textit{n} premises; one for the result of each elimination rule. This property, as illustrated in Figure\,\ref{fig:nuA_intro_rule}, is obviously reversible, such that we can always use our elimination rules on an introduction form and vice versa.
 
 \begin{figure}
 \caption{Elimination rules $\pi_1, \pi_2 \ldots \pi_n$ for a type $\nu A. B_1 \times B_2 \times \ldots \times B_n$.}
 \label{fig:nuA_elim_rules}
 \end{figure}
 
-\subsection{Desugaring (co)data}
+\begin{figure}
+\caption{Introduction rule for a type $\nu A. B_1 \times B_2 \times \ldots \times B_n$ based on information synthesized from the elimination rules.}
+\label{fig:nuA_intro_rule}
+\end{figure}
 
+Using the intuition of going back and forth between elimination and introduction, we now present our high-level desugaring function $desuhar$ which takes constructs from projection-based form to constructor-based form.
+
+
+
+\subsection{Desugaring (co)record definitions}
+Record and corecords definitions are desugared according to the rule defined in Figure\,\ref{desugaring_records}. The type of each projection becomes an input type to the constructor with the given name.
+
+\begin{figure}
+\caption{Desugaring rule for record definitions.}
+\label{fig:desugaring_records}
+\end{figure}
+
+Definitions of records are desugared at 
 
 \subsection{Desugaring left-hand side projections}
 
+\begin{figure}
+\begin{lstlisting}[mathescape]
+dupNth : Stream a -> Nat -> Nat -> Stream a
+head (dupNth s n m) = 
+  head (mkStream (head s) ?tail) 
+head (tail (dupNth s n Z)) = 
+  head (tail (mkStream ?head (mkStream (head s) ?tailtail)))
+head (tail (dupNth s n (S m'))) = 
+  head (tail (mkStream ?head (mkStream (head (tail s)) ?tailtail)))
+tail (tail (dupNth s n Z)) = 
+  tail (tail (mkStream ?head (mkStream ?headtail 
+                                       (tail (dupNth s n n)))))
+tail (tail (dupNth s n (S m'))) = 
+  tail (tail (mkStream ?head (mkStream ?headtail 
+                                       (tail (dupNth (tail s) n m')))))
+\end{lstlisting}
+\caption{Desugaring, step 1: Expand right-hand sides to make projections on a constructor.}
+\label{fig:desugar_step1}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+dupNth : Stream a -> Nat -> Nat -> Stream a
+dupNth s n m      = 
+  mkStream (head s) ?tail
+dupNth s n Z      = 
+  mkStream ?head (mkStream (head s) ?tailtail)
+dupNth s n (S m') = 
+  mkStream ?head (mkStream (head (tail s)) ?tailtail)))
+dupNth s n Z))    = 
+  mkStream ?head (mkStream ?headtail (tail (dupNth s n n)))
+dupNth s n (S m') = 
+  mkStream ?head (mkStream ?headtail (tail (dupNth (tail s) n m')))
+\end{lstlisting}
+\caption{Desugaring, step 2: Reduce clauses by removing projections appearing in the same position on left and right-hand sides.}
+\label{fig:desugar_step1}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+dupNth : Stream a -> Nat -> Nat -> Stream a
+dupNth s n Z      = 
+  mkStream (head s) (mkStream (head s) 
+                              (tail (dupNth s n n)))
+dupNth s n (S m') = 
+  mkStream (head s) 
+           (mkStream (head (tail s)) 
+                     (tail (dupNth (tail s) n m')))
+\end{lstlisting}
+\caption{Desugaring, step 3: Merge right-hand sides of compatible clauses.}
+\label{fig:desugar_step1}
+\end{figure}
+
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+--| Expands the right-hand side to make 
+--| projections on a constructor definition
+expand ($\pi_i$ (f x)) rhs = $\pi_i$ (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_i$ $\cdots$ ?arg$_n$)
+expand ($\pi_j$ lhs) rhs = 
+  $\pi_j$ (expand lhs (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_j$ $\cdots$ ?arg$_n$))
+expand lhs rhs = rhs
+
+--| Reduce an expression by removing equal projections 
+--| on the left and right-hand sides of a clause
+reduce (f x)    rhs     = f x = rhs
+reduce ($\pi_i$ lhs) ($\pi_i$ rhs) = reduce lhs rhs
+reduce _ _ = error -- Trying to reduce non-compatible projections
+
+--| Merges the first clause with the second clause
+--| if their left-hand sides are compatible
+mergeWithClause (lhs$_1$ = rhs$_1$) (lhs$_2$ = rhs$_2$) =
+  if compatible (lhs$_1$) (lhs$_2$)
+  then (lhs$_1$ = merge (rhs$_1$) (rhs$_2$))
+  else (lhs$_1$ = rhs$_1$)
+
+--| Merges the first constructor with the second
+merge (mkA ?arg$_1$ ?arg$_2$ $\cdots$ ?arg$_i$ $\cdots$ ?arg$_n$)
+      (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_i$  $\cdots$ ?arg$_n$) 
+      = (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_i$ $\cdots$ ?arg$_n$)
+merge (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_i$ $\cdots$ ?arg$_n$)
+      (mkA ?arg$_1$ ?arg$_2$ $\cdots$ ?arg$_i$  $\cdots$ ?arg$_n$) 
+      = (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_i$ $\cdots$ ?arg$_n$)
+merge (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_{i1}$ $\cdots$ ?arg$_n$)
+      (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_{i2}$  $\cdots$ ?arg$_n$) 
+      = error -- Trying to merge two different RHS
+merge (mkA ?arg$_1$ ?arg$_2$ $\cdots$ mkA($\cdots$)$_{i1}$ $\cdots$ ?arg$_n$)
+      (mkA ?arg$_1$ ?arg$_2$ $\cdots$ mkA($\cdots$)$_{i2}$  $\cdots$ ?arg$_n$) 
+      = (mkA ?arg$_1$ ?arg$_2$ $\cdots$ merge (mkA($\cdots$)$_{i1}$) (mkA($\cdots$)$_{i2}$) $\cdots$ ?arg$_n$)
+merge xs ys = xs
+
+--| Desugars a list of clauses
+desugar ((lhs = rhs) :: clauses) =
+  let expandedRhs = expand lhs rhs
+  in let reduced = reduce (lhs = expandedRhs)
+  in foldr mergeWithClause reduced clauses
+desugar [] = []
+\end{lstlisting}
+\caption{High-level implementation of desugaring, given in Haskell-like syntax.}
+\label{fig:desugar_step1}
+\end{figure}
+
+% merge : Constructor A -> Constructor A -> Constructor A
+% merge (Constr name args) (Constr name' args') =
+%   if name == name'
+%   then (Constr name (mergeArgs args args'))
+%   else error
+
+% mergeArgs : [Args] -> [Args] -> [Args]
+% mergeArgs (? :: xs) (y :: ys) = y :: mergeArgs xs ys
+% mergeArgs (x :: xs) (? :: ys) = x :: mergeArgs xs ys
+% mergeArgs ((Constr n args) :: xs) ((Constr m args') :: ys) = 
+%   if n == m
+%   then (Constr n (mergeArgs args args')) :: mergeArgs xs ys
+%   else error
+% mergeArgs (x :: xs) (y :: ys) = error
+
+% mkRHS : Projection -> LHS -> RHS -> RHS
+% mkRHS ($\pi$_i) (fun n) (r_i) = mk 
 
 \subsection{Desugaring right-hand side projections}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "../copatterns-thesis"
+%%% End: 
