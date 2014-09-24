@@ -62,7 +62,7 @@ In order to define the desugaring mechanism which allows us to straightforwardly
 \label{fig:nuA_intro_rule}
 \end{figure}
 
-Using the intuition of going back and forth between elimination and introduction, we now present our high-level desugaring function $desuhar$ which takes constructs from projection-based form to constructor-based form.
+Using the intuition of going back and forth between elimination and introduction, we now present our high-level desugaring mechanism which takes constructs from projection-based form to constructor-based form. Note that all desugaring operations happen during or before elaboration.
 
 
 
@@ -77,7 +77,7 @@ Record and corecords definitions are desugared according to the rule defined in 
 Definitions of records are desugared at 
 
 \subsection{Desugaring left-hand side projections}
-
+Left-hand side projections for values of both record and corecord type can be desugared in the same way. A clause with left-hand side projections is desugared in three steps: expand, reduce, and merge. To illustrate each step, we will show the steps involved in desugaring the \textit{dupNth} function from Figure\,\ref{fig:dup_copatterns}. 
 \begin{figure}
 \begin{lstlisting}[mathescape]
 dupNth : Stream a -> Nat -> Nat -> Stream a
@@ -98,6 +98,8 @@ tail (tail (dupNth s n (S m'))) =
 \label{fig:desugar_step1}
 \end{figure}
 
+The first step, expansion, is shown in Figure\,\ref{fig:desugar_step1}. Since we desugar in the elaboration phase, we assume that the constructor for a given type,  \textit{mkStream} in this example, is available in the context. During expansion, the right-hand side of a clause with one or more left-hand side projections is expanded such that projections happen on an appropriate constructor, where the original right-hand side is injected as a parameter in the position specified by left-hand side projections. Due to the intuition given above, we do not have a well-formed introduction form (i.e. constructor application) before we know the result of all eliminations. Because each clause only defines one elimination rule, holes (e.g. ?tail) must therefore be left for constructor arguments unknown to a given clause. However, we defer resolving these holes to the merging step. None of the clauses try to access information unknown to them, so no undefined behaviour can arise as a result of this step.
+
 \begin{figure}
 \begin{lstlisting}[mathescape]
 dupNth : Stream a -> Nat -> Nat -> Stream a
@@ -113,8 +115,10 @@ dupNth s n (S m') =
   mkStream ?head (mkStream ?headtail (tail (dupNth (tail s) n m')))
 \end{lstlisting}
 \caption{Desugaring, step 2: Reduce clauses by removing projections appearing in the same position on left and right-hand sides.}
-\label{fig:desugar_step1}
+\label{fig:desugar_step2}
 \end{figure}
+
+Reduction is the second step of desugaring, and is exemplified in Figure\,\ref{fig:desugar_step2}. In this step, each clause is reduced by removing equivalent projections on both side of a clause, similar to how one would reduce a mathematical equation. We are allowed to perform such reductions at this point because all the clauses make right-hand side projections directly on the (as yet unmerged) output of the function, while all the left-hand side projections happen directly on the input.
 
 \begin{figure}
 \begin{lstlisting}[mathescape]
@@ -128,9 +132,10 @@ dupNth s n (S m') =
                      (tail (dupNth (tail s) n m')))
 \end{lstlisting}
 \caption{Desugaring, step 3: Merge right-hand sides of compatible clauses.}
-\label{fig:desugar_step1}
+\label{fig:desugar_step3}
 \end{figure}
 
+The third and final step is merging, shown in Figure\,\ref{fig:desugar_step3}, where the right-hand sides of compatible clauses are merged into a single clause. Two clauses are considered to be compatible if (1) they make equivalent pattern matches on the same arguments or (2) a more specific clause is merged with a more general clause. The first condition means that \texttt{dupNth s n Z} is compatible with \texttt{dupNth s n Z}, but not \texttt{dupNth s n (S~m')}. The second condition is more subtle, expressing that \texttt{dupNth s n Z} is compatible with \texttt{dupNth s n m}, since the former is more specific than the latter. Accordingly, \texttt{dupNth s n m} is not compatible with \texttt{dupNth s n Z}.
 
 \begin{figure}
 \begin{lstlisting}[mathescape]
@@ -172,13 +177,15 @@ merge xs ys = xs
 --| Desugars a list of clauses
 desugar ((lhs = rhs) :: clauses) =
   let expandedRhs = expand lhs rhs
-  in let reduced = reduce (lhs = expandedRhs)
+  in let reduced = reduce lhs expandedRhs
   in foldr mergeWithClause reduced clauses
 desugar [] = []
 \end{lstlisting}
-\caption{High-level implementation of desugaring, given in Haskell-like syntax.}
-\label{fig:desugar_step1}
+\caption{High-level formalization of desugaring, given in Haskell-like syntax. The constructor name \texttt{mkA} signifies a constructor for an arbitrary type A, and $\pi_i$ denotes projections.}
+\label{fig:desugar_formalization}
 \end{figure}
+
+A formalization of the three steps is shown in Figure\,\ref{fig:desugar_formalization}. Expansion and reduction is straightforward. Merging tries to merge one clause with all other clauses of a definition, although only compatible clauses will lead to an actual merge. This presentation makes no mention of implicit arguments, since these are treated in the same way as explicit arguments.
 
 % merge : Constructor A -> Constructor A -> Constructor A
 % merge (Constr name args) (Constr name' args') =
