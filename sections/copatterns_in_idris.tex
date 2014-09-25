@@ -66,15 +66,68 @@ Using the intuition of going back and forth between elimination and introduction
 
 
 
-\subsection{Desugaring (co)record definitions}
-Record and corecords definitions are desugared according to the rule defined in Figure\,\ref{desugaring_records}. The type of each projection becomes an input type to the constructor with the given name.
+\subsection{Desugaring record definitions}
+%Record and corecords definitions are desugared according to the rule defined in Figure\,\ref{desugaring_records}. The type of each projection becomes an input type to the constructor with the given name.
+
+A record definition defined with projections is desugared to a record definition with a single constructor, where each parameter is labeled with the name given in the projection-based form. An intuition is given in Figure\,\ref{fig:desugar_records}. In Idris, automatic generation of projection functions with the specified names happens during elaboration, and therefore desugaring becomes a matter of injecting the specified projections into the record constructor as named parameters.
 
 \begin{figure}
-\caption{Desugaring rule for record definitions.}
-\label{fig:desugaring_records}
+\begin{lstlisting}[mathescape]
+--| Projection-based form
+record A : Type where
+  $\pi_1$ : T$_1$
+  $\pi_2$ : T$_2$
+  $\vdots$
+  $\pi_n$ : T$_n$
+  constructor mkA
+
+--| Desugared form
+record A : Type where
+  mkA : ($\pi_1$ : T$_1$) ->
+        ($\pi_2$ : T$_2$) ->
+        $\vdots$
+        ($\pi_n$ : T$_n$) ->
+        A
+\end{lstlisting}
+\caption{Desugaring record definitions.}
+\label{fig:desugar_records}
 \end{figure}
 
-Definitions of records are desugared at 
+\subsection{Desugaring corecord definitions}
+
+Corecord definitions are desugared to codata definitions with a single constructor. Similar to the desugaring of records, projections are injected into the constructor as named arguments. A general description is given in Figure\,\ref{fig:desugar_corecords}. However, as Idris does not have a corecord construct, projection functions must be generated while desugaring. Generating these functions is straightforward, since it is simply a matter of extracting the constructor argument at a specified position with pattern matching. This procedure is shown in Figure\,\ref{fig:generate_projections}.
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+--| Projection-based form
+corecord A : Type where
+  $\pi_1$ : T$_1$
+  $\pi_2$ : T$_2$
+  $\vdots$
+  $\pi_n$ : T$_n$
+  constructor mkA
+
+--| Desugared form
+codata record A : Type where
+  mkA : ($\pi_1$ : T$_1$) ->
+        ($\pi_2$ : T$_2$) ->
+         $\vdots$
+        ($\pi_n$ : T$_n$) ->
+        A
+\end{lstlisting}
+\caption{Desugaring corecord definitions.}
+\label{fig:desugar_corecords}
+\end{figure}
+
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+generateProjection ($\pi_i$ : T$_i$) =
+  $\pi_i$ (mkA (arg$_1$) (arg$_2$) $\cdots$ (arg$_i$) $\cdots$ (arg$_n$)) =  arg$_i$
+\end{lstlisting}
+\caption{Generating projection functions for a desugared corecord definition.}
+\label{fig:generate_projections}
+\end{figure}
 
 \subsection{Desugaring left-hand side projections}
 Left-hand side projections for values of both record and corecord type can be desugared in the same way. A clause with left-hand side projections is desugared in three steps: expand, reduce, and merge. To illustrate each step, we will show the steps involved in desugaring the \textit{dupNth} function from Figure\,\ref{fig:dup_copatterns}. 
@@ -206,6 +259,7 @@ A formalization of the three steps is shown in Figure\,\ref{fig:desugar_formaliz
 % mkRHS ($\pi$_i) (fun n) (r_i) = mk 
 
 \subsection{Desugaring right-hand side projections}
+Since each projection is substituted with a projection function when a record or corecord definition is desugared, there should be no reason to desugar right-hand side projections. The desugared projection functions are added to the same namespace as high-level projections, and the semantics of both the projections prior to desugaring and the generated projection functions are the same.
 
 %%% Local Variables: 
 %%% mode: latex
