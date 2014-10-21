@@ -91,7 +91,7 @@ mutual
 merge : Stream Nat -> Stream Nat
 head (merge s t) = if (head s) <= (head t) then head s else head t
 tail (merge s t) = if (head s) <= (head t) then
-                      if (head t < head s) then
+                      if (head t <= head s) then
                         merge (tail s) (tail t)
                       else
                         merge (tail s) t
