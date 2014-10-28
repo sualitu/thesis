@@ -129,14 +129,28 @@ prepend = fix (\p => \l => \s => case l of
 
 
 partial
-prepend' : Vect n a -> Stream' a -> Stream' a
-prepend' = fix thing
-       where
-         thing : (Vect n a -> Stream' a -> Stream' a) -> Vect n a -> Stream' a -> Stream' a
-         thing _ [] s = s
-         thing p (x :: xs) s = StreamCons x ((p <$> (next xs)) <$> (next s))
+-- prepend' : Vect n a -> Stream' a -> Stream' a
+-- prepend' = fix thing
+--        where
+--          thing : (Vect n a -> Stream' a -> Stream' a) -> Vect n a -> Stream' a -> Stream' a
+--          thing _ [] s = s
+--          thing p (x :: xs) s = StreamCons x ((p <$> (next xs)) <$> (next s))
 
+partial
+hMerge : Stream' a -> Stream' a -> Stream' a
+hMerge = fix (\m => \xs => \ys => StreamCons (hd xs) (next (StreamCons (hd ys) (m <$> (tl xs) <$> (tl ys)))))
 
+partial
+hMerge' : Stream' a -> Stream' a -> Stream' a
+hMerge' = fix (\m => \xs => \ys => StreamCons (hd xs) ((next StreamCons <$> next (hd ys)) <$> next ((m <$> (tl xs)) <$> (tl ys))))
+
+partial
+mergef : (a -> a -> Later (Stream' a) -> Stream' a) -> Stream' a -> Stream' a -> Stream' a
+mergef f = fix (\m => \xs => \ys => f (hd xs) (hd ys) ((m <$> (tl xs)) <$> (tl ys)))
+
+partial
+mergef' : (a -> a -> Later (Stream' a) -> Stream' a) -> Stream' a -> Stream' a -> Stream' a
+mergef' = fix (\m => \f => \xs => \ys => f (hd xs) (hd ys) (((m <$> (next f)) <$> (tl xs)) <$> (tl ys)))
 
 partial
 sMap : (a -> b) -> Stream' a -> Stream' b
@@ -150,7 +164,7 @@ partial
 sMerge : Ord a => Stream' a -> Stream' a -> Stream' a
 sMerge = fix (\m => \s => \t => StreamCons 
                                  (if (hd s) <= (hd t) then hd s else hd t) 
-                                 (if (hd s) <= (hd t) then
+                                 (if (hd s) <= (hd t) then              
                                      (if (hd t <= hd s) then
                                         app4 (app4 m (tl s)) (tl t)
                                      else
@@ -179,7 +193,7 @@ fib = fix (\f => StreamCons 0 (app4 (app3 StreamCons 1) (app4' (app1' {n=1} (app
 
 partial
 nats : Stream' Nat
-nats = fix (\n => StreamCons 0 (app2 (sMap S) n))
+nats = fix (\n => StreamCons 0 ((next sMap <$> next S) <$> n))
 
 
 ---------- Proofs ----------
