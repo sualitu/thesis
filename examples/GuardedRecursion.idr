@@ -106,12 +106,20 @@ app4' {n} = nCompose n
 app4n : (n : Nat) -> nLater (S n) (a -> b) -> nLater (S n) a -> nLater (S n) b
 app4n n = app4' {n}
 
-record Stream' : Type -> Type where
-  StreamCons : (hd : a) -> (tl : Later (Stream' a)) -> Stream' a
+corecord Stream' : Type -> Type where
+   hd : Stream' a -> a
+   tl : Stream' a -> Later (Stream' a)
+   constructor StreamCons
   
 take' : (n : Nat) -> Stream' a -> Vect n a
 take' Z _ = []
 take' (S n) s = (hd s) :: (take' n (unsafeForce (tl s)))
+
+partial
+take'' : (n : Nat) -> Stream' a -> List a
+take'' = fix(\t,n,s => case n of
+                         Z    => []
+                         S n' => (hd s) :: (unsafeForce ( ( t <$> (next n') ) <$> (tl s))))
 
 partial
 zeros : Stream' Nat
@@ -194,7 +202,6 @@ fib = fix (\f => StreamCons 0 (app4 (app3 StreamCons 1) (app4' (app1' {n=1} (app
 partial
 nats : Stream' Nat
 nats = fix (\n => StreamCons 0 ((next sMap <$> next S) <$> n))
-
 
 ---------- Proofs ----------
 
