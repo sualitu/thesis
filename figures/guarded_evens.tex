@@ -1,0 +1,4 @@
+\begin{alltt}
+evens : Stream a \(\rightarrow\) Stream a
+evens = fix(\(\lambda\)e.\(\lambda\)s. StreamCons (hd s) (e \(\circledast\) (force (tl \(\circledast\) (tl s)))))
+\end{alltt}

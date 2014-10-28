@@ -1,0 +1,4 @@
+\begin{alltt}
+nats : Stream Nat
+nats = fix(\(\lambda\)n. StreamCons 0 ((next map \(\circledast\) next S) \(\circledast\) n))
+\end{alltt}

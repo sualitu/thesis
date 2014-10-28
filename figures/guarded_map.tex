@@ -1,0 +1,4 @@
+\begin{alltt}
+map : (a \(\rightarrow\) b) \(\rightarrow\) Stream a \(\rightarrow\) Stream b
+map = fix(\(\lambda\)m.\(\lambda\)f.\(\lambda\)s. StreamCons (f (hd s)) (m \(\circledast\) (next f) \(\circledast\) (tl s)))
+\end{alltt}
