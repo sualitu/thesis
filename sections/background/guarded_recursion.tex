@@ -1,11 +1,11 @@
-%!TEX root = ../copatterns-thesis.tex
+%!TEX root = ../../copatterns-thesis.tex
 \section{Guarded Recursion}
 \label{sec:guarded-recursion}
 
-Guarded recursion provides a typing discipline which ensures that all programs adhering to their type specification must be productive. In a system with a syntactic guardedness condition, the productivity of a given program follows from its syntactic structure. With guarded recursion, the productivity of a program follows from its type. Consequently, it is impossible to write a well-typed program guarded recursive program which is not productive.
+Guarded recursion provides a typing discipline which ensures that all programs adhering to their type specification must be productive. In a system with a syntactic guardedness condition, the productivity of a given program follows from its syntactic structure. With guarded recursion, the productivity of a program follows from its type. Consequently, it is impossible to write a well-typed guarded recursive program which is not productive.
 
 \subsection{The Guardedness Type Constructor}
-The use of guarded recursion was pioneered by Nakano\,\citep{Nakano:2000}, who presented a type system (based on $\lambda \mu$) where no well-typed terms diverge by introducing a guardedness type constructor for a type $A$, $\later A$, into the type system. Although Nakano does not call it so explicitly, we recommend that the guardedness type constructor $\later$ is read as ``later''. The addition of the $\later$ operator leads to a type system where there is a distinction between an inhabitant of a type $A$, which must have be available now (i.e. at any point in time), and an inhabitant of $\later A$, which has be available later (i.e. not now). Using this intuition, a stream of elements of type $A$ can be defined as described in Figure\,\ref{fig:guarded_recursion_stream}. The idea is that we can access the head of the stream now, but we cannot access the recursive reference in the tail until later.
+The use of guarded recursion was pioneered by Nakano\,\citep{Nakano:2000}, who presented a type system (based on $\lambda \mu$) where no well-typed terms diverge by introducing a guardedness type constructor for a type $A$, $\later A$, into the type system. Although Nakano does not call it so explicitly, we recommend that the guardedness type constructor $\later$ is read as ``later''. The addition of the $\later$ operator leads to a type system where there is a distinction between an inhabitant of a type $A$, which must have be available now (i.e. at any point in time), and an inhabitant of $\later A$, which has to be available later (i.e. not now). Using this intuition, a stream of elements of type $A$ can be defined as described in Figure\,\ref{fig:guarded_recursion_stream}. The idea is that we can access the head of the stream now, but we cannot access the recursive reference in the tail until later.
 
 \begin{figure}
 \[
@@ -20,7 +20,7 @@ hd \, : \, Stream\,A\, \rightarrow \, A \,
 \label{fig:guarded_recursion_stream}
 \end{figure} 
 
-At this point, we can draw a parallel to syntactic guardedness. Since any manipulation of recursive references is disallowed, syntactic guardedness essentially requires that recursive references are also available now, because there is no guarantee that a result can be given at any later point in time. In contrast, any guarded recursive definition must guarantee that even though the recursive reference is manipulated, a result will always be available later.
+%At this point, we can draw a parallel to syntactic guardedness. Since any manipulation of recursive references is disallowed, syntactic guardedness essentially requires that recursive references are also available now, because there is no guarantee that a result can be given at any later point in time. In contrast, any guarded recursive definition must guarantee that even though the recursive reference is manipulated, a result will always be available later.
 
 \subsection{Constructing Guarded Recursive Programs}
 \label{sec:constr-guard-recurs}
@@ -33,7 +33,7 @@ To obtain the guarantees of productivity provided by guarded recursion, guarded 
 Consider the example of an infinite stream of zeros given in Figure\,\ref{fig:guarded_recursion_zeros}. The function \texttt{zeros} is only well-typed because the recursive reference has type $\later Stream\,Nat$, since a $Stream\,Nat$ could not have been given as an argument to \texttt{StreamCons}. Productivity is thus ensured because the type system forces us to preserve the levels of guardedness required by the type of the program.
 \begin{figure}
 \[
-\tensor \, :\, \later (A\, \rightarrow \, A)\, \rightarrow \, \later A\, \rightarrow \, \later A
+\tensor \, :\, \later (A\, \rightarrow \, B)\, \rightarrow \, \later A\, \rightarrow \, \later B
 \]
 \input{figures/guarded_next}
 \caption{General rules for guarded recursive programs.}
@@ -66,7 +66,7 @@ map = fix($\lambda$m.$\lambda$f.$\lambda$s. StreamCons$\,$(f (hd s))
 Both the $\tensor$ rule and the $next$ rule are used in the example of \texttt{nats} in Figure\,\ref{fig:guarded_recursion_nats}. In order to obtain a value of type $\later Stream\,Nat$ for the second argument of \texttt{StreamCons}, we first apply $next$ to \texttt{map} and \texttt{S}, obtaining \texttt{next map :} $\later((a~\rightarrow~b)~\rightarrow~Stream~a~\rightarrow~Stream~b)$ and \texttt{next~S~:}~$\later(Nat~\rightarrow~Nat)$. Applying $\tensor$, we get (\texttt{next map} $\tensor$ \texttt{next S}) : $\later(Stream\,Nat \rightarrow Stream\,Nat)$, which when applied to the recursive reference \texttt{n} leaves us with an element of $\later Stream\,Nat$, as desired.
 
 \subsection{Clock Variables}
-While the system of guarded recursion presented so far is useful for manipulating values that we know will be available later, it is still impossible to leave the time constraints behind (go from $\later A$ to $A$), even when it is safe to do so. This puts some limitations on the practical use of the system. To alleviate this situation, Atkey and McBride\,\citep{Atkey:2013} introduce the idea of clock variables. A clock variable $\kappa$ represents a clock with a fixed amount of time remaining. Clocks can be associated with types, such that when $x : \onk{A}$, we know that at least the first $\kappa$ elements of $x$ can be generated. This intuition is then extended with universal quantification over clocks, such that when $x : \forall\kappa. A^\kappa$ we know that $x$ is productive, since for any $\kappa$ the first $\kappa$ elements of $x$ can be generated. 
+While the system of guarded recursion presented so far is useful for manipulating values that we know will be available later, it is still impossible to leave the time constraints behind (go from $\later A$ to $A$), even when it is safe to do so. This puts some limitations on the practical use of the system. To alleviate this situation, Atkey and McBride\,\citep{Atkey:2013} introduce the idea of clock variables. A clock variable $\kappa$ represents a clock with a fixed amount of time remaining. Clocks can be associated with types, such that when $x : \onk{A}$, we know that at least the first $\kappa$ elements of $x$ can be provided. This intuition is then extended with universal quantification over clocks, such that when $x : \forall\kappa. A^\kappa$ we know that $x$ is productive, since for any $\kappa$ the first $\kappa$ elements of $x$ can be provided. 
 \begin{figure}
 \[
 \tensor \, :\, \laterk{(A\, \rightarrow \, B)}\, \rightarrow \, \laterk{A}\, \rightarrow \, \laterk{B}
