@@ -2,9 +2,141 @@
 \section{Guarded Recursion}
 \label{sec:guarded-recursion}
 
-\citep{Nakano:2000}
-\citep{Atkey:2013}
-\citep{Mogelberg:2014}
+Guarded recursion provides a typing discipline which ensures that all programs adhering to their type specification must be productive. In a system with a syntactic guardedness condition, the productivity of a given program follows from its syntactic structure. With guarded recursion, the productivity of a program follows from its type. Consequently, it is impossible to write a well-typed program guarded recursive program which is not productive.
+
+\subsection{The Guardedness Type Constructor}
+The use of guarded recursion was pioneered by Nakano\,\citep{Nakano:2000}, who presented a type system (based on $\lambda \mu$) where no well-typed terms diverge by introducing a guardedness type constructor for a type $A$, $\later A$, into the type system. Although Nakano does not call it so explicitly, we recommend that the guardedness type constructor $\later$ is read as ``later''. The addition of the $\later$ operator leads to a type system where there is a distinction between an inhabitant of a type $A$, which must have be available now (i.e. at any point in time), and an inhabitant of $\later A$, which has be available later (i.e. not now). Using this intuition, a stream of elements of type $A$ can be defined as described in Figure\,\ref{fig:guarded_recursion_stream}. The idea is that we can access the head of the stream now, but we cannot access the recursive reference in the tail until later.
+
+\begin{figure}
+\[
+Stream\,A = \mu X. A \times \later X
+\]
+\input{figures/guarded_streamcons}
+\[
+hd \, : \, Stream\,A\, \rightarrow \, A \, 
+\]
+\input{figures/guarded_tl}
+\caption{A guarded recursive definition of streams, along with constructor and projection functions.}
+\label{fig:guarded_recursion_stream}
+\end{figure} 
+
+At this point, we can draw a parallel to syntactic guardedness. Since any manipulation of recursive references is disallowed, syntactic guardedness essentially requires that recursive references are also available now, because there is no guarantee that a result can be given at any later point in time. In contrast, any guarded recursive definition must guarantee that even though the recursive reference is manipulated, a result will always be available later.
+
+\subsection{Constructing Guarded Recursive Programs}
+\label{sec:constr-guard-recurs}
+To obtain the guarantees of productivity provided by guarded recursion, guarded recursive programs must be constructed in a special way. For this purpose, Nakano defines a guarded fixpoint operator, shown in Figure\,\ref{fig:guarded_recursion_fixpoint}. As the recursive reference of the fixpoint is only available later, we cannot inadvertently construct a well-typed program where the recursive reference is used in a way that would make the program diverge.
+\begin{figure}
+\input{figures/guarded_fix}
+\caption{Fixpoint declaration for guarded recursive programs.}
+\label{fig:guarded_recursion_fixpoint}
+\end{figure} 
+Consider the example of an infinite stream of zeros given in Figure\,\ref{fig:guarded_recursion_zeros}. The function \texttt{zeros} is only well-typed because the recursive reference has type $\later Stream\,Nat$, since a $Stream\,Nat$ could not have been given as an argument to \texttt{StreamCons}. Productivity is thus ensured because the type system forces us to preserve the levels of guardedness required by the type of the program.
+\begin{figure}
+\[
+\tensor \, :\, \later (A\, \rightarrow \, A)\, \rightarrow \, \later A\, \rightarrow \, \later A
+\]
+\input{figures/guarded_next}
+\caption{General rules for guarded recursive programs.}
+\label{fig:guarded_recursion_rules}
+\end{figure}
+
+\begin{figure}
+\input{figures/guarded_zeros}
+\caption{A guarded recursive definition of an infinite stream of zeros.}
+\label{fig:guarded_recursion_zeros}
+\end{figure} 
+To define guarded recursive programs with a more interesting structure than \texttt{zeros}, we will apply the $\tensor$ operator shown in Figure\,\ref{fig:guarded_recursion_rules} defined by Atkey and McBride\,\citep{Atkey:2013}. The $\tensor$ operator facilitates the composition of guarded recursive programs by allowing us to apply functions which are available later to values which are available later. As hinted at by its type, $\tensor$ is also an applicative functor, and the standard laws for these apply to $\tensor$ as well. Furthermore, the $next$ rule lifts a value which is available now into a context which also makes it available later. Since $next$ can be applied multiple times, any value available now can be made available at any later point in time.
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+map : (a $\rightarrow$ b) $\rightarrow$ Stream a $\rightarrow$ Stream b
+map = fix($\lambda$m.$\lambda$f.$\lambda$s. StreamCons$\,$(f (hd s)) 
+                              $\;$(m $\tensor$ (next f) $\tensor$ (tl s)))
+\end{lstlisting}
+\caption{A guarded recursive definition of a mapping over streams.}
+\label{fig:guarded_recursion_map}
+\end{figure}
+
+\begin{figure}
+\input{figures/guarded_nats}
+\caption{A guarded recursive definition of the natural numbers, using the \texttt{map} function from Figure\,\ref{fig:guarded_recursion_zeros}. The function \texttt{S} is the successor function for the natural numbers, which has the standard definition without any added guardedness information.}
+\label{fig:guarded_recursion_nats}
+\end{figure}
+
+Both the $\tensor$ rule and the $next$ rule are used in the example of \texttt{nats} in Figure\,\ref{fig:guarded_recursion_nats}. In order to obtain a value of type $\later Stream\,Nat$ for the second argument of \texttt{StreamCons}, we first apply $next$ to \texttt{map} and \texttt{S}, obtaining \texttt{next map :} $\later((a~\rightarrow~b)~\rightarrow~Stream~a~\rightarrow~Stream~b)$ and \texttt{next~S~:}~$\later(Nat~\rightarrow~Nat)$. Applying $\tensor$, we get (\texttt{next map} $\tensor$ \texttt{next S}) : $\later(Stream\,Nat \rightarrow Stream\,Nat)$, which when applied to the recursive reference \texttt{n} leaves us with an element of $\later Stream\,Nat$, as desired.
+
+\subsection{Clock Variables}
+While the system of guarded recursion presented so far is useful for manipulating values that we know will be available later, it is still impossible to leave the time constraints behind (go from $\later A$ to $A$), even when it is safe to do so. This puts some limitations on the practical use of the system. To alleviate this situation, Atkey and McBride\,\citep{Atkey:2013} introduce the idea of clock variables. A clock variable $\kappa$ represents a clock with a fixed amount of time remaining. Clocks can be associated with types, such that when $x : \onk{A}$, we know that at least the first $\kappa$ elements of $x$ can be generated. This intuition is then extended with universal quantification over clocks, such that when $x : \forall\kappa. A^\kappa$ we know that $x$ is productive, since for any $\kappa$ the first $\kappa$ elements of $x$ can be generated. 
+\begin{figure}
+\[
+\tensor \, :\, \laterk{(A\, \rightarrow \, B)}\, \rightarrow \, \laterk{A}\, \rightarrow \, \laterk{B}
+\]
+\[
+next \, :\, \onk{A} \, \rightarrow \, \laterk{A}
+\]
+\[
+fix\, :\, (\laterk{A}\, \rightarrow \, \onk{A})\, \rightarrow \, \onk{A}
+\]
+\[
+force \, :\, (\flaterk{A}) \rightarrow (\forallk{A})
+\]
+\caption{The $\tensor$, $next$, and $fix$ rules extended with clocks, along with the added $force$ rule.}
+\label{fig:guarded_recursion_rules_clocks}
+\end{figure}
+\begin{figure}
+\[
+Stream\,A = \mu X. A \times \laterk{X}
+\]
+\[
+StreamCons\, :\, A\, \rightarrow \, \laterk{Stream}\, A\, \rightarrow \, \onk{Stream}\, A
+\]
+\[
+hd \, : \, \onk{Stream}\,A\, \rightarrow \, A \, 
+\]
+\[
+tl \, : \, \onk{Stream}\, A\, \rightarrow \,\laterk{Stream}\, A \, 
+\]
+\caption{The guarded recursive definition of streams from Figure\,\ref{fig:guarded_recursion_stream} extended with clocks.}
+\label{fig:guarded_recursion_stream_clocks}
+\end{figure}
+The introduction of clock variables and quantification over these requires some changes in the rules presented above. The extended rules are shown in Figure\,\ref{fig:guarded_recursion_rules_clocks}, and a stream definition extended with clocks is shown in Figure\,\ref{fig:guarded_recursion_stream_clocks}. The most important change is the addition of the $force$ rule, which says that whenever it is possible to universally quantify over a clock on a type $\laterk{A}$, the time constraints imposed by the $\later$ operator can be removed.
+\begin{figure}
+\begin{lstlisting}[mathescape]
+evens : ($\forall\kappa.$Stream$^\kappa$ a) $\rightarrow$ ($\forall\kappa'.$Stream$^{\kappa'}$ a)
+evens = fix($\lambda$e.$\lambda$s.
+              StreamCons$\;$(hd s) 
+                        $\;$(e $\tensor$ (force (next tl $\tensor$ (tl s)))))
+\end{lstlisting}
+\caption{A guarded recursive definition of a function that removes every second element from a stream.}
+\label{fig:guarded_recursion_evens}
+\end{figure}
+The $force$ rule is necessary for the \texttt{evens} function in Figure~\ref{fig:guarded_recursion_evens} to be well-typed, since \texttt{StreamCons} requires as its second argument a $\laterk{Stream} A$. Seeing as we need to have two calls to \texttt{tl} on the input stream \texttt{s} to obtain the desired semantics, we have a situation in which \texttt{(next tl $\tensor$ (tl s)) :} $\forall\kappa.\laterkappa\laterk{Stream} A$, i.e. the result is available too late. We can recover from this situation by forcing the result to be available earlier. Forcing is only possible because the type of \texttt{evens} requires the input stream to be universally quantified over all clocks, so we could not have defined this function in a guarded recursive type system without clock variables.
+\begin{figure}
+\begin{lstlisting}[mathescape]
+take : Nat $\rightarrow$ ($\forall\kappa.$Stream$^\kappa$ a) $\rightarrow$ List a
+take Z     s = []
+take (S n) s = (hd s) :: take n (force (tl s))
+\end{lstlisting}
+\caption{A function that takes the first \texttt{n} elements of the input stream \texttt{s}. The definition of the \texttt{List} type is standard, without any $\later$ operations or clocks.}
+\label{fig:guarded_recursion_take}
+\end{figure}
+
+A different example of the use of clock variables is shown in Figure~\ref{fig:guarded_recursion_take}. The \texttt{take} function is not defined in terms of the $fix$, since elements of its result type, \texttt{List}, should always be available. To be able to make the recursive call well-typed, however, we need to rid ourselves of the $\laterkappa$ constraint imposed on the stream argument \texttt{s} by the use of \texttt{tl}. The solution is to use the $force$ rule, which requires that \texttt{s} is known to be productive. 
+
+Note that the examples in Figure~\ref{fig:guarded_recursion_zeros}, Figure~\ref{fig:guarded_recursion_map}, and Figure~\ref{fig:guarded_recursion_nats} are all still valid in a setting with clock variables. Their types simply have to be annotated with a top-level clock quantification, as shown in Figure~\ref{fig:guarded_recursion_quantified_examples}.
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+zeros : $\forall\kappa$.Stream$^\kappa$$\,$Nat
+map   : $\forall\kappa$.(A $\rightarrow$ B) $\rightarrow$ Stream$^\kappa$$\,$A $\rightarrow$ Stream$^\kappa$$\,$A
+nats  : $\forall\kappa$.Stream$^\kappa$$\,$Nat
+\end{lstlisting}
+\caption{The types of the examples from Section~\ref{sec:constr-guard-recurs} extended with clock variables.}
+\label{fig:guarded_recursion_quantified_examples}
+\end{figure}
+\paragraph{}
+
+%Note that guardedness type constructors can be nested, meaning that $\later A$ and $\later \later A$ are both valid and distinct types. However, an element of type $\later A$ can never be given where an element of type $\later \later A$ is expected, and vice versa, since guardedness levels cannot be collapsed.
 
 %%% Local Variables: 
 %%% mode: latex

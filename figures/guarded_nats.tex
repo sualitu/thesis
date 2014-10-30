@@ -1,4 +1,4 @@
-\begin{alltt}
+\begin{lstlisting}[mathescape]
 nats : Stream Nat
-nats = fix(\(\lambda\)n. StreamCons 0 ((next map \(\circledast\) next S) \(\circledast\) n))
-\end{alltt}
+nats = fix($\lambda$n. StreamCons 0 ((next map $\tensor$ next S) $\tensor$ n))
+\end{lstlisting}

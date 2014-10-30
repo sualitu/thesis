@@ -1,6 +1,6 @@
-\begin{alltt}
-take : Nat \(\rightarrow\) Stream a \(\rightarrow\) List a
-take = fix(\(\lambda\)t.\(\lambda\)n.\(\lambda\)s. case n of
-                              Z   \,\(\rightarrow\) []
-                              S n \(\rightarrow\) (hd x) :: (force (t \(\circledast\) (next n) \(\circledast\) (tl s))))
-\end{alltt}
+\begin{lstlisting}[mathescape]
+take : Nat $\rightarrow$ Stream a $\rightarrow$ List a
+take = fix($\lambda$t.$\lambda$n.$\lambda$s. case n of
+                              Z   \,$\rightarrow$ []
+                              S n $\rightarrow$ (hd x) :: (force (t $\tensor$ (next n) $\tensor$ (tl s))))
+\end{lstlisting}
