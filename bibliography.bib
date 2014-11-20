@@ -29,6 +29,14 @@
  keywords = {coalgebras, corecursion, guarded recursion, total functional programming}
 }
 
+@InProceedings{Krishnaswami13,
+  author =    {Neelakantan R. Krishnaswami},
+  title =     {Higher-Order Reactive Programming without Spacetime Leaks},
+  booktitle = {International Conference on Functional Programming (ICFP)},
+  month =     sep,
+  year =      {2013}
+}
+
 @inproceedings{Mogelberg:2014,
  author = {M{\o}gelberg, Rasmus Ejlers},
  title = {A Type Theory for Productive Coprogramming via Guarded Recursion},
@@ -48,6 +56,399 @@
  keywords = {categorical semantics, corecursion, denotational semantics, dependent types, guarded recursion}
 } 
 
+% Codata
+@ARTICLE{Jacobs97atutorial,
+    author = {Bart Jacobs and Jan Rutten},
+    title = {A Tutorial on (Co)Algebras and (Co)Induction},
+    journal = {EATCS Bulletin},
+    year = {1997},
+    volume = {62},
+    pages = {62--222}
+}
+
+@article{Hagino89,
+ author = {Hagino, Tatsuya},
+ title = {Codatatypes in ML},
+ journal = {J. Symb. Comput.},
+ issue_date = {Dec. 1989},
+ volume = {8},
+ number = {6},
+ month = dec,
+ year = {1989},
+ issn = {0747-7171},
+ pages = {629--650},
+ numpages = {22},
+ url = {http://dx.doi.org/10.1016/S0747-7171(89)80065-3},
+ doi = {10.1016/S0747-7171(89)80065-3},
+ acmid = {77574},
+ publisher = {Academic Press, Inc.},
+ address = {Duluth, MN, USA},
+}
+
+% Syntactic Guardedness
+@book{Milner82,
+ author = {Milner, R.},
+ title = {A  Calculus of Communicating Systems},
+ year = {1982},
+ isbn = {0387102353},
+ publisher = {Springer-Verlag New York, Inc.},
+ address = {Secaucus, NJ, USA},
+}
+
+@inproceedings{Coquand94,
+ author = {Coquand, Thierry},
+ title = {Infinite Objects in Type Theory},
+ booktitle = {Proceedings of the International Workshop on Types for Proofs and Programs},
+ series = {TYPES '93},
+ year = {1994},
+ isbn = {3-540-58085-9},
+ location = {Nijmegen, The Netherlands},
+ pages = {62--78},
+ numpages = {17},
+ url = {http://dl.acm.org/citation.cfm?id=189973.189976},
+ acmid = {189976},
+ publisher = {Springer-Verlag New York, Inc.},
+ address = {Secaucus, NJ, USA},
+}
+
+@incollection{Gimenez95,
+  year={1995},
+  isbn={978-3-540-60579-9},
+  booktitle={Types for Proofs and Programs},
+  volume={996},
+  series={Lecture Notes in Computer Science},
+  editor={Dybjer, Peter and Nordstr\"{o}m, Bengt and Smith, Jan},
+  doi={10.1007/3-540-60579-7_3},
+  title={Codifying guarded definitions with recursive schemes},
+  url={http://dx.doi.org/10.1007/3-540-60579-7_3},
+  publisher={Springer Berlin Heidelberg},
+  author={Gim\'{e}nez, Eduarde},
+  pages={39-59}
+}
+
+@INPROCEEDINGS{Telford97ensuringstreams,
+    author = {Telford, Alastair and Turner, David},
+    title = {Ensuring Streams Flow},
+    booktitle = {Proc. 6th AMAST},
+    year = {1997},
+    pages = {509--523},
+    publisher = {Springer}
+}
+
+@MISC{Telford98ensuringthe,
+    author = {Telford, Alastair and Turner, David},
+    title = {Ensuring the Productivity of Infinite Structures},
+    year = {1998}
+}
+
+@String(j-jucs = "Journal of Universal Computer Science")
+@Article{Telford:jucs_6_4:ensuring_termination_in_esfp,
+  author =     {Telford, Alastair and Turner, David},
+  title =      {Ensuring Termination in ESFP},
+  abstract =   "In previous papers we have proposed an elementary discipline of strong functional programming (ESFP), in which all computations terminate. A key feature of the discipline is that we introduce a type distinction between data which is known to be finite, and codata which is (potentially) infinite. To ensure termination, recursion over data must be well-founded, and corecursion (the definition schema for codata) must be productive, and both of these restrictions must be enforced automatically by the compiler. In our previous work we used abstract interpretation to establish the productivity of corecursive definitions in an elementary strong functional language. We show here that similar ideas can be applied in the dual case to check whether recursive function definitions are strongly normalising. We thus exhibit a powerful termination analysis technique which we demonstrate can be extended to partial functions.",
+  journal =    j-jucs,
+  year =       {2000},
+  volume =     {6},
+  number =     {4},
+  pages =      {474--488},
+  date =       {2000-04-28},
+  month =      {apr},
+  note =       {\url{http://www.jucs.org/jucs_6_4/ensuring_termination_in_esfp}}
+}
+
+@MISC{Danielsson10beatingthe,
+    author = {Nils Anders Danielsson},
+    title = {Beating the Productivity Checker Using Embedded Languages},
+    year = {2010}
+}
+
+@misc{AltenkirchNAD10,
+  author = {Altenkirch, Thorsten and Danielsson, Nils Anders},
+  title = {Termination Checking in the Presence of Nested Inductive and Coinductive Types},
+  note = {Short note supporting a talk given at PAR 2010, Workshop on Partiality and Recursion in Interactive Theorem Provers.},
+  year = {2010}
+}
+
+@inproceedings{Nakano00,
+ author = {Nakano, Hiroshi},
+ title = {A Modality for Recursion},
+ booktitle = {Proceedings of the 15th Annual IEEE Symposium on Logic in Computer Science},
+ series = {LICS '00},
+ year = {2000},
+ isbn = {0-7695-0725-5},
+ pages = {255--},
+ url = {http://dl.acm.org/citation.cfm?id=788022.789002},
+ acmid = {789002},
+ publisher = {IEEE Computer Society},
+ address = {Washington, DC, USA},
+ keywords = {Logics of Programs, Modal and Temporal Logics, Specifications, Lambda and Combinatory Caluculi, Type Systems and Type Theory},
+}
+
+% foetus
+@MISC{Abel98foetus,
+    author = {Andreas Abel},
+    title = {foetus --- Termination Checker for Simple Functional Programs},
+    year = {1998}
+}
+
+% Copatterns
+@inproceedings{Abel13Copatterns,
+ author = {Abel, Andreas and Pientka, Brigitte and Thibodeau, David and Setzer, Anton},
+ title = {Copatterns: Programming Infinite Structures by Observations},
+ booktitle = {Proceedings of the 40th Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
+ series = {POPL '13},
+ year = {2013},
+ isbn = {978-1-4503-1832-7},
+ location = {Rome, Italy},
+ pages = {27--38},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/2429069.2429075},
+ doi = {10.1145/2429069.2429075},
+ acmid = {2429075},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {coinduction, functional programming, introduction vs. elimination, message passing, pattern matching},
+}
+
+@inproceedings{Abel13Wellfounded,
+ author = {Abel, Andreas M. and Pientka, Brigitte},
+ title = {Wellfounded Recursion with Copatterns: A Unified Approach to Termination and Productivity},
+ booktitle = {Proceedings of the 18th ACM SIGPLAN International Conference on Functional Programming},
+ series = {ICFP '13},
+ year = {2013},
+ isbn = {978-1-4503-2326-0},
+ location = {Boston, Massachusetts, USA},
+ pages = {185--196},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/2500365.2500591},
+ doi = {10.1145/2500365.2500591},
+ acmid = {2500591},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {coinduction, pattern matching, productivity, recursion, strong normalization, type-based termination},
+} 
+
+% Idris
+@article{BradyIdrisImpl13,
+  author = {Brady,Edwin},
+  title = {Idris, a general-purpose dependently typed programming language: Design and implementation},
+  journal = {Journal of Functional Programming},
+  volume = {23},
+  issue = {05},
+  month = {9},
+  year = {2013},
+  issn = {1469-7653},
+  pages = {552--593},
+  numpages = {42},
+  doi = {10.1017/S095679681300018X},
+  URL = {http://journals.cambridge.org/article_S095679681300018X},
+}
+
+% Size-change
+@inproceedings{LeeJones01SizeChange,
+ author = {Lee, Chin Soon and Jones, Neil D. and Ben-Amram, Amir M.},
+ title = {The Size-change Principle for Program Termination},
+ booktitle = {Proceedings of the 28th ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
+ series = {POPL '01},
+ year = {2001},
+ isbn = {1-58113-336-7},
+ location = {London, United Kingdom},
+ pages = {81--92},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/360204.360210},
+ doi = {10.1145/360204.360210},
+ acmid = {360210},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {PSPACE-completeness, omega automaton, partial evaluation, program analysis, termination},
+}
+
+@incollection{Jones04Untyped,
+  year={2004},
+  isbn={978-3-540-22153-1},
+  booktitle={Rewriting Techniques and Applications},
+  volume={3091},
+  series={Lecture Notes in Computer Science},
+  editor={Oostrom, Vincent},
+  doi={10.1007/978-3-540-25979-4_1},
+  title={Termination Analysis of the Untyped $\lambda$-Calculus},
+  url={http://dx.doi.org/10.1007/978-3-540-25979-4_1},
+  publisher={Springer Berlin Heidelberg},
+  author={Jones, Neil D. and Bohr, Nina},
+  pages={1-23}
+}
+
+@INPROCEEDINGS{Sereni05terminationanalysis,
+    author = {Damien Sereni and Jones, Neil D.},
+    title = {Termination Analysis of Higher-Order Functional Programs},
+    booktitle = {APLAS 2005: The Third Asian Symposium on Programming Languages and Systems (Kwangkeun)},
+    year = {2005},
+    pages = {281--297},
+    publisher = {Springer. November}
+}
+
+@phdthesis{Sereni06Phd,
+  author = {Damien Sereni},
+  title = {Termination Analysis of Higher-Order Functional Programs},
+  school = {Oxford University, Magdalen College},
+  year = {2006}	
+}
+
+@article{Hyvernat13,
+  author    = {Pierre Hyvernat},
+  title     = {The Size-Change Termination Principle for Constructor Based
+               Languages},
+  journal   = {CoRR},
+  volume    = {abs/1306.3833},
+  year      = {2013},
+  ee        = {http://arxiv.org/abs/1306.3833},
+  bibsource = {DBLP, http://dblp.uni-trier.de}
+}
+
+@misc{PMLLanguage,
+  title = {The PML language},
+  howpublished = {\url{http://www.lama.univ-savoie.fr/tracpml}},
+  note = {Accessed: 07-05-2014}
+}
+
+@MISC{Avery05SizeChange,
+    author = {James Avery},
+    title = {The Size-Change Termination Principle on Non-Well founded Data Types},
+    year = {2005}
+}
+
+@incollection{Avery06,
+  year={2006},
+  isbn={978-3-540-33438-5},
+  booktitle={Functional and Logic Programming},
+  volume={3945},
+  series={Lecture Notes in Computer Science},
+  editor={Hagiya, Masami and Wadler, Philip},
+  doi={10.1007/11737414_14},
+  title={Size-Change Termination and Bound Analysis},
+  url={http://dx.doi.org/10.1007/11737414_14},
+  publisher={Springer Berlin Heidelberg},
+  author={Avery, James},
+  pages={192-207}
+}
+
+@INPROCEEDINGS{Krauss07certifiedsizechange,
+    author = {Alexander Krauss},
+    title = {Certified size-change termination},
+    booktitle = {In Proc. 21st CADE, volume 4603 of LNAI},
+    year = {2007},
+    pages = {460--475},
+    publisher = {Springer}
+}
+
+% Sized types
+@inproceedings{Hughes96,
+ author = {Hughes, John and Pareto, Lars and Sabry, Amr},
+ title = {Proving the Correctness of Reactive Systems Using Sized Types},
+ booktitle = {Proceedings of the 23rd ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
+ series = {POPL '96},
+ year = {1996},
+ isbn = {0-89791-769-3},
+ location = {St. Petersburg Beach, Florida, USA},
+ pages = {410--423},
+ numpages = {14},
+ url = {http://doi.acm.org/10.1145/237721.240882},
+ doi = {10.1145/237721.240882},
+ acmid = {240882},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@incollection{Amadio98,
+  year={1998},
+  isbn={978-3-540-64300-5},
+  booktitle={Foundations of Software Science and Computation Structures},
+  volume={1378},
+  series={Lecture Notes in Computer Science},
+  editor={Nivat, Maurice},
+  doi={10.1007/BFb0053541},
+  title={Analysis of a guard condition in type theory},
+  url={http://dx.doi.org/10.1007/BFb0053541},
+  publisher={Springer Berlin Heidelberg},
+  author={Amadio, Roberto M. and Coupet-Grimal, Solange},
+  pages={48-62}
+}
+
+@INPROCEEDINGS{Gimenez98structuralrecursive,
+    author = {Gim\'{e}nez, Eduarde},
+    title = {Structural Recursive Definitions in Type Theory},
+    booktitle = {Automata, Languages and Programming, 25th International Colloquium, ICALP’98},
+    year = {1998},
+    pages = {13--17},
+    publisher = {Springer-Verlag}
+}
+
+@MISC{Abel99terminationchecking,
+    author = {Andreas Abel},
+    title = {Termination Checking with Types},
+    year = {1999}
+}
+
+@misc{Thibodeau11,
+  author = {David Thibodeau},
+  title = {Termination Checking: Comparing Structural Recursion and Sized Types by Examples},
+  year = {2011},
+  howpublished = {\url{http://www2.tcs.ifi.lmu.de/~abel/miniagda/TermSizes.pdf}}
+}
+
+% Agda
+@phdthesis{Norell:thesis,
+  author  = {Ulf Norell},
+  title   = {Towards a practical programming language based on dependent type theory},
+  school  = {Department of Computer Science and Engineering, Chalmers University of Technology},
+  year    = {2007},
+  month   = {September},
+  address = {SE-412 96 G\"{o}teborg, Sweden}
+}
+
+% Coq
+@Manual{Coq:manual,
+  title =        {The Coq proof assistant reference manual},
+  author =       {Coq development team, The},
+  organization = {LogiCal Project},
+  note =         {Version 8.0},
+  year =         {2004},
+  url =          "http://coq.inria.fr"
+}
+
+% Beluga
+@inproceedings{Pientka10,
+  author    = {Brigitte Pientka},
+  title     = {Beluga: Programming with Dependent Types, Contextual Data,
+               and Contexts},
+  booktitle = {FLOPS},
+  year      = {2010},
+  pages     = {1-12},
+  ee        = {http://dx.doi.org/10.1007/978-3-642-12251-4_1},
+  crossref  = {DBLP:conf/flops/2010},
+  bibsource = {DBLP, http://dblp.uni-trier.de}
+}
+
+% Total functional programming
+@ARTICLE{Turner04totalfunctional,
+    author = {David Turner},
+    title = {Total Functional Programming},
+    journal = {Journal of Universal Computer Science},
+    year = {2004},
+    volume = {10},
+    pages = {187--209}
+}
+
+
+% Oury's counterexample, subject reduction
+@misc{OuryCounterexample,
+  author = {Danielsson, Nils Anders},
+  title = {Codata oddity},
+  year = {2008},
+  howpublished = {\url{http://thread.gmane.org/gmane.comp.lang.agda/226}},
+  note = {Email posted on the Agda mailing list. Accessed: 16-05-2014}
+}
+
 % General
 @book{Harper:2012,
  author = {Harper, Robert},
@@ -56,4 +457,60 @@
  isbn = {1107029570, 9781107029576},
  publisher = {Cambridge University Press},
  address = {New York, NY, USA}
+}
+
+%% SICP
+@book{Abelson96SICP,
+ author = {Abelson, Harold and Sussman, Gerald J.},
+ title = {Structure and Interpretation of Computer Programs},
+ year = {1996},
+ isbn = {0262011530},
+ edition = {2nd},
+}
+
+%% TAPL
+@book{Pierce:2002:TPL:509043,
+ author = {Pierce, Benjamin C.},
+ title = {Types and Programming Languages},
+ year = {2002},
+ isbn = {0-262-16209-1},
+ publisher = {MIT Press},
+ address = {Cambridge, MA, USA},
+} 
+
+%% Abstract Interpretation
+@incollection{Jones:1995,
+ author = {Jones, Neil D. and Nielson, Flemming},
+ chapter = {Abstract Interpretation: A Semantics-based Tool for Program Analysis},
+ title = {Handbook of Logic in Computer Science (Vol. 4)},
+ editor = {Abramsky, S. and Gabbay, Dov M. and Maibaum, T. S. E.},
+ year = {1995},
+ isbn = {0-19-853780-8},
+ pages = {527--636},
+ numpages = {110},
+ url = {http://dl.acm.org/citation.cfm?id=218623.218637},
+ acmid = {218637},
+ publisher = {Oxford University Press},
+ address = {Oxford, UK},
+}
+
+%% Bidirectional typing
+@article{Pierce00,
+ author = {Pierce, Benjamin C. and Turner, David N.},
+ title = {Local Type Inference},
+ journal = {ACM Trans. Program. Lang. Syst.},
+ issue_date = {Jan. 2000},
+ volume = {22},
+ number = {1},
+ month = jan,
+ year = {2000},
+ issn = {0164-0925},
+ pages = {1--44},
+ numpages = {44},
+ url = {http://doi.acm.org/10.1145/345099.345100},
+ doi = {10.1145/345099.345100},
+ acmid = {345100},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {polymorphism, subtyping, type inference},
 }

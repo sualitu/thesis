@@ -203,6 +203,18 @@ partial
 nats : Stream' Nat
 nats = fix (\n => StreamCons 0 ((next sMap <$> next S) <$> n))
 
+partial tailtail : Stream' a -> Later (Later (Stream' a))
+tailtail = fix(\t, s => (next tl) <$> (tl s))
+
+hat : nLater (S n) (a -> b) -> (Later (nLater n a -> nLater n b))
+hat = ?h
+
+partial nats2 : Stream' Nat
+nats2 = fix(\n => StreamCons 0 (app4 (app3 StreamCons 1) (app4 (hat {n=1} (app3n 2 sMap S)) (app2 tl n))))
+
+partial bad : (Stream' Nat)
+bad = fix(\b => b)
+
 ---------- Proofs ----------
 
 GuardedRecursion.app2EqMeta = proof

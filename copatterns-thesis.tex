@@ -11,14 +11,22 @@
 \usepackage{amssymb, amsfonts, amsmath}
 \usepackage{listings}
 \usepackage{natbib}
+\usepackage{pdflscape}
 \bibliographystyle{alpha}
 
 \newcommand{\later}{\rhd}
+% Kappa commands
 \newcommand{\onk}[1]{#1^\kappa}
 \newcommand{\laterkappa}{\later^{\!\!\!\kappa}}
 \newcommand{\laterk}[1]{\later^{\!\!\!\kappa}#1^\kappa}
 \newcommand{\forallk}[1]{\forall\kappa.#1^\kappa}
 \newcommand{\flaterk}[1]{\forall\kappa.\later^{\!\!\!\kappa}#1^\kappa}
+% Kappa prime commands
+\newcommand{\onkp}[1]{#1^\kappa'}
+\newcommand{\laterkappap}{\later^{\!\!\!\kappa'}}
+\newcommand{\laterkp}[1]{\later^{\!\!\!\kappa'}#1^{\kappa'}}
+\newcommand{\forallkp}[1]{\forall\kappa'.#1^{\kappa'}}
+\newcommand{\flaterkp}[1]{\forall\kappa'.\later^{\!\!\!\kappa'}#1^{\kappa'}}
 \newcommand{\tensor}{\circledast}
 
 \begin{document}
