@@ -14,7 +14,19 @@ instance Functor Later where
 instance Applicative Later where
   pure = next
   (next t) <$> (next u) = compose (next t) (next u) 
-                  
+{-
+data Box : Type where
+  Boxed   : Box
+  Unboxed : Box
+                                                      
+data GT : Box -> Type -> Type where
+  Guard : (b : Box) -> a -> GT b a
+
+instance Functor (GT b) where
+  map f g = case g of 
+              Guard b a => Guard b (f a)
+-}
+
 partial
 fix : (Later a -> a) -> a
 fix f = f (next (fix f))
@@ -135,15 +147,14 @@ prepend = fix (\p => \l => \s => case l of
                                    [] => s
                                    (x :: xs) => StreamCons x ((p <$> (next xs)) <$> (next s)))
 
-
+{-
 partial
--- prepend' : Vect n a -> Stream' a -> Stream' a
--- prepend' = fix thing
---        where
---          thing : (Vect n a -> Stream' a -> Stream' a) -> Vect n a -> Stream' a -> Stream' a
---          thing _ [] s = s
---          thing p (x :: xs) s = StreamCons x ((p <$> (next xs)) <$> (next s))
+prepend'Z : Vect Z a -> Stream' a -> Stream' a
+prepend'Z = fix (\p, [], s => s)
 
+prepend'S : Vect (S n) a -> Stream' a -> Stream' a
+prepend'S = fix (\p, (x :: xs), s => StreamCons x (p <$> (next xs) <$> (next s)))
+-}
 partial
 hMerge : Stream' a -> Stream' a -> Stream' a
 hMerge = fix (\m => \xs => \ys => StreamCons (hd xs) (next (StreamCons (hd ys) (m <$> (tl xs) <$> (tl ys)))))
@@ -159,7 +170,17 @@ mergef f = fix (\m => \xs => \ys => f (hd xs) (hd ys) ((m <$> (tl xs)) <$> (tl y
 partial
 mergef' : (a -> a -> Later (Stream' a) -> Stream' a) -> Stream' a -> Stream' a -> Stream' a
 mergef' = fix (\m => \f => \xs => \ys => f (hd xs) (hd ys) (((m <$> (next f)) <$> (tl xs)) <$> (tl ys)))
+{-
+unguard : (GT Boxed a) -> a
+unguard (Guard _ a) = a
 
+partial
+gMap : (a -> b) -> (GT x (Stream' a)) -> (GT x (Stream' b))
+gMap = fix (\m, f, s => Guard x (StreamCons (map (f . hd) s)  ))
+
+partial
+gEven : (GT Boxed (Stream' a)) -> (GT Boxed (Stream' a))
+-}
 partial
 sMap : (a -> b) -> Stream' a -> Stream' b
 sMap = fix (\m => \f => \s => StreamCons (f (hd s)) ((m <$> (next f)) <$> (tl s)))
@@ -203,6 +224,7 @@ partial
 nats : Stream' Nat
 nats = fix (\n => StreamCons 0 ((next sMap <$> next S) <$> n))
 
+
 partial tailtail : Stream' a -> Later (Later (Stream' a))
 tailtail = fix(\t, s => (next tl) <$> (tl s))
 
@@ -214,6 +236,15 @@ nats2 = fix(\n => StreamCons 0 (app4 (app3 StreamCons 1) (app4 (hat {n=1} (app3n
 
 partial bad : (Stream' Nat)
 bad = fix(\b => b)
+
+corecord Foo : Type where
+  bar : Foo -> Bool
+  baz : (f : Foo) -> (if bar f then (Later Foo) else Nat)
+  
+partial
+alpha : Foo
+alpha = fix (\a => MkFoo True (next alpha))
+
 
 ---------- Proofs ----------
 
