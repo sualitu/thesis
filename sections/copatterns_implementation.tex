@@ -1,7 +1,12 @@
 %!TEX root = ../copatterns-thesis.tex
-\chapter{Copatterns Implementation}
+\chapter{Adding Copatterns}
 
-\section{Desugaring}
+% What, Why
+\section{Intuition}
+
+% How
+\section{Implementation}
+\subsection{Desugaring}
 % Why do we want to desugar?
 Codata definitions and record definitions with projections, along with function definitions described with copatterns, can all be written using existing Idris constructs. In particular, we consider a function such as \texttt{dup} given in Figure\,\ref{fig:dup_copatterns} to be syntactic sugar for the definition given in Figure\,\ref{fig:dup_desugared}. Likewise, the definition of the coinductively defined Stream type with projections is desugared into a constructor-based definition with exactly one constructor.
 
@@ -260,6 +265,9 @@ A formalization of the three steps is shown in Figure\,\ref{fig:desugar_formaliz
 
 \subsection{Desugaring right-hand side projections}
 Since each projection is substituted with a projection function when a record or corecord definition is desugared, there should be no reason to desugar right-hand side projections. The desugared projection functions are added to the same namespace as high-level projections, and the semantics of both the projections prior to desugaring and the generated projection functions are the same.
+
+\subsection{Other Approaches}
+% Agda
 
 %%% Local Variables: 
 %%% mode: latex

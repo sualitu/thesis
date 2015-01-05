@@ -1,25 +1,29 @@
 %!TEX root = ../copatterns-thesis.tex
 \chapter{Idris}
-\section{Idris Structure}
 To understand how an implementation of guarded recursion could be realized in Idris, we must first understand the internal structure of the language. In this section we will first outline the overall structure of Idris and then dig into specific parts relevant to guarded recursion. This is not a thorough description of all of Idris's components, but rather an explanation of parts of the language. For more reading on this topic see Edwin Brady's .%todo: REF
-\subsection{Outline}
+\section{Overview}
 %Idris -> Idris- -> TT -> Executable
 \subsection{Internal Representations}
-\subsubsection{High-Level Abstract Syntax}
+\subsection{High-Level Abstract Syntax}
 %PDecl/PTerm
 %	Top level abstract syntax
 %	Functions with multiple clauses are multiple Decls
-\subsubsection{Dependently Typed Lambda Calculus}
+\subsection{Dependently Typed Lambda Calculus}
 %		TT
 %			Dependently typed lambda calculus
 %			Wrapped in case trees
 %			Data and Type constructors??
-\subsection{Totality checking}
+\section{Totality checking}
 %		Happens during and after elaboration
 %			What happens when and why?
 %		Coverage: Case Trees
 %		Termination: Size Change
 %			When are the graphs build?
 %		Productivity: Syntactic Guardedness
-\subsection{Type checking}
+\section{Type checking}
 %??
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../copatterns-thesis"
+%%% End:
