@@ -8,7 +8,7 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage{alltt}
-\usepackage{amssymb, amsfonts, amsmath}
+\usepackage{amssymb, amsfonts, amsmath, amsthm}
 \usepackage{listings}
 \usepackage{natbib}
 \usepackage{pdflscape}
@@ -28,6 +28,18 @@
 \newcommand{\forallkp}[1]{\forall\kappa'.#1^{\kappa'}}
 \newcommand{\flaterkp}[1]{\forall\kappa'.\later^{\!\!\!\kappa'}#1^{\kappa'}}
 \newcommand{\tensor}{\circledast}
+
+% Theorem Styles
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+% Definition Styles
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{example}{Example}[section]
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
 
 \begin{document}
 
@@ -53,7 +65,7 @@ This is an abstract
 
 \include{sections/motivation}
 
-\include{sections/idris_structure}
+\include{sections/idris}
 
 \include{sections/copatterns_implementation}
 
