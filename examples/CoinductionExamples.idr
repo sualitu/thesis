@@ -40,7 +40,6 @@ fst (x, _) = x
 snd : (a, b) -> b
 snd (_, y) = y
 
--- Not found total
 total causal unfold : (s -> (a, s)) -> s -> Stream a
 &head unfold step x = fst (step x)
 &tail unfold step x = unfold step (snd (step x))
@@ -54,7 +53,6 @@ namespace List
     nil : List a
     (::) : a -> List a -> List a
 
-  -- Not found total
   total causal prepend : List a -> Stream a -> Stream a
   prepend [] s = s
   prepend (x ::xs) s = x :: (prepend xs s)
