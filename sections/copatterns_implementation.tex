@@ -3,10 +3,39 @@
 \label{sec:adding_copatterns}
 % What, Why
 \section{Intuition}
+%#########
+% Eliminationsregler => Introduktionsregler
+% Top-level produktstruktur (een introduktionsregel)
+% Pattern matching?
+%#########
 
 % How
 \section{Implementation}
-\subsection{Desugaring}
+
+\subsection{Implementing Coinductive Records}
+%#############
+% Intuition: 
+% Parse til corecord decl, byg constructor fra projektioner, send til
+% elaboration som codata, projektionsfunktioner bygges på samme måde som for
+% records
+
+% Hvorfor udvides TT ikke?
+%#############
+
+\subsection{Implementing Copatterns}
+%#############
+% Hvordan foregår desugaring? 
+% Hvordan implementeres intuitionen?
+% Hvorfor desugaring, i modsætning til elaboration? (mere code sharing)
+% Hvorfor udvides TT ikke?
+
+% Pattern matching
+% where-blocks
+% Parsing?
+% with-rule
+% Eksempler (simpelt + avanceret)
+%############
+\subsubsection{Desugaring}
 % Why do we want to desugar?
 Codata definitions and record definitions with projections, along with function definitions described with copatterns, can all be written using existing Idris constructs. In particular, we consider a function such as \texttt{dup} given in Figure\,\ref{fig:dup_copatterns} to be syntactic sugar for the definition given in Figure\,\ref{fig:dup_desugared}. Likewise, the definition of the coinductively defined Stream type with projections is desugared into a constructor-based definition with exactly one constructor.
 
@@ -71,7 +100,7 @@ Using the intuition of going back and forth between elimination and introduction
 
 
 
-\subsection{Desugaring record definitions}
+\subsubsection{Desugaring record definitions}
 %Record and corecords definitions are desugared according to the rule defined in Figure\,\ref{desugaring_records}. The type of each projection becomes an input type to the constructor with the given name.
 
 A record definition defined with projections is desugared to a record definition with a single constructor, where each parameter is labeled with the name given in the projection-based form. An intuition is given in Figure\,\ref{fig:desugar_records}. In Idris, automatic generation of projection functions with the specified names happens during elaboration, and therefore desugaring becomes a matter of injecting the specified projections into the record constructor as named parameters.
@@ -98,7 +127,7 @@ record A : Type where
 \label{fig:desugar_records}
 \end{figure}
 
-\subsection{Desugaring corecord definitions}
+\subsubsection{Desugaring corecord definitions}
 
 Corecord definitions are desugared to codata definitions with a single constructor. Similar to the desugaring of records, projections are injected into the constructor as named arguments. A general description is given in Figure\,\ref{fig:desugar_corecords}. However, as Idris does not have a corecord construct, projection functions must be generated while desugaring. Generating these functions is straightforward, since it is simply a matter of extracting the constructor argument at a specified position with pattern matching. This procedure is shown in Figure\,\ref{fig:generate_projections}.
 
@@ -134,7 +163,7 @@ generateProjection ($\pi_i$ : T$_i$) =
 \label{fig:generate_projections}
 \end{figure}
 
-\subsection{Desugaring left-hand side projections}
+\subsubsection{Desugaring left-hand side projections}
 Left-hand side projections for values of both record and corecord type can be desugared in the same way. A clause with left-hand side projections is desugared in three steps: expand, reduce, and merge. To illustrate each step, we will show the steps involved in desugaring the \textit{dupNth} function from Figure\,\ref{fig:dup_copatterns}. 
 \begin{figure}
 \begin{lstlisting}[mathescape]
@@ -263,10 +292,10 @@ A formalization of the three steps is shown in Figure\,\ref{fig:desugar_formaliz
 % mkRHS : Projection -> LHS -> RHS -> RHS
 % mkRHS ($\pi$_i) (fun n) (r_i) = mk 
 
-\subsection{Desugaring right-hand side projections}
+\subsubsection{Desugaring right-hand side projections}
 Since each projection is substituted with a projection function when a record or corecord definition is desugared, there should be no reason to desugar right-hand side projections. The desugared projection functions are added to the same namespace as high-level projections, and the semantics of both the projections prior to desugaring and the generated projection functions are the same.
 
-\subsection{Other Approaches}
+\subsubsection{Other Approaches}
 % Agda
 
 %%% Local Variables: 

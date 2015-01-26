@@ -1,0 +1,39 @@
+\section{Coinductive Types}
+\label{sec:coinductive-types}
+% Thomas
+%#########
+% Hvad er en coinduktiv type? (eliminationsregler) (typeteori)
+% Hvorfor coinduktive typer / hvad kan de bruges til?
+% Simple eksempler
+% Uortodokse eksempler (fx partiality)
+% Lazy evaluation (i.e. Haskell-style) vs. distinction between coinductive and
+%% inductive data
+
+% Ny viden: Coinduktive typer
+%#########
+
+% Start: Algebraiske data typer
+% Hvad er en algebra (algebraic structure)?
+% Hvad er en F-algebra?
+% F-coalgebra
+% Induktive og coinduktive typer
+% eksempel
+% Category theory nonsense?
+
+Algebraic data types are ubiquitous in functional programming, providing a
+concise way of defining data types.
+
+\begin{figure} 
+\begin{lstlisting}
+data Lam = Var String
+         | Abs String Lam
+         | App Lam Lam
+\end{lstlisting}
+\caption{The untyped lambda calculus defined as an algebraic data structure in a
+Haskell-like language. For simplicity, strings are used for identifiers.}
+\end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../../copatterns-thesis"
+%%% End:

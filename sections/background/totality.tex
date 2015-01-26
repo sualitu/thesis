@@ -1,6 +1,24 @@
+%########
+% Hvad er totality?
+% Hvorfor totality?
+% Totalitet skal bevises
+%% Hvordan beviser man det?
+% Hvorfor er totalitet ikke standard?
+% Partiality
+% Coverage
+% Termination
+% Produktivitet
+
+% Finite prefix af coinduktiv data ved endeligt antal unfolds
+% Partielle funktioner defineres ved subset-intuition
+
+% Ny viden: Hvorfor totality?, Hvad består totalitet af? Produktivitet vs. terminering, total vs. partiel funktion
+%########
+
 \section{Totality and Total Functional Programming}
-Totality is a property of programs. In the context of functional programming,
-totality is thus a property of functions. 
+Totality is a property of functions. In the context of functional programming,
+totality is thus a property of programs (assuming that our programming language
+models mathematical functions). 
 
 \begin{definition}[\textit{Total function}]
 \label{def:total_function}
@@ -19,9 +37,9 @@ functional programming''. But why should we care whether the programs we write
 are total?
 
 \subsection{Partiality and Partial Functional Programming}
-An appreciation for totality is perhaps best achieved by understanding its
+An appreciation of totality is perhaps best achieved by understanding its
 counterpart, \emph{partiality}. Like totality, partiality is also a property of
-programs. 
+functions. 
 
 \begin{definition}[\textit{Partial function}]
   A function $g$ with domain $A$ and codomain $B$ is partial if for some
@@ -52,21 +70,26 @@ that $\bot$ is never a possible result of program evaluation.
 
 \subsection{A Total Program is a Proof}
 Another advantage of programming with total functions is that our programs can
-act as proofs. The Curry-Howard correspondence\,\citep{Wadler2014} identifies a
-deep connection between logic and computer programs. Within this connection,
-types are identified as propositions, (total) programs as proofs, and evaluation of
-programs as simplification of proofs. Consequently, a program can be viewed as a
-proof script in a logic (which, in this case, is our programming language),
-showing that a given proposition, specified by the program's type, holds. This
-is not merely an academic curiosity, but leads to a situation where a program can
-be \emph{correct by construction}\,\citep{Pierce:2002:TPL:509043} if its type
+act as proofs. The Curry-Howard correspondence identifies a
+deep connection between logic and computer programs. Curry first discovered a
+connection between functions and the theory of implication\,\citep{Curry1934}, a
+notion which later led Howard to describe a correspondence between natural
+deduction and the simply typed lambda calculus\,\citep{Howard80} (an in-depth
+and accessible overview of this development has been covered by
+Wadler\,\citep{Wadler2014}). Within this connection, types are identified as
+propositions, (total) programs as proofs, and evaluation of programs as
+simplification of proofs. Consequently, a program can be viewed as a proof
+script in a logic (which, in this case, is our programming language), showing
+that a given proposition, specified by the program's type, holds. This is not
+merely an academic curiosity, but leads to a situation where a program can be
+\emph{correct by construction}\,\citep{Pierce:2002:TPL:509043} if its type
 sufficiently describes the program's behaviour. The correctness of the program
 can then be established statically by the type checker.
 
 A partial function can never be correct by construction, since evaluating it
 might lead to infinite recursion. Infinite recursion is logically equivalent to
 Russell's paradox (the equivalent type theoretic formulation is given by
-Girard's paradox), which is known to introduce an inconsistency into an
+Girard's paradox\,\citep{Girard1972}), which is known to introduce an inconsistency into an
 intuitionistic logic, and therefore also into the logic that is our programming
 language. Any proposition can be deduced in an inconsistent logic, and as a
 consequence, a partial function can never act as a valid proof.
@@ -96,9 +119,10 @@ invocations result in an output value in finite time.
   has a reduction rule for every inhabitant $x\in A$.
 \end{definition}
 
-Depending on whether the codomain of $f$ is an inductive or a coinductive type,
-$f$ must be shown to be either \emph{terminating} or \emph{productive} in order
-to ensure that all invocations of $f$ lead to a result in finite time.
+Depending on whether the codomain of a covering function $f$ is an inductive or
+a coinductive type, $f$ must be shown to be either \emph{terminating} or
+\emph{productive} in order to ensure that all invocations of $f$ lead to a
+result in finite time.
 
 \begin{definition}[\textit{Terminating function}]
 \label{def:terminating_function}

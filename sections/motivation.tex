@@ -3,15 +3,42 @@ This chapter explains why we want copatterns, and which problems they (potential
 
 \section{The Use Case for Copatterns}
 \label{sec:motivation_copatterns}
+%############
+% Pattern matching on data with top-level product structure vs. copatterns
+% Mixed induction-coinduction, coninductive resumption monad
+% Coinduction (definition og operationel intuition) (måske bisimilarity)
+
+% Ny viden: Hvornår bør/kan jeg bruge copatterns?
+%############
+
 \subsection{Coinduction}
 Definition by elimination
 Coinduction principle
 
 \subsection{Product vs. Coproduct Structure}
 
-\section{Loss of Subject Reduction}
+\subsection{Recovering Subject Reduction}
+%#########
+% Hvorfor mistes subject reduction ved dependent pattern matching på codata?
+% Mister Idris subject reduction?
+% Modeksempel (helst implementeret i Idris)
+% Hvordan afhjælper copatterns problemet?
 
-\section{Less Restrictive Productivity Checking}
+% Ny viden: Copatterns kan være et værktøj til at undgå at man mister subject reduction
+%#########
+
+\section{Less Restrictive Productivity Checking} 
+% Hvorfor vil vi inferere guarded recursion?
+%###########
+% Dette afsnit har i princippet intet at gøre med copatterns!
+% Referer til baggrund om syntactic guardedness
+% Hvad kan guarded recursion som syntactic guardedness?
+% Hvorfor er guarded recursion frygteligt at skrive / ikke brugervenligt?
+% Bedre end syntactic guardedness + Bruger vil ikke skrive det => Inferer det
+
+
+% Ny viden: Hvorfor vil vi gerne inferere guarded recursion?
+%###########
 ... And why the user should be oblivious
 
 %%% Local Variables:
