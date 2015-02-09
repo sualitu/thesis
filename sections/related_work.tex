@@ -2,6 +2,10 @@
 \chapter{Related Work}
 \label{cha:related-work}
 
+\section{Copatterns}
+\label{sec:related_work_copatterns}
+\todo{Relate to 'Unnesting of Copatterns' by Setzer et al.}
+
 \section{Size-change Termination}
 Since Idris already has a working totality checker using size-change termination\,\citep{BradyIdrisImpl13}, it would be interesting if the size-change principle could be used for determining the productivity of corecursive functions as well. The size-change principle for termination was first proposed for a strict first-order functional language (without loop constructs) by Lee, Jones, and Ben-Amram\,\citep{LeeJones01SizeChange}. The principle essentially states that if infinitely many recursive calls to a function would lead to infinite decrease in some parameter value, then the function must be terminating, since any value of an inductive type must have finite size. This last condition is of particular importance, as the size-change principle cannot in general recognize functions as being terminating if they have parameters that do not exhibit a well-founded order. Lee, Jones, and Ben-Amram present two realizations of the principle, one using automata and one using a call graph. In the graph formulation, termination is determined by identifying any recursive calls (both direct and indirect) through cycles in the call graph, and then constructing a ``size-change graph'' for each of these. The size-change graphs are then used to find out whether infinite descent in some parameter value is present. One of the limitations of this approach is that parameter values must decrease monotonically: Values cannot at any point become structurally larger, even though the total change in size in a call chain would ultimately lead a to a decreasing value. Two examples of size-change terminating functions are shown in Figure~\ref{fig:sizechange_plus_map}. In both examples, the recursive call happens on structurally smaller input.
 

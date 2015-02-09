@@ -1,6 +1,12 @@
 %!TEX root = ../copatterns-thesis.tex
 \chapter{Adding Copatterns}
 \label{sec:adding_copatterns}
+Copatterns can be added to Idris without changing its core, the TT
+calculus. Throughout this chapter, we will show how copatterns can be implemented as
+syntactic sugar, i.e. a transformation from \IdrisM{} to \IdrisM{}, such that
+all copattern clauses have been reduced to pattern clauses by the
+time elaboration is reached.
+
 % What, Why
 \section{Intuition}
 %#########
@@ -8,297 +14,550 @@
 % Top-level produktstruktur (een introduktionsregel)
 % Pattern matching?
 %#########
+Following the discussion in Section~\ref{sec:prod-vs.-copr}, support for
+copatterns have only been added for record types, both inductive and
+coinductive. This decision is based upon the fact that Idris record types have
+an obvious top-level structure, making them ideal companions for
+copatterns. All examples are therefore given for record types only.
 
-% How
-\section{Implementation}
-
-\subsection{Implementing Coinductive Records}
-%#############
-% Intuition: 
-% Parse til corecord decl, byg constructor fra projektioner, send til
-% elaboration som codata, projektionsfunktioner bygges på samme måde som for
-% records
-
-% Hvorfor udvides TT ikke?
-%#############
-
-\subsection{Implementing Copatterns}
-%#############
-% Hvordan foregår desugaring? 
-% Hvordan implementeres intuitionen?
-% Hvorfor desugaring, i modsætning til elaboration? (mere code sharing)
-% Hvorfor udvides TT ikke?
-
-% Pattern matching
-% where-blocks
-% Parsing?
-% with-rule
-% Eksempler (simpelt + avanceret)
-%############
-\subsubsection{Desugaring}
-% Why do we want to desugar?
-Codata definitions and record definitions with projections, along with function definitions described with copatterns, can all be written using existing Idris constructs. In particular, we consider a function such as \texttt{dup} given in Figure\,\ref{fig:dup_copatterns} to be syntactic sugar for the definition given in Figure\,\ref{fig:dup_desugared}. Likewise, the definition of the coinductively defined Stream type with projections is desugared into a constructor-based definition with exactly one constructor.
+\subsection{The Duality Between Construction and Observation}
+Desugaring copattern clauses, which give definitions by observation, to pattern
+clauses, which give definitions by construction, relies on the duality between
+introduction and elimination rules for (co)inductive types. For our first example,
+we will consider the simple record type \texttt{Pair} in
+Figure~\ref{fig:record_pair}. 
+\begin{figure}
+\begin{lstlisting}[mathescape]
+record Pair (a : Type) (b : Type) where
+  MkPair : (fst : a) $\to$ (snd : b) $\to$ Pair a b
+\end{lstlisting}
+  \centering
+  $\begin{matrix} 
+    \frac { \Gamma \,\vdash\, x\,:\,a \quad \Gamma \,\vdash\, y\,:\,b }{
+      \Gamma\, \vdash\,MkPair\,x\,y\,:\,Pair\,a\,b} \scriptstyle I_{Pair}
+  & \frac { \Gamma \,\vdash\, e\,:\,Pair\, a\,b }{ \Gamma\,
+    \vdash\,fst(e)\,:\,a} \scriptstyle E_{fst}
+  & \frac { \Gamma\, \vdash\, e\,:\,Pair\, a\,b }{ \Gamma\, \vdash\,
+    snd(e)\,:\,b } \scriptstyle E_{snd}  \end{matrix}$
+  $\vspace{12pt}$
+  $\begin{matrix}
+      \frac { \Gamma\, \vdash\, MkPair\,x\,y\,:\,Pair\,a\,b }{ \Gamma
+      \,\vdash\, fst(MkPair\,x\,y)\,\equiv\,x  } \eta_{fst}  & \frac { \Gamma\, \vdash\,
+      MkPair\,x\,y\,:\,Pair\,a\,b }{ \Gamma\, \vdash \,snd(MkPair\,x\,y)\,\equiv\,y } \eta_{snd} \end{matrix}$
+  \caption{A record defining a type \texttt{Pair}, along with its introduction,
+    elimination, and $\eta$-rules.}
+  \label{fig:record_pair}
+\end{figure}
+The traditional way of creating a value of type \texttt{Pair} is by construction
+using pattern clauses, as shown in Figure~\ref{fig:pair_example_pattern}. Here,
+we construct a value of \texttt{Pair} using its introduction rule, giving the values
+\texttt{``Idris''} and \texttt{42} as arguments. We can observe the data in the
+constructed value by using the elimination rules \texttt{fst} and \texttt{snd},
+which have corresponding $\eta$-rules as expected (see
+Figure~\ref{fig:record_pair}). As seen from
+Figure~\ref{fig:pair_example_pattern_typing_derivation}, such observations
+provide unsurprising results, since \texttt{MkPair} simply acts as a container
+for the observed data.
 
 \begin{figure}
 \begin{lstlisting}
-corecord Stream : Type -> Type where
-  head : Stream a -> a
-  tail : Stream a -> Stream a
-  constructor mkStream
+pattern : Pair String Nat
+pattern = MkPair "Idris" 42
+\end{lstlisting}
+  \caption{A value of \texttt{Pair} defined by construction.}
+  \label{fig:pair_example_pattern}
+\end{figure}
 
---| dupNth s n m duplicates every nth element of s, 
---| starting with the mth element
-dupNth : Stream a -> Nat -> Nat -> Stream a
-head       (dupNth s n m)       = head s
+\begin{figure}
+\centering
+    $
+     \frac { \Gamma \,\vdash\, "Idris"\,:\,String \quad \Gamma \,\vdash\, 42\,:\,Nat }{
+      \Gamma\, \vdash\,MkPair\,"Idris"\,42\,:\,Pair\,String\,Nat} \scriptstyle
+    I_{Pair}$
+   $\vspace{10pt}$
+  $\begin{matrix} \frac { \Gamma \,\vdash\,MkPair\,"Idris"\,42\,:\,Pair\, String\,Nat }{ \Gamma\,
+    \vdash\,fst(MkPair\,"Idris"\,42)\,:\,String} \scriptstyle E_{fst}
+  & \frac { \Gamma\, \vdash\,MkPair\,"Idris"\,42\,:\,Pair\,String\,Nat }{ \Gamma\, \vdash\,
+    snd(MkPair\,"Idris"\,42)\,:\,Nat } \scriptstyle E_{snd}  \end{matrix}$
+   $\vspace{10pt}$
+  $\begin{matrix}
+      \frac { \Gamma\, \vdash\, MkPair\,"Idris"\,42\,:\,Pair\,String\,Nat }{ \Gamma
+      \,\vdash\, fst(MkPair\,"Idris"\,42)\,\equiv\,"Idris"  } \eta_{fst}  & \frac { \Gamma\, \vdash\,
+      MkPair\,"Idris"\,42\,:\,Pair\,String\,Nat }{ \Gamma\, \vdash \,snd(MkPair\,"Idris"\,42)\,\equiv\,42 } \eta_{snd} \end{matrix}$
+  \caption{Using the rules for \texttt{Pair} on the example in Figure~\ref{fig:pair_example_pattern}.}
+  \label{fig:pair_example_pattern_typing_derivation}
+\end{figure}
+
+The idea behind copatterns is that whenever a (co)data constructor simply acts
+as a container for values, we can treat the (co)data constructor as a black box,
+defining only the values we expect to observe when making specific observations
+on the constructed (co)data. As an example,
+Figure~\ref{fig:pair_example_copatterns} shows how we can use copatterns to
+define a program by observation which is equivalent to the definition by
+construction in Figure~\ref{fig:pair_example_pattern}. The most striking
+difference is that \texttt{pattern} itself is never directly defined. Instead,
+it is implicitly defined, since the two copattern clauses provide all the data
+necessary to derive a corresponding pattern clause which defines
+\texttt{pattern} explicitly, as in Figure~\ref{fig:pair_example_pattern}. From
+this observation, we arrive at the main intuition behind our desugaring
+procedure: Any definition given by copattern clauses has an equivalent
+definition given by pattern clauses, and this definition can be derived without
+providing any further information. To make this intuition concrete, consider the
+derivation in
+Figure~\ref{fig:pair_elimination_on_introduction_rules_rewrite}. Rewriting with
+the observations defined in Figure~\ref{fig:pair_example_copatterns}, the
+elimination rules for \texttt{Pair} are used to directly derive the right-hand
+side of the \texttt{pattern} example from
+Figure~\ref{fig:pair_example_pattern}. 
+
+\begin{figure}
+\begin{lstlisting}
+pattern' : Pair String Nat
+fst pattern' = "Idris"
+snd pattern' = 42
+\end{lstlisting}
+  \caption{A value of \texttt{Pair} defined by construction.}
+  \label{fig:pair_example_copatterns}
+\end{figure}
+
+\begin{figure}
+  \centering
+$\frac { \begin{matrix} \frac { \Gamma \, \vdash \,pattern'\, :\,
+      Pair\, String\, Nat }{ \Gamma \, \vdash \, "Idris"\,:\,String
+    } \scriptstyle E_{fst}   & \frac { \Gamma \, \vdash \,pattern'\, :\, Pair\, String\,
+      Nat }{ \Gamma \, \vdash \, 42\,:\,Nat } \scriptstyle E_{snd}  \end{matrix} }{
+  \Gamma \, \vdash \, MkPair\, "Idris"\, 42\, :\, Pair\, String\, Nat } \scriptstyle I_{ Pair }$
+  \caption{Deriving the right-hand side of \texttt{pattern} from \texttt{pattern'}.}
+  \label{fig:pair_elimination_on_introduction_rules_rewrite}
+\end{figure}
+
+\subsection{Desugaring Copatterns}
+While the derivation in
+Figure~\ref{fig:pair_elimination_on_introduction_rules_rewrite} provides a fine
+display of our intention, such a direct derivation is only possible for simple
+examples which have only one resulting pattern clause. In particular, desugaring
+copatterns becomes more complex as the following challendes must be taken into account:
+
+\begin{enumerate}
+\item Nested copatterns
+\item Pattern matching
+\item Subsumed copattern clauses
+\item Non-covering definitions
+\end{enumerate}
+
+To address each of these challenges, we have devised a desugaring procedure for
+copatterns which operates in three steps:
+
+\begin{enumerate}
+\item \textbf{Expansion}, in which right-hand sides are expanded into partially
+  defined constructor invocations.
+\item \textbf{Reduction}, in which copatterns are eliminated from the reduction rules.
+\item \textbf{Merging}, in which compatible clauses are merged into one clause.
+  \begin{enumerate}
+  \item Identify compatible clauses
+  \item Merge compatible clauses
+  \end{enumerate}
+\end{enumerate}
+
+Before discussing how our solution tackles each of the challenges, the inner
+workings of the procedure will be illustrated with a simple example. Consider
+the program \texttt{zeros} in Figure~\ref{fig:zeros}, which produces a value of
+the type \texttt{Stream} defined in Figure~\ref{fig:corecord_stream}. In the
+first step of desugaring \texttt{zeros}, expansion, the right-hand side of each
+copattern clause is expanded into an explicit projection on a partially defined
+Stream. Thus, the \texttt{head} clause of Figure~\ref{fig:desugared_zeros_step1}
+may be read as: ``The \texttt{head} of \texttt{zeros} is the \texttt{head} of
+the partially defined \texttt{Stream} which has \texttt{Z} as its first
+constructor argument''. A corresponding reading exists for the \texttt{tail}
+clause. For constructor arguments where no output is defined, Idris
+metavariables are inserted, e.g. \texttt{?zeroshead}.
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+corecord Stream (a : Type) where
+  head : a
+  tail : Stream a
+  constructor (::)
+\end{lstlisting}
+  \centering
+  $\begin{matrix} 
+    \frac { \Gamma \,\vdash\, x\,:\,a \quad \Gamma \,\vdash\, xs\,:\,Stream\,a }{
+      \Gamma\, \vdash\,(x\,::\,xs)\,:\,Stream \,a} \scriptstyle I_{Stream}
+  & \frac { \Gamma \,\vdash\, s\,:\,Stream\, a }{ \Gamma\,
+    \vdash\,head(s)\,:\,a} \scriptstyle E_{head}
+  & \frac { \Gamma\, \vdash\, s\,:\,Stream\, a }{ \Gamma\, \vdash\,
+    tail(s)\,:\,Stream\, a } \scriptstyle E_{tail}  \end{matrix}$
+  $\vspace{10pt}$
+  $\begin{matrix}
+      \frac { \Gamma\, \vdash\, (x\,::\,xs\,:\,Stream\,a }{ \Gamma
+      \,\vdash\, head(x\,::\,xs)\,\equiv\,x  } \eta_{head}  & \frac { \Gamma\, \vdash\,
+      (x\,::\,xs)\,:\,Stream\,a }{ \Gamma\, \vdash \,tail(x\,::\,xs)\,\equiv\,xs } \eta_{tail} \end{matrix}$
+  \caption{A coinductive record type \texttt{Stream} defining an infinite list,
+    along with introduction, elimination, and $\eta$-rules.}
+  \label{fig:corecord_stream}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+zeros : Stream Nat
+head zeros = Z
+tail zeros = zeros
+\end{lstlisting}
+  \caption{A function \texttt{zeros} defining a stream of 0.}
+  \label{fig:zeros}
+\end{figure}
+
+In the second step, reduction, each clause from
+Figure~\ref{fig:desugared_zeros_step1} is reduced by removing equivalent
+projections on both side of a clause, similar to how one would reduce a
+mathematical equation. The result of the reduction is shown in
+Figure~\ref{fig:desugared_zeros_step2}. We are allowed to perform such
+reductions at this point because all the clauses make right-hand side
+projections directly on the (as yet unmerged) output of the function, while all
+the left-hand side projections happen directly on the input.
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+zeros : Stream Nat
+head zeros = head (Z :: ?zerostail)
+tail zeros = tail (?zeroshead :: zeros)
+\end{lstlisting}
+  \caption{Desugaring \texttt{zeros}, step 1: Expansion.}
+  \label{fig:desugared_zeros_step1}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+zeros : Stream Nat
+-- Before: head zeros = head (Z :: ?zerostail)
+-- Eliminate 'head' on each side
+zeros = Z :: ?zerostail
+-- Before: tail zeros = tail (?zeroshead :: zeros)
+-- Eliminate 'tail' on each side
+zeros = ?zeroshead :: zeros
+\end{lstlisting}
+  \caption{Desugaring \texttt{zeros}, step 2: Reduction.}
+  \label{fig:desugared_zeros_step2}
+\end{figure}
+
+The final step, merging, is actually a two-step process, where compatible clauses are
+merged with each other such that their right-hand sides are combined into
+possibly complete constructor invocations. Some of the right-hand sides may remain
+incomplete after the merging step if the definition we are desugaring is not
+covering. In Figure~\ref{fig:desugared_zeros_step3a}, the clauses of
+\texttt{zeros} which are compatible with each other are identified. Since
+\texttt{zeros} is a simple example, the two clauses are compatible with each
+other because their left-hand sides are identical. Therefore, the two clauses are
+merged into one, as shown in Figure~\ref{fig:desugared_zeros_step3b}.
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+zeros : Stream Nat
+-- The two clauses are compatible with each other
+(1) zeros = Z :: ?zerostail
+(2) zeros = ?zeroshead :: zeros
+\end{lstlisting}
+  \caption{Desugaring \texttt{zeros}, step 3a: Identifying compatible
+    clauses. The clauses have been numbered for reference.}
+  \label{fig:desugared_zeros_step3a}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+zeros : Stream Nat
+(1,2) zeros = Z :: zeros 
+\end{lstlisting}
+  \caption{Desugaring \texttt{zeros}, step 3b: Merging compatible clauses. The
+    numbers indicate that both of the clauses from
+    Figure~\ref{fig:desugared_zeros_step3a} have been merged into one clause.}
+  \label{fig:desugared_zeros_step3b}
+\end{figure}
+
+\begin{definition}[\textit{Compatibility}]
+\label{def:compatibility}
+  Compatibility is a reflexive, transitive, and anti-symmetric binary relation
+  $C$ on pattern clauses which describes whether the pattern in one pattern
+  clause is more general or equally general to the pattern in another pattern
+  clause. Let $V$ be a function which, given a subpattern, returns the set of
+  values matched by that subpattern. For two pattern clauses
+  $a\,p_{1}\,p_{2}\,\cdots\,p_{n}\,=\,rhs_{a}$ and
+  $b\,q_{1}\,q_{2}\,\cdots\,q_{n}\,=\,rhs_{b}$ of an $n$-ary function,
+  $(a,b)\in C$ if $V(p_{i})\subseteq V(q_{i})$ for $0 < i\le n$. For a nullary
+  function, all pattern clauses are trivially compatible.
+\end{definition}
+% if the set of values
+% for each argument $i$ matched by the pattern of $a$, $P_{i}(a)$, is a subset of of the set of
+% values for each argument $i$ matched by the pattern of $b$, $P_{i}(b)$ i.e.
+% $P_{i}(a)\subseteq P_{i}(b)$ for all $0 < i\le n$. 
+
+\subsubsection{Addressing the Challenges}
+The three-step desugaring procedure presented above has been devised as a
+unified solution to four main challenges. As we go through each of the
+challenges, the \texttt{dupNth} program in Figure~\ref{fig:dupNth} will serve as
+a running example of the desugaring of a non-trivial definition with copattern
+clauses.
+
+\paragraph{Challenge 1: Nested Copatterns}
+Copatterns, i.e. left-hand side projections, can be nested arbitrarily as long
+as the nesting is well-typed. As described in
+Chapter~\ref{cha:coind-records-idris}, definitions with copatterns only behave
+as intended when all projection names are unique. Therefore, our solution
+assumes that projection names not only indicate semantics, but also argument
+positions to the corresponding constructor. To illustrate, consider the
+transformation of clause (2) from Figure~\ref{fig:dupNth} to the expanded clause
+\texttt{(2)} in Figure~\ref{fig:desugared_dupNth_step1}. Because this clause
+defines the \texttt{head} of the \texttt{tail} of the output, the expanded
+clause has the right-hand side, \texttt{head~s}, inserted at this position in
+the partially defined constructor on the right-hand side of (2) in
+Figure~\ref{fig:desugared_dupNth_step1}. The same reasoning holds for the remaining clauses.
+
+In general, nested copatterns are handled in the first two steps, expansion and
+reduction. Expansion ensures that the original right-hand sides are inserted
+into the correct positions in the expanded constructor invocations, while
+reduction eliminates all left-hand side projections through equational
+reasoning. A different solution to the problem of handling nested copatterns has
+been proposed by Setzer et al.\,\citep{Setzer14Unnesting}, in which auxiliary
+functions are created for each level of nested copatterns. The difference
+between this and our approach will be discussed in Section~\ref{sec:related_work_copatterns}.
+
+\paragraph{Challenge 2: Pattern Matching}
+Whenever the copattern clauses for a definition have different patterns on the
+left-hand side, these patterns must be preserved in the desugared version of the
+definition. After eliminating copatterns in the reduction step
+(Figure~\ref{fig:desugared_dupNth_step2}), preservation of pattern matching is
+ensured in the first sub-step of merging
+(Figure~\ref{fig:desugared_dupNth_step3a}), where compatible clauses are
+identified. In the following sub-step, shown in
+Figure~\ref{fig:desugared_dupNth_step3b}, only compatible clauses are
+merged. Merging only compatible clauses ensures that a clause is only merged
+with other clauses which match the same or a more general set of input values. As an example, we will show exactly why clause (2) is compatible
+with clause (1) as postulated in
+Figure~\ref{fig:desugared_dupNth_step3a}. The proof
+proceeds in Figure~\ref{fig:compatibility_proof}. Note that if, in Figure~\ref{fig:compatibility_proof}, $m_{1}$ had been
+$S\,m_{1}$ instead, $(2,1)\notin C$ since $V(S\,m_{1}) =
+\{\,x\,|\,x\,:\,Nat\,\setminus\{Z\}\}$, and $V(Z)\not\subseteq V(S\,m_{1})$.
+
+\begin{figure}
+From
+Definition~\ref{def:compatibility}, we must show: $(2,1)\in C$, where (2) and (1) are clauses from
+Figure~\ref{fig:desugared_dupNth_step3a}.
+\\\\
+We consider the left-hand sides of (2) and (1), respectively:\\
+$lhs_{(2)} = dupNth\,s_{(2)}\,n_{(2)}\,Z$\\
+$lhs_{(1)} = dupNth\,s_{(1)}\,n_{(1)}\,m_{(1)}$\\
+\\
+For each sub-pattern, we define the set of matching values:\\
+$V(s_{2}) = \{\,x\,|\,x\,:\,Stream\,a\}$\\
+$V(n_{2}) = \{\,x\,|\,x\,:\,Nat\}$\\
+$V(Z) = \{Z\}$\\
+$V(s_{1}) = \{\,x\,|\,x\,:\,Stream\,a\}$\\
+$V(n_{1}) = \{\,x\,|\,x\,:\,Nat\}$\\
+$V(m_{1}) = \{\,x\,|\,x\,:\,Nat\}$\\
+\\
+Having defined these, the following must hold:
+\\
+$V(s_{2})\subseteq V(s_{1}) = \{\,x\,|\,x\,:\,Stream\,a\}\subseteq\,\{\,x\,|\,x\,:\,Stream\,a\}\,\qed$\\
+$V(n_{2})\subseteq V(n_{1}) =
+\{\,x\,|\,x\,:\,Nat\}\subseteq\,\{\,x\,|\,x\,:\,Nat\}\,\qed$\\
+$V(Z)\subseteq V(m_{1}) = \{Z\}\subseteq\,\{\,x\,|\,x\,:\,Nat\}\,\qed$\\\\
+Consequently, $(2,1)\in C$
+  \caption{From Figure~\ref{fig:desugared_dupNth_step3a}, clause (2) is
+    compatible with clause (1).}
+  \label{fig:compatibility_proof}
+\end{figure}
+
+
+\paragraph{Challenge 3: Subsumed Copattern Clauses}
+In addressing Challenge 2, we stated that different left-hand side patterns must
+be preserved in the output. Nevertheless, the pattern from clause (1) in
+Figure~\ref{fig:desugared_dupNth_step3a} does not occur in the
+desugared version of the function in
+Figure~\ref{fig:desugared_dupNth_step3b}. Due to the fact that clause (1) is
+more general than all the other clauses, it is subsumed by these in the final
+output, such that the right-hand side of (1) is a part of the right-hand side of
+both the desugared clauses. The set of subsumed copattern clauses for a
+definition are exactly the clauses which are compatible with all other clauses.  
+
+\paragraph{Challenge 4: Non-covering Defintions} As Idris allows users to
+define functions which are not covering (see
+Definition~\ref{def:covering_function}), partial definitions with copatterns
+should be possible as well. With our desugaring procedure, the solution to this
+challenge is provided ``for free'', since the metavariables which are inserted
+during the expansion phase are simply not replaced with any proper definition if
+none is given. A non-covering version of the \texttt{dupNth} function is shown
+in Figure~\ref{fig:dupNth_partial}, along with its desugared version.
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+||| Duplicate every nth element of s, 
+||| starting with the mth element.
+||| @s the stream
+||| @n how often
+||| @m where to start
+dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+(1) head       (dupNth s n m)       = head s
+(2) head (tail (dupNth s n Z))      = head s
+(3) head (tail (dupNth s n (S m'))) = head (tail s)
+(4) tail (tail (dupNth s n Z))      = tail (dupNth s n n)
+(5) tail (tail (dupNth s n (S m'))) = 
+                              tail (dupNth (tail s) n m')
+\end{lstlisting}
+  \caption{A function duplicating the nth element of a stream. The numbers have been
+  added to each clause for reference, and are not a part of the actual implementation.}
+  \label{fig:dupNth}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+(1) head       (dupNth s n m)       =
+      head (head s :: ?dupNthtail)
+(2) head (tail (dupNth s n Z))      = 
+      head (tail (?dupNthhead :: (head s :: ?dupNthtail)))
+(3) head (tail (dupNth s n (S m'))) =
+      head (tail (?dupNthhead :: 
+                 (head (tail s) :: ?dupNthtail)))
+(4) tail (tail (dupNth s n Z))      =
+      tail (tail (?dupNthhead :: 
+                 (?dupNthheadtail :: tail (dupNth s n n))))
+(5) tail (tail (dupNth s n (S m'))) =
+      tail (tail (?dupNthhead :: 
+                 (?dupNthheadtail :: 
+                  tail (dupNth (tail s) n m'))))
+\end{lstlisting}
+  \caption{Desugaring \texttt{dupNth}, step 1: Expansion.}
+  \label{fig:desugared_dupNth_step1}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+(1) dupNth s n m       =
+      head s :: ?dupNthtail
+(2) dupNth s n Z      = 
+      ?dupNthhead :: (head s :: ?dupNthtail)
+(3) dupNth s n (S m') =
+      ?dupNthhead :: (head (tail s) :: ?dupNthtail)
+(4) dupNth s n Z      =
+      ?dupNthhead :: (?dupNthheadtail :: 
+                      tail (dupNth s n n))
+(5) dupNth s n (S m') =
+      ?dupNthhead :: (?dupNthheadtail :: 
+                      tail (dupNth (tail s) n m'))
+\end{lstlisting}
+  \caption{Desugaring \texttt{dupNth}, step 2: Reduction.}
+  \label{fig:desugared_dupNth_step2}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+-- The 'dupNth s n m' clause is compatible with 
+-- all of the other clauses.
+(1) dupNth s n m = head s :: ?dupNthtail
+-- compatible with (1), (2), and (4)
+(2) dupNth s n Z      = 
+     ?dupNthhead :: (head s :: ?dupNthtail)
+-- compatible with (1), (3), and (5)
+(3) dupNth s n (S m') =
+     ?dupNthhead :: (head (tail s) :: ?dupNthtail)
+-- compatible with (1), (2), and (4)
+(4) dupNth s n Z      =
+     ?dupNthhead :: (?dupNthheadtail :: 
+                     tail (dupNth s n n))
+-- compatible with (1), (3), and (5)
+(5) dupNth s n (S m') =
+     ?dupNthhead :: (?dupNthheadtail :: 
+                     tail (dupNth (tail s) n m'))
+\end{lstlisting}
+  \caption{Desugaring \texttt{dupNth}, step 3a: Identifying compatible
+    clauses. The clauses have been numbered for reference.}
+  \label{fig:desugared_dupNth_step3a}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+(1,2,4) dupNth s n Z = 
+          head s :: (head s :: tail (dupNth s n n))
+(1,3,5) dupNth s n (S m') = 
+          head s :: 
+          (head (tail s) :: tail (dupNth (tail s) n m'))
+\end{lstlisting}
+  \caption{Desugaring \texttt{dupNth}, step 3b: Merging compatible
+    clauses. The numbers indicate which of the clauses from
+    Figure~\ref{fig:desugared_dupNth_step3a} that have been merged into each clause.}
+  \label{fig:desugared_dupNth_step3b}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
 head (tail (dupNth s n Z))      = head s
 head (tail (dupNth s n (S m'))) = head (tail s)
 tail (tail (dupNth s n Z))      = tail (dupNth s n n)
 tail (tail (dupNth s n (S m'))) = tail (dupNth (tail s) n m')
 \end{lstlisting}
-\caption{A duplication function on streams, defined with copatterns.}
-\label{fig:dup_copatterns}
-\end{figure}
-
-\begin{figure}
-\begin{lstlisting}
-codata Stream : Type -> Type where
-  mkStream : a -> Stream a -> Stream a
-
-head : Stream a -> a
-head (mkStream h _) = h
-
-tail : Stream a -> a
-tail (mkStream _ t) = t
-
-dupNth : Stream a -> Nat -> Nat -> Stream a
-dupNth s n Z      =
-  mkStream (head s)
-           (mkStream (head s)
-                     (tail (dupNth s n n)))
-dupNth s n (S m') =
-  mkStream (head s)
-           (mkStream (head (tail s))
-                     (tail (dupNth (tail s) n m')))
-\end{lstlisting}
-\caption{A desugared version of the program described in Figure \ref{fig:dup_copatterns}.}
-\label{fig:dup_desugared}
-\end{figure}
-
-In order to define the desugaring mechanism which allows us to straightforwardly transform programs from a projection-based form to a constructor-based form, we recall that each projection in a type definition defines an elimination rule for that type. For a general coinductive type with product structure $\nu A. B_1 \times B_2 \times \cdots \times B_n$ where $A$ may occur in any of the types $B_i$ (for $1 \leq i \leq n$), we can define \textit{n} elimination rules in the style of Harper\,\cite[Ch. 15]{Harper:2012} as shown in Figure\,\ref{fig:nuA_elim_rules}. Since these rules define all of the ways we can eliminate a value of the given type, we can synthesize them into a single introduction rule which has \textit{n} premises; one for the result of each elimination rule. This property, as illustrated in Figure\,\ref{fig:nuA_intro_rule}, is obviously reversible, such that we can always use our elimination rules on an introduction form and vice versa.
-
-\begin{figure}
-\caption{Elimination rules $\pi_1, \pi_2 \ldots \pi_n$ for a type $\nu A. B_1 \times B_2 \times \ldots \times B_n$.}
-\label{fig:nuA_elim_rules}
-\end{figure}
-
-\begin{figure}
-\caption{Introduction rule for a type $\nu A. B_1 \times B_2 \times \ldots \times B_n$ based on information synthesized from the elimination rules.}
-\label{fig:nuA_intro_rule}
-\end{figure}
-
-Using the intuition of going back and forth between elimination and introduction, we now present our high-level desugaring mechanism which takes constructs from projection-based form to constructor-based form. Note that all desugaring operations happen during or before elaboration.
-
-
-
-\subsubsection{Desugaring record definitions}
-%Record and corecords definitions are desugared according to the rule defined in Figure\,\ref{desugaring_records}. The type of each projection becomes an input type to the constructor with the given name.
-
-A record definition defined with projections is desugared to a record definition with a single constructor, where each parameter is labeled with the name given in the projection-based form. An intuition is given in Figure\,\ref{fig:desugar_records}. In Idris, automatic generation of projection functions with the specified names happens during elaboration, and therefore desugaring becomes a matter of injecting the specified projections into the record constructor as named parameters.
-
-\begin{figure}
 \begin{lstlisting}[mathescape]
---| Projection-based form
-record A : Type where
-  $\pi_1$ : T$_1$
-  $\pi_2$ : T$_2$
-  $\vdots$
-  $\pi_n$ : T$_n$
-  constructor mkA
-
---| Desugared form
-record A : Type where
-  mkA : ($\pi_1$ : T$_1$) ->
-        ($\pi_2$ : T$_2$) ->
-        $\vdots$
-        ($\pi_n$ : T$_n$) ->
-        A
-\end{lstlisting}
-\caption{Desugaring record definitions.}
-\label{fig:desugar_records}
-\end{figure}
-
-\subsubsection{Desugaring corecord definitions}
-
-Corecord definitions are desugared to codata definitions with a single constructor. Similar to the desugaring of records, projections are injected into the constructor as named arguments. A general description is given in Figure\,\ref{fig:desugar_corecords}. However, as Idris does not have a corecord construct, projection functions must be generated while desugaring. Generating these functions is straightforward, since it is simply a matter of extracting the constructor argument at a specified position with pattern matching. This procedure is shown in Figure\,\ref{fig:generate_projections}.
-
-\begin{figure}
-\begin{lstlisting}[mathescape]
---| Projection-based form
-corecord A : Type where
-  $\pi_1$ : T$_1$
-  $\pi_2$ : T$_2$
-  $\vdots$
-  $\pi_n$ : T$_n$
-  constructor mkA
-
---| Desugared form
-codata record A : Type where
-  mkA : ($\pi_1$ : T$_1$) ->
-        ($\pi_2$ : T$_2$) ->
-         $\vdots$
-        ($\pi_n$ : T$_n$) ->
-        A
-\end{lstlisting}
-\caption{Desugaring corecord definitions.}
-\label{fig:desugar_corecords}
-\end{figure}
-
-
-\begin{figure}
-\begin{lstlisting}[mathescape]
-generateProjection ($\pi_i$ : T$_i$) =
-  $\pi_i$ (mkA (arg$_1$) (arg$_2$) $\cdots$ (arg$_i$) $\cdots$ (arg$_n$)) =  arg$_i$
-\end{lstlisting}
-\caption{Generating projection functions for a desugared corecord definition.}
-\label{fig:generate_projections}
-\end{figure}
-
-\subsubsection{Desugaring left-hand side projections}
-Left-hand side projections for values of both record and corecord type can be desugared in the same way. A clause with left-hand side projections is desugared in three steps: expand, reduce, and merge. To illustrate each step, we will show the steps involved in desugaring the \textit{dupNth} function from Figure\,\ref{fig:dup_copatterns}. 
-\begin{figure}
-\begin{lstlisting}[mathescape]
-dupNth : Stream a -> Nat -> Nat -> Stream a
-head (dupNth s n m) = 
-  head (mkStream (head s) ?tail) 
-head (tail (dupNth s n Z)) = 
-  head (tail (mkStream ?head (mkStream (head s) ?tailtail)))
-head (tail (dupNth s n (S m'))) = 
-  head (tail (mkStream ?head (mkStream (head (tail s)) ?tailtail)))
-tail (tail (dupNth s n Z)) = 
-  tail (tail (mkStream ?head (mkStream ?headtail 
-                                       (tail (dupNth s n n)))))
-tail (tail (dupNth s n (S m'))) = 
-  tail (tail (mkStream ?head (mkStream ?headtail 
-                                       (tail (dupNth (tail s) n m')))))
-\end{lstlisting}
-\caption{Desugaring, step 1: Expand right-hand sides to make projections on a constructor.}
-\label{fig:desugar_step1}
-\end{figure}
-
-The first step, expansion, is shown in Figure\,\ref{fig:desugar_step1}. Since we desugar in the elaboration phase, we assume that the constructor for a given type,  \textit{mkStream} in this example, is available in the context. During expansion, the right-hand side of a clause with one or more left-hand side projections is expanded such that projections happen on an appropriate constructor, where the original right-hand side is injected as a parameter in the position specified by left-hand side projections. Due to the intuition given above, we do not have a well-formed introduction form (i.e. constructor application) before we know the result of all eliminations. Because each clause only defines one elimination rule, holes (e.g. ?tail) must therefore be left for constructor arguments unknown to a given clause. However, we defer resolving these holes to the merging step. None of the clauses try to access information unknown to them, so no undefined behaviour can arise as a result of this step.
-
-\begin{figure}
-\begin{lstlisting}[mathescape]
-dupNth : Stream a -> Nat -> Nat -> Stream a
-dupNth s n m      = 
-  mkStream (head s) ?tail
-dupNth s n Z      = 
-  mkStream ?head (mkStream (head s) ?tailtail)
+dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+dupNth s n Z = 
+ ?dupNthhead :: (head s :: tail (dupNth s n n))
 dupNth s n (S m') = 
-  mkStream ?head (mkStream (head (tail s)) ?tailtail)))
-dupNth s n Z))    = 
-  mkStream ?head (mkStream ?headtail (tail (dupNth s n n)))
-dupNth s n (S m') = 
-  mkStream ?head (mkStream ?headtail (tail (dupNth (tail s) n m')))
+ ?dupNthhead1 :: (head (tail s) :: 
+                  tail (dupNth (tail s) n m'))
 \end{lstlisting}
-\caption{Desugaring, step 2: Reduce clauses by removing projections appearing in the same position on left and right-hand sides.}
-\label{fig:desugar_step2}
+
+  \caption{Above: A non-covering version of \texttt{dupNth}, where the \texttt{head}
+    clause has been omitted. Below: its desugared version.}
+  \label{fig:dupNth_partial}
 \end{figure}
 
-Reduction is the second step of desugaring, and is exemplified in Figure\,\ref{fig:desugar_step2}. In this step, each clause is reduced by removing equivalent projections on both side of a clause, similar to how one would reduce a mathematical equation. We are allowed to perform such reductions at this point because all the clauses make right-hand side projections directly on the (as yet unmerged) output of the function, while all the left-hand side projections happen directly on the input.
 
-\begin{figure}
+% How
+\section{Implementing Copatterns in Idris}
+
+%\subsection{Implementing Copatterns}
+%#############
+% Hvordan foregår desugaring? 
+% Hvordan implementeres intuitionen?
+%% Hvilke dele af Idris (jf. figur) berører vi?
+% Hvorfor desugaring, i modsætning til elaboration? (mere code sharing)
+% Hvorfor udvides TT ikke?
+
+% Identifying copatterns
+% Pattern matching
+% where-blocks
+% Parsing?
+% with-rule
+% Eksempler (simpelt + avanceret)
+% Discussion
+%############
+
+\section{Discussion}
+% Is this the best approach to desugaring?
+% Would a TT-based approach have been better?
+% Discuss 'Unnesting of copatterns' approach
+% fejlmeddelelser
+
 \begin{lstlisting}[mathescape]
 dupNth : Stream a -> Nat -> Nat -> Stream a
-dupNth s n Z      = 
-  mkStream (head s) (mkStream (head s) 
-                              (tail (dupNth s n n)))
-dupNth s n (S m') = 
-  mkStream (head s) 
-           (mkStream (head (tail s)) 
-                     (tail (dupNth (tail s) n m')))
+head (dupNth s n m) = head s
+tail (dupNth s n m) = dupNth' s n m
+
+dupNth' : Stream a -> Nat -> Nat -> Stream a
+dupNth' s n Z = dupNthZ s n
+dupNth' s n (S m') = dupNthS s n m'
+
+dupNthZ : Stream a -> Nat -> Stream a
+head (dupNthZ s n) = head s
+tail (dupNthZ s n) = tail (dupNth s n n)
+
+dupNthS : Stream a -> Nat -> Nat -> Stream a
+head (dupNthS s n m') = head (tail s)
+tail (dupNthS s n m') = tail (dupNth (tail s) n m')
 \end{lstlisting}
-\caption{Desugaring, step 3: Merge right-hand sides of compatible clauses.}
-\label{fig:desugar_step3}
-\end{figure}
 
-The third and final step is merging, shown in Figure\,\ref{fig:desugar_step3}, where the right-hand sides of compatible clauses are merged into a single clause. Two clauses are considered to be compatible if (1) they make equivalent pattern matches on the same arguments or (2) a more specific clause is merged with a more general clause. The first condition means that \texttt{dupNth s n Z} is compatible with \texttt{dupNth s n Z}, but not \texttt{dupNth s n (S~m')}. The second condition is more subtle, expressing that \texttt{dupNth s n Z} is compatible with \texttt{dupNth s n m}, since the former is more specific than the latter. Accordingly, \texttt{dupNth s n m} is not compatible with \texttt{dupNth s n Z}.
-
-\begin{figure}
-\begin{lstlisting}[mathescape]
---| Expands the right-hand side to make 
---| projections on a constructor definition
-expand ($\pi_i$ (f x)) rhs = $\pi_i$ (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_i$ $\cdots$ ?arg$_n$)
-expand ($\pi_j$ lhs) rhs = 
-  $\pi_j$ (expand lhs (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_j$ $\cdots$ ?arg$_n$))
-expand lhs rhs = rhs
-
---| Reduce an expression by removing equal projections 
---| on the left and right-hand sides of a clause
-reduce (f x)    rhs     = f x = rhs
-reduce ($\pi_i$ lhs) ($\pi_i$ rhs) = reduce lhs rhs
-reduce _ _ = error -- Trying to reduce non-compatible projections
-
---| Merges the first clause with the second clause
---| if their left-hand sides are compatible
-mergeWithClause (lhs$_1$ = rhs$_1$) (lhs$_2$ = rhs$_2$) =
-  if compatible (lhs$_1$) (lhs$_2$)
-  then (lhs$_1$ = merge (rhs$_1$) (rhs$_2$))
-  else (lhs$_1$ = rhs$_1$)
-
---| Merges the first constructor with the second
-merge (mkA ?arg$_1$ ?arg$_2$ $\cdots$ ?arg$_i$ $\cdots$ ?arg$_n$)
-      (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_i$  $\cdots$ ?arg$_n$) 
-      = (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_i$ $\cdots$ ?arg$_n$)
-merge (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_i$ $\cdots$ ?arg$_n$)
-      (mkA ?arg$_1$ ?arg$_2$ $\cdots$ ?arg$_i$  $\cdots$ ?arg$_n$) 
-      = (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_i$ $\cdots$ ?arg$_n$)
-merge (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_{i1}$ $\cdots$ ?arg$_n$)
-      (mkA ?arg$_1$ ?arg$_2$ $\cdots$ rhs$_{i2}$  $\cdots$ ?arg$_n$) 
-      = error -- Trying to merge two different RHS
-merge (mkA ?arg$_1$ ?arg$_2$ $\cdots$ mkA($\cdots$)$_{i1}$ $\cdots$ ?arg$_n$)
-      (mkA ?arg$_1$ ?arg$_2$ $\cdots$ mkA($\cdots$)$_{i2}$  $\cdots$ ?arg$_n$) 
-      = (mkA ?arg$_1$ ?arg$_2$ $\cdots$ merge (mkA($\cdots$)$_{i1}$) (mkA($\cdots$)$_{i2}$) $\cdots$ ?arg$_n$)
-merge xs ys = xs
-
---| Desugars a list of clauses
-desugar ((lhs = rhs) :: clauses) =
-  let expandedRhs = expand lhs rhs
-  in let reduced = reduce lhs expandedRhs
-  in foldr mergeWithClause reduced clauses
-desugar [] = []
-\end{lstlisting}
-\caption{High-level formalization of desugaring, given in Haskell-like syntax. The constructor name \texttt{mkA} signifies a constructor for an arbitrary type A, and $\pi_i$ denotes projections.}
-\label{fig:desugar_formalization}
-\end{figure}
-
-A formalization of the three steps is shown in Figure\,\ref{fig:desugar_formalization}. Expansion and reduction is straightforward. Merging tries to merge one clause with all other clauses of a definition, although only compatible clauses will lead to an actual merge. This presentation makes no mention of implicit arguments, since these are treated in the same way as explicit arguments.
-
-% merge : Constructor A -> Constructor A -> Constructor A
-% merge (Constr name args) (Constr name' args') =
-%   if name == name'
-%   then (Constr name (mergeArgs args args'))
-%   else error
-
-% mergeArgs : [Args] -> [Args] -> [Args]
-% mergeArgs (? :: xs) (y :: ys) = y :: mergeArgs xs ys
-% mergeArgs (x :: xs) (? :: ys) = x :: mergeArgs xs ys
-% mergeArgs ((Constr n args) :: xs) ((Constr m args') :: ys) = 
-%   if n == m
-%   then (Constr n (mergeArgs args args')) :: mergeArgs xs ys
-%   else error
-% mergeArgs (x :: xs) (y :: ys) = error
-
-% mkRHS : Projection -> LHS -> RHS -> RHS
-% mkRHS ($\pi$_i) (fun n) (r_i) = mk 
-
-\subsubsection{Desugaring right-hand side projections}
-Since each projection is substituted with a projection function when a record or corecord definition is desugared, there should be no reason to desugar right-hand side projections. The desugared projection functions are added to the same namespace as high-level projections, and the semantics of both the projections prior to desugaring and the generated projection functions are the same.
-
-\subsubsection{Other Approaches}
-% Agda
-
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "../copatterns-thesis"
-%%% End: 
+%%% End:
