@@ -1,6 +1,17 @@
 \chapter{Inference of Guarded Recursion}
+\todo{Should we mention somewhere that we don't plan on running these? And can
+  we even do that? What about evaluation in types?}
 \label{cha:infer-guard-recurs}
+As mentioned in Section~\ref{sec:less-restr-prod} we wish to extend Idris with
+a less restrictive productivity checker using guarded recursion. However, as
+we saw in Section~\ref{sec:guarded-recursion} defining guarded recursive
+programs can be quite tedious and requires the programmer to understand guarded
+recursion in order to write productive programs. We therefore propose a system
+where we can check productivity of programs using guarded recursion without
+bothering the user.
 
+In this chapter we describe a such system with focus on how it is implemented,
+and how we have put theory into practice.
 \section{Intuition}
 %##########
 % Type-directed (undersøg præcis hvad dette betyder) 
@@ -11,8 +22,512 @@
 %% Problemet bag: hvorfor er vi nødt til at skelne?
 % Eksempel på inferens
 %##########
+Our system divides into two parts: (1) An inference system that builds a
+guarded recursive term from a user written term, and (2) an algorithm that
+checks the structure of a term and its type according to the rules from 
+Figure~\ref{fig:guarded_recursion_rules_clocks}. While the general idea is that
+these two parts work together, such that the inference system first builds a term
+for the checking algorithm to check, it is our goal that these two should work
+as disjoint modules. This is important as we want our checking algorithm to be a
+general-purpose guarded recursion checker, not just an algorithm for checking
+the output of the inference system.
+
+Furthermore it is important to note that our system is an extension of
+Idris. This means that we do not add or change any core elements of the language, and
+therefore do not jeopardise or tamper with the correctness of the Idris type system.
+
+\subsection{Practical Considerations}
+When realising a theoretical model such as guarded recursion in an existing
+system, there are practical considerations to be taken. Because of the way Idris
+is implemented, how we construe the theory might not be immediately obvious. In
+the following we will lay out these practical considerations, and how they
+relate to the theory.
+
+\paragraph{Target}
+As discussed in Chapter~\ref{cha:idris}, an Idris program is represented in
+multiple different ways throughout compilation. The time and representation on
+which to perform our analysis has great impact on how a solution
+unfolds.
+
+Discarding the representations obviously not useful for this analysis (namely
+concrete Idris, IBC, and binaries), we are left with two options: \IdrisM and
+TT. As guarded recursion is a typing discipline our system needs access to
+the types of any term, and since \IdrisM does not contain all type information
+our analysis is performed on the core language, TT.
+
+\paragraph{Parameters}
+In Section~\ref{sec:guarded-recursion} we discussed and used a guarded fixpoint
+operator. Due to the type of this operator ($(\later A \rightarrow A)
+\rightarrow A$) the recursive reference will always have a $\later$-type. This
+means that any application of a recursive reference to an argument must be done
+using $\tensor ^{\kappa}$.
+
+Idris, like many other languages, have named parameters which influence the type
+of a function. Looking at the rule for $\tensor ^{\kappa}$ in
+Figure~\ref{fig:guarded_recursion_rules} we see that it does not take any type
+substitution into account unlike the rules for regular application in Idris from
+Figure~\ref{fig:TT_typing_rules}. This means that we cannot use $\tensor ^{\kappa}$ for
+parameter application. To better understand this, consider the following example.
+
+\begin{figure}[h]
+  \begin{lstlisting}[mathescape]
+repeat : $\forall \kappa$ ((a : Type) $\rightarrow$ a $\rightarrow$ Stream$^{\kappa}$ a)
+repeat = $\Lambda \kappa$ fix$^{\kappa}$($\lambda{}$rec$.\lambda{}$a$.\lambda{}$n$.$ 
+             StreamCons a n ((rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ a)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)))
+\end{lstlisting}
+  \caption{An infinite stream of the same element.}
+  \label{fig:repeat_guarded_example}
+\end{figure}
+
+In Figure~\ref{fig:repeat_guarded_example} an infinite stream \texttt{repeat} is
+defined. It simply just repeats the same element infinitely. Note that even
+though this problem also applies to implicit arguments, all arguments in the
+example are explicit for simplicity. This means that \texttt{StreamCons} has
+type \texttt{(a : Type) $\rightarrow$ a $\rightarrow$ $\later^{\kappa}$ Stream$^{\kappa}$ a $\rightarrow$ Stream$^{\kappa}$ a}.
+
+When checking if this implementation conforms to the guarded rules we have to
+check that \texttt{(rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ a)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)} has type
+\texttt{$\later ^{\kappa}$Stream$^{\kappa}$a} we run into trouble. In order for this to hold,
+according to the $\tensor ^{\kappa}$ rule, \texttt{rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ a)} must have
+type \texttt{$\later^{\kappa}$(a $\rightarrow$ Stream$^{\kappa}$ a)}. As shown in
+Figure~\ref{fig:repeat_typing} we cannot show this as \texttt{rec} has a
+different type in our environment to what we are trying to show.
+
+\begin{figure}[h]
+\[
+\frac { \begin{matrix} \inference { \frac { ? }{ \Gamma '\, \vdash \, rec\, :\, \later
+        ^{\kappa}(Type\, \rightarrow \, a\, \rightarrow \, Stream^{\kappa}\, a) } \, 
+      \frac {
+        \frac {  }{ \Gamma '\, \vdash \, a\, :\, Type } 
+      }
+      { \Gamma '\, \vdash \,
+        Next^{\kappa}\, a\, :\, \later ^{\kappa}\, Type }
+    }{ \, \Gamma '\, \vdash \, rec\,
+      \tensor ^{\kappa} \, (Next^{\kappa}\, a)\, :\, \later ^{\kappa}(a\, \rightarrow \, Stream^{\kappa}\,
+      a)\ }  & \inference { \inference {  }{ \Gamma '\, \vdash \, n\, :\, a }  }{
+      \Gamma '\, \vdash \, Next^{\kappa}\, n\, :\, \later ^{\kappa} \, a }  \end{matrix} }{
+  \Gamma '\, \vdash \, (rec\, \tensor ^{\kappa} \, (Next^{\kappa}\, a))\, \tensor ^{\kappa} \,
+  (Next^{\kappa}\, n))\, :\, \later ^{\kappa} Stream^{\kappa}\, a }
+\]
+\[
+\Gamma '\, =\, \Gamma ,\, rec\, :\, \later ^{\kappa}((a\, :\, Type)\, \rightarrow \,
+a\, \rightarrow \, Stream^{\kappa}\, a),\, a\, :\, Type,\, n\, :\, a
+\]
+  \caption{Part of an attempt to type repeat.}
+  \label{fig:repeat_typing}
+\end{figure}
+
+One way of solving this could be to have the $\tensor ^{\kappa}$-rule take substitution in
+types into account as seen in Figure~\ref{fig:tensor_with_subst}. This, however,
+is not yet backed by the theory, and is therefore not an option.
+
+\begin{figure}[h]
+\[
+\inference { \Gamma \, \vdash \, t\, :\, \later^{\kappa} ((a\, :\, A)\,
+  \rightarrow \, B)\quad \Gamma \, \vdash \, u\, :\, \later^{\kappa} A }{
+  \Gamma \, \vdash \, t\, \tensor ^{\kappa} \, u\, :\, \later^{\kappa} B[{ u
+  }/{ a }] } 
+\]
+  \caption{Tensor with substitution in types.}
+  \label{fig:tensor_with_subst}
+\end{figure}
+
+Instead we change what is fixed by the fixpoint. We pull any parameter out,
+changing the fixed type, such that \texttt{rec} now has type \texttt{$\later
+  ^{\kappa}$(a $\rightarrow$ Stream$^{\kappa}$ a)}. This gives us the definition seen in
+Figure~\ref{fig:repeat_guarded_example_new}. Here the \texttt{a} is fixed and
+not part of the recursive reference. This allows us to type part of
+\texttt{repeat} as exemplified in Figure~\ref{fig:repeat_typing_new}.
+
+\begin{figure}[h]
+  \begin{lstlisting}[mathescape]
+repeat : (a : Type) $\rightarrow$ $\forall \kappa$ (a $\rightarrow$ Stream$^{\kappa}$ a)
+repeat a = $\Lambda \kappa$ fix$^{\kappa}$($\lambda{}$rec$.\lambda{}$n$.$ 
+             StreamCons a n (rec $\tensor ^{\kappa}$ (Next$^{\kappa}$$^{\kappa}$ n)))
+\end{lstlisting}
+  \caption{Repeat with the type parameter fixed.}
+  \label{fig:repeat_guarded_example_new}
+\end{figure}
+
+\begin{figure}[h]
+\[
+\frac { \frac {  }{ \Gamma '\, \vdash \, rec\, :\, \later ^{\kappa}(a\, \rightarrow
+    \, Stream^{\kappa}\, a) } \, \frac { \Gamma '\, \vdash \, n\, :\, a }{ \Gamma '\,
+    \vdash \, Next^{\kappa}\, n\, :\, \later ^{\kappa}\, a }  }{ \, \Gamma '\, \vdash \, rec\,
+  \tensor ^{\kappa} \, (Next^{\kappa}\, n)\, :\, \later ^{\kappa}Stream^{\kappa}\, a }
+\]
+\[
+ \Gamma '\, =\, \Gamma ,\, rec\, :\, \later ^{\kappa}(a\, \rightarrow \, Stream^{\kappa}\,
+ a),\, a\, :\, Type,\, n\, :\, a
+\]
+
+  \caption{Part of typing repeat with fixed type parameter.}
+  \label{fig:repeat_typing_new}
+\end{figure}
+
+\paragraph{Multiple clauses}
+Another problem occurs when we consider functions with multiple clauses,
+e.g. functions defined with pattern matching. To understand the problem we must
+first step out of the guarded recursive world for a moment and consider the
+function \texttt{cycle} in Figure~\ref{fig:cycle_non_guarded}. Note that it is
+not a guarded recursive definition, but a standard Idris definition.
+
+\begin{figure}[h]
+  \begin{lstlisting}[mathescape]
+cycle : Nat $\rightarrow$ Nat $\rightarrow$ Stream Nat
+cycle Z m = Z :: (cycle m m)
+cycle (S n) m = (S n) :: (cycle n m)
+\end{lstlisting}
+  \caption{A function cycle in standard Idris}
+  \label{fig:cycle_non_guarded}
+\end{figure}
+
+When transforming this to a guarded recursive form we want to make the fixed
+point over both clauses. An intuitive way to get around this could be to
+convert the pattern matching match into case-expressions. This is not possible
+as TT does not have case-expressions, only top-level pattern
+matching. Furthermore, a case-expression based solution would make even less
+sense when we consider dependent pattern matching, since we by removing the
+dependent pattern match change the type of the left hand side.
+
+Instead, we can define cycle as two functions: One with the fixed point, and one
+with the pattern match, as seen in Figure~\ref{fig:cycle_guarded}. This way, all
+clauses of \texttt{cycle} are part of the same fixpoint. The recursive reference
+\texttt{ref} is handed to \texttt{cycle} as a parameter. Note that this way of
+handling the fixed point also works for functions with only one clause.
+
+\begin{figure}[h]
+\begin{lstlisting}[mathescape]
+cycle : $\later ^{\kappa}$ (Nat $\rightarrow$ Nat $\rightarrow$ Stream$^{\kappa}$ Nat) $\rightarrow$ 
+             Nat $\rightarrow$ Nat $\rightarrow$ Stream$^{\kappa}$ Nat
+cycle rec    Z  m = 
+         StreamCons Z     (rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ m)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ m)
+cycle rec (S n) m = 
+         StreamCons (S n) (rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ m)
+
+cycle$'$ : $\forall \kappa$ (Nat $\rightarrow$ Nat $\rightarrow$ Stream$^{\kappa}$ Nat)
+cycle$'$ = $\Lambda \kappa$ fix$^{\kappa}$($\lambda$rec.$\lambda$n.$\lambda$m. cycle rec n m)
+\end{lstlisting}
+  \caption{A guarded definition of cycle}
+  \label{fig:cycle_guarded}
+\end{figure}
+
+Again, this solution has short comings. We fix the recursive
+reference as \texttt{ref} and thereby also fix its type. This works out fine in
+the simply typed case, but once we consider higher-order and especially
+dependent types we run into problems. If we consider the function prepend from
+Figure~\ref{fig:guarded_prepend}, the \texttt{n} in the type of \texttt{rec} is
+fixed, e.g. in the second clause to \texttt{S n}. Since \texttt{xs} has type
+\texttt{Vect n a}, this term is not well-typed.
+
+\begin{figure}[h]
+\begin{lstlisting}[mathescape]
+prepend : (Later' (Vect n a -> Stream a -> Stream a)) -> Vect n a -> Stream a -> Stream a
+prepend rec [] s = s 
+prepend rec (x :: xs) s = StreamCons x (compose {n=Now} (compose {n=Now} rec (Next xs)) (Next s))
+
+prepend' : Forall (Vect n a -> Stream a -> Stream a)
+prepend' = LambdaKappa (fix(\rec, xs, s => prepend rec xs s))
+\end{lstlisting}
+  \caption{A function prepending a vector on a stream.}
+  \label{fig:guarded_prepend}
+\end{figure}\todo{Prettify and verify figure}
+
+To circumvent this we eliminate the \texttt{fix} operator all together according
+to the elimination rules in Figure~\ref{fig:fix_elim_rules}. By eliminating the
+fixpoint, we no longer fix the type of the recursive reference. Because of the
+type of the guarded fixed point operator, the type of \texttt{rec} is
+$\later^{\kappa}$A, which is also the type of \texttt{Next f}.
+
+\begin{figure}[h]
+  \[
+\frac { \Delta ,\, \kappa ; \, \Gamma \, \vdash \, f\, =\, { fix }^{ \kappa  }(\lambda
+  rec.\, e)\, :\, A }{ \Delta ,\, \kappa \, ; \Gamma \vdash \, f\, =\, e[{ (Next^{ \kappa
+    }\, f) }/{ rec }]\, :\, A } fix_{E_1}
+\]
+
+\[
+\frac { \Delta \, ; \Gamma \vdash \, f\, =\, \Lambda \kappa .{ fix }^{ \kappa  }(\lambda
+  rec.\, e)\, :\, \forall \kappa .A }{ \Delta \, ; \Gamma \vdash \, f\, =\, \Lambda
+  \kappa .e[{ (Next^{ \kappa  }\, f[\kappa ]) }/{ rec }]\, :\, \forall \kappa .A
+} fix_{E_2}
+\]
+  \caption{Rules for fix elimination}
+  \label{fig:fix_elim_rules}
+\end{figure}
+
+\paragraph{Singleton Clock}
+To simplify the implementation we have limited our system to only have one
+clock, rather than a clock environment. Either the clock is open, or the clock
+is closed. This changes the rules we discussed in
+Section~\ref{sec:guarded-recursion}, as seen in
+Figure~\ref{fig:gr_rules_sin_clock}\todo{insert one clock rules}. Here
+$\sqcup$ denotes the open clock, and $\sqcap$ the closed. \todo{Explain how we
+  came to these rules}
+
+\begin{figure}[h]
+  
+  \caption{Guarded Recursion rules with singleton clock.}
+  \label{fig:gr_rules_sin_clock}
+\end{figure}
+
+While deriving this rule set from the original one has not followed a specific
+methodology, a general trend is:
+
+\begin{itemize}
+\item If a rule required a specific clock in the environment, it now requires an
+  open clock.
+\item Side conditions talking about a specific clock being not being free in the
+  environment are transformed to that no free clocks are allowed in the
+  environment at all.
+\end{itemize}
+
+Note that the $\kappa$ has gone from a lot of the types and terms. This is
+because we no longer talk about specific clocks, but about the
+clock. I.e. $\later$ is always on the same clock and as such there is no need to
+specify which. Also note that the $\kappa$ remains on some $\forall \kappa$ and
+$\Lambda \kappa$. While these still only mention the singleton clock, the
+$\kappa$ is kept to disambiguate these from regular quantification and
+abstraction. 
+
+This change of course limits the set of programs for which we can infer guarded
+recursion, and thereby ensure productivity. In Section~\ref{cha:evaluation} we
+discuss how this limitation affects our system.
+
+\paragraph{Modality of Functions}
+In general, when defining a guarded recursive function, one has to consider how
+to quantify over clocks. For example, in the definition of \texttt{repeat} from
+Figure~\ref{fig:repeat_guarded_example_new} the clock quantification is on the
+entire type, where as in the definition of \texttt{evens} from
+Figure~\ref{fig:guarded_recursion_evens}, the clock quantification is on each
+individual \texttt{Stream}. As there we increase the number of arguments we also
+increase the number of different way we could quantify the function, making it
+increasingly difficult to infer how to place them.
+
+Because of this we have simplified to the problem. A function is either
+\emph{causal} or \emph{not causal}. We call this the \emph{modality} of a
+function. If a function is causal it means that the quantification is on the
+entire type. In this sense \texttt{repeat} is said to be causal. If a function
+is not causal the quantification is on each individual guarded type, meaning
+that \texttt{evens} is \emph{not} causal.
+
+While inferring the modality of a function is indeed be possible, simply by
+trial and error, there might exist not guarded function with both a causal and
+not causal guarded implementation. In such a situation the system would have no
+way of knowing which modality to assign the function.
+
+Instead of attempting to infer the modality, we let the user assign a modality
+to a function. By doing this we ensure that the system does not infer a function
+with the wrong modality.\todo{Explain what this means for recursive ref}
 
 \section{Implementation}
+In this section we go over how we have realized the above intuition into an
+actual Idris implementation. We start by presenting the overall additions to the
+Idris compiler environment, and then how the inference and checker systems have
+been implemented.
+
+\paragraph{Guarded Recursion Library}
+The first step to adding guarded recursion to Idris is to add the guarded
+recursive types and functions. We have added these to the Idris built-in
+library, and not as a part of the prelude. This is because the user should be
+able to check functions for productivity using our guarded recursion checker
+without having to rely on the standard library.  While most of the
+implementations are straight forward, and can be found in Appendix\todo{Add ref
+  to appendix. And add appendix!}, there are interesting parts to discuss. We
+have added the notion of \emph{how much later} something is, through the idea of
+\texttt{Availability}, seen in Figure~\ref{fig:availability}. This is, in
+conjunction with \texttt{Later} done so that we can many $\later$ applications
+as a single \texttt{Later} applications.
+
+\begin{figure}[h]
+  \begin{lstlisting}[mathescape]
+data Availability = Now | Tomorrow Availability
+
+data Later' : Type -> Type where
+  Next : {a : Type} -> a -> Later' a
+
+Later : Availability -> Type -> Type
+Later Now a = a
+Later (Tomorrow n) a = Later' (Later n a)
+\end{lstlisting}
+  \caption{Availability.}
+  \label{fig:availability}
+\end{figure}
+
+\paragraph{Guarded Names}
+As we want to infer new types and terms, and not override the existing ones, we
+need a system for creating a guarded name from an existing user written
+name. While this is fairly trivial, it is an important part of our system. We
+will hence forth refer to these as the \emph{guarded names} as oppose to their
+original \emph{Idris names}. We will mark these guarded names with a subscript
+$g$, such that a name $Name$ becomes $_gName$.
+
+During compilation we keep a map from Idris names to their guarded names. This
+means that we can for any Idris name find their guarded name, and vice
+versa. This comes in handy when we infer the guarded terms.
+
+\paragraph{Clocked Types}
+These are made by inferring a new data declaration for any codata or corecord
+declaration. This new data declaration is simply constructed during the
+elaboration of the original and then elaborated by itself. This means that for
+any user written codata or corecord declaration a guarded version is an
+intrinsic part of the program. 
+
+A such guarded version of a declaration is fairly straight forward. Guarded
+names are given to the type and to all constructors. Any recursive reference in
+the type of the constructor is placed under a $\later$-type, in a similar
+fashion to how Idris already handles lazy evaluation. The type constructor
+remains unchanged. An example of this inferences for a codata declaration can be
+seen in Figure~\ref{fig:guarded_stream_inf}. Note that the inferred declaration
+is a data declaration, not codata. This is because we do not need both Idris's
+built in laziness (\texttt{Inf}), and the guarded recursion laziness ($\later$).
+
+\begin{figure}[h]
+\begin{lstlisting}[mathescape]
+codata Stream : Type -> Type where
+  MkStream : a -> Stream a -> Stream a
+
+data $_g$Stream : Type -> Type where
+  $_g$MkStream : a -> $\later_g$Stream a -> $_g$Stream a
+\end{lstlisting}
+  \caption{Inference of the guarded stream declaration.}
+  \label{fig:guarded_stream_inf}
+\end{figure}
+
+In the corecord case, we take a similar approach. However, instead of
+constructors we have to guard projections. Again, any recursive projection is
+guarded such that $A \rightarrow A$ becomes $A \rightarrow \later A$, and all
+projections are given a guarded name. Figure~\ref{fig:guarded_tree_inf} shows an
+example of such an inference.
+
+\begin{figure}[h]
+\begin{lstlisting}[mathescape]
+corecord Tree a where
+  left : Tree a -> Tree a
+  value : Tree a -> a
+  right : Tree a -> Tree a
+
+record $_g$Tree a where
+  $_g$left : $_g$Tree a -> $\later_g$Tree a
+  $_g$value : $_g$Tree a -> a
+  $_g$right : $_g$Tree a -> $\later_g$Tree a
+\end{lstlisting}
+  \caption{Inference of the guarded tree declaration.}
+  \label{fig:guarded_tree_inf}
+\end{figure}
+
+Furthermore, for each projection we also generate what we call a \emph{forall
+  projection}, henceforth denoted as $_\forall Name$. We use this for
+projections on quantified types. Consider a coinductive type $A$ with a
+projection $p$ of type $A \rightarrow A$, and a variable $x$ of type $\forall
+\kappa.A$. In order to perform $p$ on $x$ and maintain the quantification in the
+type, we must first apply the clock to $x$, apply $_gp$, and then abstract over the
+clock again using $\Lambda \kappa$. This gives us:
+
+\[
+\Lambda \kappa . _gp (apply\,x) : \forall \kappa . \later A
+\]
+
+The type of the above is isomorphic with $\forall \kappa . A$ according to the
+isomorphism described by Rasmus M\o gelberg\,\cite{Mogelberg:2014} seen in
+Figure~\ref{fig:quantified_later_iso}. As a short for all of this we simply use
+$_\forall p$ which has type $\forall A \rightarrow \forall A$, giving us the
+same result. As such these \emph{forall projections} do not add anything new,
+they are just a simpler way for us to perform projections on terms of quantified
+type. The intuition is that because of Figure~\ref{fig:quantified_later_iso} we
+can perform projections on quantified types without having to worrying about
+their lateness. Because they are quantified over clocks, they are always available.
+
+\begin{figure}[h]
+\[
+\forall \kappa .A\cong \forall \kappa .\rhd ^\kappa A
+\]
+  \caption{A type isomorphism describe by Rasmus M\o gelberg\,\cite{Mogelberg:2014}.}
+  \label{fig:quantified_later_iso}
+\end{figure}
+
+\subsection{Inference}
+\subsection{Checking}
+To check that what we infer actually conforms to the guarded recursion rules, we
+have implemented a checker. This algorithm simply checks a term to have a given
+type within the rule from Figure~\ref{fig:gr_rules_sin_clock}. To the algorithm
+less error prone it is implemented in the simplest fashion possible and as
+attempts to stick strictly to the typing rules. This means that the checking
+algorithm is very simple, conservative, and rigid. It expect types and terms to
+be of a specific structure, and it discards anything it can guarantee the
+correctness off. 
+
+The checker traverses a term, and unfolds them according to the rules. Any rules
+that requires a type equality is done by asking the Idris type system for
+conversion equality, and if the type of a term is needed it is checked using the
+Idris type checker.
+
+The structure of the code itself aims to take care of as much as the check using
+pattern matching. While not always possible, ideally the conclusion of a rule
+should be represented by a pattern match, and the premise(s) by a right-hand
+side. By doing this we can, through different patterns, be very selective about
+what is accepted by the checker and discard anything that does not match the
+conclusion of a rule.
+
+Getting more into the actual implementation the checking algorithm is a function
+\texttt{check}, with the type signature seen in Figure~\ref{fig:check_type}. The
+parameters are as follows:\todo{Is this too low level?}
+
+\begin{itemize}
+\item \texttt{Clock} is the clock under which we are checking the term. A clock
+  is simply either open or closed.
+\item \texttt{Env} is the local environment, usually generated from the
+  left-hand side of the clause being checked.
+\item \texttt{(Name, Type)} is name and the type of the recursive
+  reference. 
+\item \texttt{Term} is the term being checked.
+\item \texttt{Type} is the type the term is being checked to have.
+\item \texttt{Idris Totality} is the result of the algorithm wrapped in the
+  Idris monad\todo{Is the Idris monad explained at this point?}. 
+\end{itemize}
+
+\begin{figure}[h]
+\begin{lstlisting}
+check :: Clock -> 
+         Env -> 
+         (Name, Type) -> 
+         Term -> 
+         Type -> 
+         Idris Totality
+\end{lstlisting}  
+  \caption{Checking algorithm type.}
+  \label{fig:check_type}
+\end{figure}
+
+The majority of the conclusions of the rules can be reflected as patterns. If we
+wish to e.g. delay a term, the $Next_i$-rule requires that, (1) the clock is
+open, (2) the term is on the form $Next t$, and (3) the type is on the form
+$\later A$. These requirements are expressed as a pattern in
+Figure~\ref{fig:next_pattern}. The view-patterns can be read as regular pattern
+match, such that \texttt{next -> Extracted t} is \texttt{Next t}. The premise
+from the rule is reflected on the right-hand side. simply check that given the
+same environments \texttt{t} has type \texttt{a}.
+
+\begin{figure}[h]
+\begin{lstlisting}
+check Open g n (next -> Extracted t) (later -> Extracted a) 
+     =
+     check Open g n t a
+\end{lstlisting}
+  \caption{$Next_{i}$ pattern. Note the use of view-patterns (the -> syntax).}
+  \label{fig:next_pattern}
+\end{figure}
+
+\paragraph{No Free Clocks in Environment}
+% No free clocks in finished definitions.
+% Check everything in local environment with closed clock.
+Some rules have a side condition dictating that there must no free clocks in the
+variable environment. These are checked by checking that every term in the
+variable can be checked under a closed clock. This is the same as no clocks
+being free, because any term or type with a free clock would require the clock
+to be open in order to be well-formed. 
+\paragraph{Identifying the Recursive Reference}
+\todo{This paragraph needs more implementation to be written}
 %##########
 % To faser: Inferens og check - bør kunne beskrives separat
 % Inferens - regler

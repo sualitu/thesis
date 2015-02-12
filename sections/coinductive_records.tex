@@ -1,5 +1,65 @@
 \chapter{Coinductive Records in Idris}
 \label{cha:coind-records-idris}
+We have previously discussed the idea of data with a top-level product
+structure. In this chapter we discuss how we have modified the current
+implementation of the records in Idris to be more focused on observations rather
+than constructions.
+
+\section{Intuition}
+To understand our implementation, let us first look at the current
+implementation of records in Idris. In Figure~\ref{fig:records_in_idris} an
+example of a product type, here a \texttt{Pair}, defined as a
+record. Syntactically, this looks a lot like a data declaration, except for the
+\texttt{record} keyword. Also, we required to define exactly one
+constructor, not zero, not more, unlike data declarations.
+
+\begin{figure}[h]
+\begin{lstlisting}
+record Pair : Type -> Type -> Type where
+  MkPair : (fst : a) -> (snd : b) -> Pair a b
+\end{lstlisting}
+  \caption{Current record syntax in Idris.}
+  \label{fig:records_in_idris}
+\end{figure}
+
+The difference between a record and a data declaration doesn't appear until just
+before elaboration. Here the record is elaborated as a data declaration
+(literally Figure~\ref{fig:records_in_idris}, with the keyword \texttt{data}
+instead of \texttt{record}), however also a set of projection functions are
+generated. Both a \emph{get} and a \emph{set} function is generated for each
+named parameter in the constructor, in the \texttt{Pair} example \texttt{fst}
+and \texttt{snd}. These projection functions are then placed in a namespace with
+the name of the type, in this case \texttt{Pair}.
+
+\begin{figure}[h]
+\begin{lstlisting}
+data Pair : Type -> Type -> Type where
+  MkPair : (fst : a) -> (snd : b) -> Pair a b
+
+namespace Pair
+  fst : Pair a b -> a
+  fst (MkPair x _) = x
+
+  snd : Pair a b -> b
+  snd (MkPair _ y) = y
+
+  set_fst : Pair a b -> a -> Pair a b
+  set_fst (MkPair _ y) x = MkPair x y
+
+  set_snd : Pair a b -> b -> Pair a b
+  set_snd (MkPair x _) y = MkPair x y
+\end{lstlisting}
+  \caption{\texttt{Pair} from Figure~\ref{fig:records_in_idris} desugared.}
+  \label{fig:pair_desugared}
+\end{figure}
+
+An example of how records are desugared can be seen in
+Figure~\ref{fig:pair_desugared}. Note that this is a slightly prettified
+version. This means that records are a high-level feature, syntactic sugar, and
+as such so should our implementation of them be.
+
+\section{Implementation}
+
 %\subsection{Implementing Coinductive Records}
 %#############
 % Intuition: 

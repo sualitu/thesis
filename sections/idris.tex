@@ -1,5 +1,6 @@
 %!TEX root = ../copatterns-thesis.tex
 \chapter{Idris}
+\label{cha:idris}
 Idris is a general-purpose functional programming language with full dependent
 types. Having full dependent types means that the type and the term level
 language is one and the same, such that types \emph{are} in fact terms, making
@@ -403,7 +404,7 @@ are a subset of the tactics which may be part of such a transformation:
 \item \textsc{Subst($x$, $e$)} which instantiates a hole $x$ with a term
   $e$, often as a result of unification.
 \item \textsc{PrimUnify($\Gamma$, $e_{1}$, $e_{2}$)} which attempts to unify terms
-  $e_{1}$} and $e_{2}$} with respect to a context $\Gamma$. 
+  $e_{1}$ and $e_{2}$ with respect to a context $\Gamma$. 
 \item \textsc{Check($\Gamma$, $e$)} which type checks a term $e$ with
   respect to a context $\Gamma$, returning the type of $e$.
 \item \textsc{Convert($\Gamma$, $e_{1}$, $e_{2}$)} which checks that the
