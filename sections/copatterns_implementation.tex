@@ -21,6 +21,7 @@ an obvious top-level structure, making them ideal companions for
 copatterns. All examples are therefore given for record types only.
 
 \subsection{The Duality Between Construction and Observation}
+\label{sec:dual-betw-constr}
 Desugaring copattern clauses, which give definitions by observation, to pattern
 clauses, which give definitions by construction, relies on the duality between
 introduction and elimination rules for (co)inductive types. For our first example,
@@ -56,9 +57,7 @@ constructed value by using the elimination rules \texttt{fst} and \texttt{snd},
 which have corresponding $\eta$-rules as expected (see
 Figure~\ref{fig:record_pair}). As seen from
 Figure~\ref{fig:pair_example_pattern_typing_derivation}, such observations
-provide unsurprising results, since \texttt{MkPair} simply acts as a container
-for the observed data.
-
+provide unsurprising results.
 \begin{figure}
 \begin{lstlisting}
 pattern : Pair String Nat
@@ -88,33 +87,32 @@ pattern = MkPair "Idris" 42
   \label{fig:pair_example_pattern_typing_derivation}
 \end{figure}
 
-The idea behind copatterns is that whenever a (co)data constructor simply acts
-as a container for values, we can treat the (co)data constructor as a black box,
+The idea behind copatterns is that we can treat the (co)data constructor as a
+black box (\texttt{MkPair} in above example),
 defining only the values we expect to observe when making specific observations
 on the constructed (co)data. As an example,
 Figure~\ref{fig:pair_example_copatterns} shows how we can use copatterns to
 define a program by observation which is equivalent to the definition by
 construction in Figure~\ref{fig:pair_example_pattern}. The most striking
-difference is that \texttt{pattern} itself is never directly defined. Instead,
-it is implicitly defined, since the two copattern clauses provide all the data
-necessary to derive a corresponding pattern clause which defines
-\texttt{pattern} explicitly, as in Figure~\ref{fig:pair_example_pattern}. From
+difference is that \texttt{pattern$^\prime$} itself is never explicitly
+defined. Instead, it is defined implicitly by the two copattern clauses, which
+provide all the data necessary to derive a corresponding pattern clause, as in Figure~\ref{fig:pair_example_pattern}. From
 this observation, we arrive at the main intuition behind our desugaring
 procedure: Any definition given by copattern clauses has an equivalent
 definition given by pattern clauses, and this definition can be derived without
 providing any further information. To make this intuition concrete, consider the
 derivation in
 Figure~\ref{fig:pair_elimination_on_introduction_rules_rewrite}. Rewriting with
-the observations defined in Figure~\ref{fig:pair_example_copatterns}, the
+the reduction rules defined in Figure~\ref{fig:pair_example_copatterns}, the
 elimination rules for \texttt{Pair} are used to directly derive the right-hand
 side of the \texttt{pattern} example from
 Figure~\ref{fig:pair_example_pattern}. 
 
 \begin{figure}
-\begin{lstlisting}
-pattern' : Pair String Nat
-fst pattern' = "Idris"
-snd pattern' = 42
+\begin{lstlisting}[mathescape]
+pattern$^\prime$ : Pair String Nat
+fst pattern$^\prime$ = "Idris"
+snd pattern$^\prime$ = 42
 \end{lstlisting}
   \caption{A value of \texttt{Pair} defined by construction.}
   \label{fig:pair_example_copatterns}
@@ -136,7 +134,7 @@ While the derivation in
 Figure~\ref{fig:pair_elimination_on_introduction_rules_rewrite} provides a fine
 display of our intention, such a direct derivation is only possible for simple
 examples which have only one resulting pattern clause. In particular, desugaring
-copatterns becomes more complex as the following challendes must be taken into account:
+copatterns becomes more complex as the following challenges must be taken into account:
 
 \begin{enumerate}
 \item Nested copatterns
@@ -169,8 +167,8 @@ Stream. Thus, the \texttt{head} clause of Figure~\ref{fig:desugared_zeros_step1}
 may be read as: ``The \texttt{head} of \texttt{zeros} is the \texttt{head} of
 the partially defined \texttt{Stream} which has \texttt{Z} as its first
 constructor argument''. A corresponding reading exists for the \texttt{tail}
-clause. For constructor arguments where no output is defined, Idris
-metavariables are inserted, e.g. \texttt{?zeroshead}.
+clause. \IdrisM{} metavariables are inserted for constructor arguments where
+output has yet to be defined, e.g. \texttt{?zeroshead}.
 
 \begin{figure}
 \begin{lstlisting}[mathescape]
@@ -247,8 +245,8 @@ incomplete after the merging step if the definition we are desugaring is not
 covering. In Figure~\ref{fig:desugared_zeros_step3a}, the clauses of
 \texttt{zeros} which are compatible with each other are identified. Since
 \texttt{zeros} is a simple example, the two clauses are compatible with each
-other because their left-hand sides are identical. Therefore, the two clauses are
-merged into one, as shown in Figure~\ref{fig:desugared_zeros_step3b}.
+other because their left-hand sides are identical. The clauses are
+therefore merged into one clause, as shown in Figure~\ref{fig:desugared_zeros_step3b}.
 
 \begin{figure}
 \begin{lstlisting}[mathescape]
@@ -278,8 +276,8 @@ zeros : Stream Nat
   Compatibility is a reflexive, transitive, and anti-symmetric binary relation
   $C$ on pattern clauses which describes whether the pattern in one pattern
   clause is more general or equally general to the pattern in another pattern
-  clause. Let $V$ be a function which, given a subpattern, returns the set of
-  values matched by that subpattern. For two pattern clauses
+  clause. Let $V$ be a function which, given an argument pattern, returns the set of
+  values matched by that pattern. For two pattern clauses
   $a\,p_{1}\,p_{2}\,\cdots\,p_{n}\,=\,rhs_{a}$ and
   $b\,q_{1}\,q_{2}\,\cdots\,q_{n}\,=\,rhs_{b}$ of an $n$-ary function,
   $(a,b)\in C$ if $V(p_{i})\subseteq V(q_{i})$ for $0 < i\le n$. For a nullary
@@ -292,7 +290,8 @@ zeros : Stream Nat
 
 \subsubsection{Addressing the Challenges}
 The three-step desugaring procedure presented above has been devised as a
-unified solution to four main challenges. As we go through each of the
+unified solution to four main challenges that arise when desugaring is performed
+as a transformation from \IdrisM{} to \IdrisM{}. As we go through each of the
 challenges, the \texttt{dupNth} program in Figure~\ref{fig:dupNth} will serve as
 a running example of the desugaring of a non-trivial definition with copattern
 clauses.
@@ -317,8 +316,8 @@ into the correct positions in the expanded constructor invocations, while
 reduction eliminates all left-hand side projections through equational
 reasoning. A different solution to the problem of handling nested copatterns has
 been proposed by Setzer et al.\,\citep{Setzer14Unnesting}, in which auxiliary
-functions are created for each level of nested copatterns. The difference
-between this and our approach will be discussed in Section~\ref{sec:related_work_copatterns}.
+functions are created for each level of nested copatterns. This approach will be
+described for an alternative solution in Section~\ref{sec:copatterns-implementation-discussion}.
 
 \paragraph{Challenge 2: Pattern Matching}
 Whenever the copattern clauses for a definition have different patterns on the
@@ -327,8 +326,7 @@ definition. After eliminating copatterns in the reduction step
 (Figure~\ref{fig:desugared_dupNth_step2}), preservation of pattern matching is
 ensured in the first sub-step of merging
 (Figure~\ref{fig:desugared_dupNth_step3a}), where compatible clauses are
-identified. In the following sub-step, shown in
-Figure~\ref{fig:desugared_dupNth_step3b}, only compatible clauses are
+identified. In the following sub-step (Figure~\ref{fig:desugared_dupNth_step3b}), only compatible clauses are
 merged. Merging only compatible clauses ensures that a clause is only merged
 with other clauses which match the same or a more general set of input values. As an example, we will show exactly why clause (2) is compatible
 with clause (1) as postulated in
@@ -533,30 +531,461 @@ dupNth s n (S m') =
 % Discussion
 %############
 
+\subsection{Parsing Copatterns}
+\label{sec:parsing-copatterns}
+Identifying copatterns in the concrete Idris syntax turns out to be non-trivial,
+due to the rather liberal naming scheme. The Idris parser currently identifies
+the leftmost ``naked'' name (without any decorations) in a clause to be the name
+of a declared function, a rule which can lead to ambiguities when copatterns
+come into play. Notably, the situation presented in
+Figure~\ref{fig:copatterns_parsing_hell} is allowed, since Idris allows
+declarations and definitions to be freely mixed. The problem in this scenario is
+that the two \texttt{head zeros} clauses are syntactically identical, but have
+completely different semantics: The first occurrence is the definition of the
+function \texttt{head}, and is essentially the constant function for \texttt{Z},
+while the second occurrence is a copattern clause for \texttt{zeros}, defining
+that the \texttt{head} of \texttt{zeros} is \texttt{Z}.
+\begin{figure}
+\begin{lstlisting}[mathescape]
+zeros : Stream Nat
+head : Nat $\to$ Nat
+head zeros = Z     -- clause for function 'head'
+head zeros = Z     -- copattern 'head' for function 'zeros'
+tail zeros = zeros -- copattern 'tail' for function 'zeros'
+\end{lstlisting}
+  \caption{Copatterns can be difficult to parse, due to situations like
+    this. The definition of the type \texttt{Stream} can be found in Figure~\ref{fig:corecord_stream}.}
+  \label{fig:copatterns_parsing_hell}
+\end{figure}
+
+To resolve such ambiguities, our current solution is simply to prefix each
+copattern with a special character, such that copatterns are easily
+recognized. Using this strategy, the solution to the situation in
+Figure~\ref{fig:copatterns_parsing_hell} is given in
+Figure~\ref{fig:copatterns_parsing_hell_fixed_ampersand}. The choice of ``\&''
+is arbitrary, aside from the fact that more obvious choices, such as ``.'', are
+already used for other purposes. Prefixing with a special character (``.'') is also
+the solution chosen by Abel and Pientka\,\citep{Abel13Wellfounded}, although
+their language is probably not intended for practical use. Seeing as our current
+solution introduces syntax which is quite unlike that of other Idris
+constructs, alternative approaches to parsing copatterns will be discussed in
+Section~\ref{sec:copatterns-implementation-discussion}.
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+zeros : Stream Nat
+head : Nat $\to$ Nat
+head zeros = Z     -- clause for function 'head'
+&head zeros = Z     -- copattern 'head' for function 'zeros'
+&tail zeros = zeros -- copattern 'tail' for function 'zeros'
+\end{lstlisting}
+  \caption{Resolving the ambiguity from Figure~\ref{fig:copatterns_parsing_hell}
+  by prefixing each copattern with a special character, here '\&'.}
+  \label{fig:copatterns_parsing_hell_fixed_ampersand}
+\end{figure}
+
+\subsection{Implementing the Desugaring Procedure}
+The desugaring procedure is implemented as a transformation from \IdrisM{} terms
+to \IdrisM{} terms, in order to allow for as much as code sharing as possible in
+the elaboration phase. In terms of Figure~\ref{fig:idris-overview}, copatterns
+are desugared in the Desugaring phase. The idea is that if copattern clauses are
+reduced to corresponding pattern clauses as early in the compilation process as
+possible, the existing elaboration logic for regular pattern clauses can be
+reused in its entirety. Early desugaring also has the implication that no
+changes to the core of Idris, the TT calculus, are necessary.
+
+\subsubsection{Implementing Expansion, Reduction, and Merging}
+A formalization of the three steps of the desugaring procedure is provided in
+Figure~\ref{fig:desugaring_formalization}. The \texttt{expand} function uses the
+left-hand side projections to guide the expansion. In particular, the indices on
+the projections, i.e. the $i$ in $\pi_i$, denotes the argument position at which
+the right-hand side ($\rho_i$) must be given to the constructor. Expansion does
+not alter left-hand sides, but leaves right-hand sides expanded as
+described. The function \texttt{reduce} is quite simple, removing equivalent
+projections on both sides of a clause if the projections occur as the leftmost
+expressions on both the left-hand and the right-hand side, respectively. Note that since
+\texttt{expand} always returns a clause where the projection pattern on both
+sides is identical, \texttt{expand} and \texttt{reduce} can be implemented as
+one step in practice, if we simply refrain from reapplying the projections to the
+output of \texttt{expand}.
+
+The \texttt{merge} function merges the right-hand side of its second argument
+into the right-hand side of its first argument, but only if the two input
+clauses are compatible. Merging two right-hand sides is a matter of replacing
+the metavariables inserted during expansion with proper terms, an operation
+implemented in \texttt{merge$^\prime$}.
+
+\subsubsection{Implementing the Compatibility Relation}
+The definition of compatibility (see Definition~\ref{def:compatibility})
+requires us to make a pairwise comparison of the sets of matched values for the
+argument patterns of two pattern clauses. Taking advantage of the fact that the two
+argument patterns compared must not only be well-typed, but also have the same
+type (since they are in the same argument position), we can implement the compatibility
+relation as a term-level comparison on \IdrisM{} terms. Since two argument patterns
+can only have a finite number of different forms, it is possible to encode the
+compatibility relation in a table, as shown in
+Figure~\ref{fig:compatibility_table}. Whenever two clauses are compatible, we may have to perform one or more
+substitutions during the merge step to ensure that the right-hand side of a
+merged pattern clause does not refer to names which are not in
+scope. Concretely, substitution happens with the function \texttt{subst}, called
+by \texttt{merge} in Figure~\ref{fig:desugaring_formalization}, where
+\texttt{subs} is a collection of substitutions. Necessary substitutions are indicated in
+Figure~\ref{fig:compatibility_table} with ``Yes, if subst.'', which means that
+the column pattern must be substituted with the row pattern in the right-hand
+side of the merged clause. The substitution function \texttt{subst} performs a simple traversal of the
+syntax tree for the right-hand side, replacing terms where necessary.
+
+\subsubsection{Handling \texttt{where}-blocks}
+When two pattern clauses are merged, their \texttt{where}-blocks must also be
+merged into one. As the last step of merging (not shown in
+Figure~\ref{fig:desugaring_formalization}), \texttt{where}-blocks are
+concatenated, inventing fresh names for definitions where name collisions
+occur. As a consequence, the invented name must be substited for the old name on the
+merged right-hand side and in the remainder of the where-block involved. 
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+--| Expands the right-hand side to make 
+--| projections on a constructor definition
+expand $\ulcorner$$\pi_i$ (f x) = $\rho_{i}$$\urcorner$ = 
+  $\ulcorner$$\pi_i$ (f x) = $\pi_i$ (MkA ?arg$_1$ ?arg$_2$ $\cdots$ $\rho_i$ $\cdots$ ?arg$_n$)$\urcorner$
+expand $\ulcorner$$\pi_j$ lhs = $\rho_{j}$$\urcorner$ = 
+  $\underline{let}$ $\ulcorner$lhs$^\prime$ = $\rho_{j}^\prime$$\urcorner$ = expand $\ulcorner$lhs = MkA ?arg$_1$ ?arg$_2$ $\cdots$ $\rho_j$ $\cdots$ ?arg$_n$$\urcorner$
+  $\underline{in}$ $\ulcorner$$\pi_j$ lhs$^\prime$ = $\pi_j$ $\rho_{j}^\prime$$\urcorner$
+expand $\ulcorner$lhs = $\rho$$\urcorner$ = $\ulcorner$lhs = $\rho$$\urcorner$
+
+--| Reduce an expression by removing equal projections 
+--| on the left and right-hand sides of a clause
+reduce $\ulcorner$$\pi_i$ lhs = $\pi_i$ $\rho$$\urcorner$  = reduce $\ulcorner$lhs = $\rho$$\urcorner$
+reduce $\ulcorner$f x = $\rho$$\urcorner$ = $\ulcorner$f x = $\rho$$\urcorner$
+reduce _ _ = error -- Trying to reduce non-compatible projections
+
+--| Merges the first clause with the second clause
+--| if they are compatible
+merge $\ulcorner$lhs$_1$ = $\rho_1$$\urcorner$ $\ulcorner$lhs$_2$ = $\rho_2$$\urcorner$ =
+  $\underline{let}$ (isCompatible, subs) = compatible $\ulcorner$lhs$_1$ = $\rho_1$$\urcorner$ $\ulcorner$lhs$_2$ = $\rho_2$$\urcorner$
+  $\underline{in}$ $\underline{if}$ isCompatible
+     $\underline{then}$ $\underline{let}$ $\ulcorner$$\rho^\prime$$\urcorner$ = merge$^\prime$ $\ulcorner$$\rho_1$$\urcorner$ $\ulcorner$subst $\rho_2$ subs$\urcorner$
+         $\underline{in}$ $\ulcorner$lhs$_1$ = $\rho^\prime$$\urcorner$
+     $\underline{else}$ $\ulcorner$lhs$_1$ = $\rho_1$$\urcorner$
+
+--| Merges the first constructor with the second
+merge$^\prime$ $\ulcorner$MkA e$_{1_1}$ e$_{2_1}$ $\cdots$ ?arg$_{i_1}$ $\cdots$ e$_{n_1}$$\urcorner$
+      $\;$$\ulcorner$MkA e$_{1_2}$ e$_{2_2}$ $\cdots$ $\rho_{i_2}$  $\cdots$ e$_{n_2}$$\urcorner$
+     =$\;$$\ulcorner$MkA e$_{1_1}$ e$_{2_1}$ $\cdots$ $\rho_{i_2}$ $\cdots$ e$_{n_1}$$\urcorner$
+merge$^\prime$ $\ulcorner$MkA e$_{1_1}$ e$_{2_1}$ $\cdots$ $\rho_{i_1}$ $\cdots$ e$_{n_1}$$\urcorner$
+      $\;$$\ulcorner$MkA e$_{1_2}$ e$_{2_2}$ $\cdots$ ?arg$_{i_2}$  $\cdots$ e$_{n_2}$$\urcorner$
+     =$\;$$\ulcorner$MkA e$_{1_1}$ e$_{2_1}$ $\cdots$ $\rho_{i_1}$ $\cdots$ e$_{n_1}$$\urcorner$
+merge$^\prime$ $\ulcorner$MkA e$_{1_1}$ e$_{2_1}$ $\cdots$ $\rho_{i_1}$ $\cdots$ e$_{n_1}$$\urcorner$
+      $\;$$\ulcorner$MkA e$_{1_2}$ e$_{2_2}$ $\cdots$ $\rho_{i_2}$  $\cdots$ e$_{n_2}$$\urcorner$
+     =$\;$$\ulcorner$MkA e$_{1_1}$ e$_{2_1}$ $\cdots$ $\rho_{i_1}$ $\cdots$ e$_{n_1}$$\urcorner$
+merge$^\prime$ $\ulcorner$MkA e$_{1_1}$ e$_{2_1}$ $\cdots$ MkA($\cdots$)$_{i_1}$ $\cdots$ e$_{n_1}$$\urcorner$
+      $\;$$\ulcorner$MkA e$_{1_2}$ e$_{2_2}$ $\cdots$ MkA($\cdots$)$_{i_2}$ $\cdots$ e$_{n_2}$$\urcorner$
+     =$\;$$\underline{let}$ $\ulcorner$$\rho^\prime$$\urcorner$ = merge$^\prime$$\;$$\ulcorner$MkA($\cdots$)$_{i_1}$ $\urcorner$ $\ulcorner$MkA($\cdots$)$_{i_2}$$\urcorner$
+      $\;$$\underline{in}$ $\ulcorner$MkA e$_{1_1}$ e$_{2_1}$ $\cdots$ $\rho^\prime$ $\cdots$ e$_{n_1}$$\urcorner$
+merge$^\prime$ $\ulcorner$$\rho_1$$\urcorner$ $\ulcorner$$\rho_2$$\urcorner$ = $\ulcorner$$\rho_1$$\urcorner$
+\end{lstlisting}
+\caption{High-level formalization of the desugaring procedure for copatterns,
+  given in Haskell-like syntax. \IdrisM{} expressions are given in Quine
+  brackets, e.g. $\ulcorner e\urcorner$. Expressions with a preceding ``?'' are
+  \IdrisM{} metavariables. The constructor name \texttt{MkA} signifies a
+  constructor for an arbitrary type A with a top-level product structure, and $\pi_i$ denotes projections,
+  i.e. copatterns on left-hand sides and regular record projections on right-hand sides.}
+\label{fig:desugaring_formalization}
+\end{figure}
+
+\begin{figure}
+  
+\begin{center}
+  \begin{tabular}{ p{3cm} | c || c | c | c | c | }
+    \cline{2-6}
+    & $C$ & \quine{$y$} & \quine{\_} & \quine{$c^\prime$} & \quine{MkA($y_1\cdots y_n$)} \\ \cline{2-6}\cline{2-6}
+    Pattern variable & \quine{$x$} & \begin{tabular}[c]{@{}c@{}}Yes,\\ if subst.\end{tabular} & Yes & No & No\\ \cline{2-6}
+    Placeholder & \quine{\_} & Yes & Yes & No & No\\ \cline{2-6}
+    Constant& \quine{$c$} & \begin{tabular}[c]{@{}c@{}}Yes,\\ if subst.\end{tabular} & Yes & if $c$ = $c^\prime$ & No \\ \cline{2-6}
+    Constructor pattern & \quine{MkA($x_1\cdots x_n$)}
+          & \begin{tabular}[c]{@{}c@{}}Yes,\\ if subst.\end{tabular} & Yes & No & if $C$($x_1$,$y_1$)$\cdots$$C$($x_n$,$y_n$)\\
+    \cline{2-6}
+  \end{tabular}
+\end{center}
+  \caption{Encoding the compatibility relation, $C$, in a table, describing
+    whether two clause arguments given as \IdrisM{} terms can lead to
+    compatibility between two clauses. Consider two clauses, $a$ and $b$ for an
+    $n$-ary function, where both clauses have $n$ argument patterns on their
+    left-hand side. The argument patterns for $a$ are found in the rows, and
+    for $b$ in the columns. Further, let $i$ indicate a position in the sequence of
+    argument patterns, such that $0 < i \le n$. For two argument patterns, $p_{i_a}$ and $q_{i_b}$,
+    where $p_{i_a}$ is the argument pattern in position $i$ for a clause $a$ and $q_{i_b}$
+    is the argument pattern in position $i$ for a clause $b$, each cell answers
+    the question: ``Does $C$($p_{i_a}$,$q_{i_b}$) hold?'', i.e. ``Is pattern $q_{i_b}$ more general
+    or equally general to pattern $p_{i_a}$?''. Possible left-hand side
+    constructs not presented in this table are currently not supported for
+    definitions with copatterns (see Section~\ref{sec:merg-comp}).}
+  \label{fig:compatibility_table}
+\end{figure}
+\todo{Is the caption for Figure~\ref{fig:compatibility_table} too long?}
+
+% \begin{figure}
+% \begin{lstlisting}[mathescape]
+% compatible $\ulcorner$lhs$_1$ = $\rho_1$$\urcorner$ $\ulcorner$lhs$_2$ = $\rho_2$$\urcorner$ = compatible$^\prime$ $\ulcorner$lhs$_1$$\urcorner$ $\ulcorner$lhs$_2$$\urcorner$ $[\;]$
+
+% compatible$^\prime$ $\ulcorner$Ref n$\urcorner$ $\ulcorner$Ref n$^\prime$$\urcorner$ subs
+%  | isConstructorName n && isConstructorName n$^\prime$ && n == n$^\prime$
+%    = subs
+%  | isConstructorName n && isConstructorName n$^\prime$ && n != n$^\prime$
+%    = $Not\;compatible$
+%  | not (isConstructorName n) && isConstructorName n$^\prime$ && n == n$^\prime$
+%    = subs
+
+
+
+
+% compatible' :: Context -> PTerm -> PTerm -> [Substitution] -> Maybe [Substitution]
+% compatible' ctxt t@(PRef _ n) (PRef _ n') subs =
+%   let sub = (n', t)
+%   in case (isConName n ctxt, isConName n' ctxt) of
+%        (True,  True)  -> if n == n' then return subs else Nothing
+%        (True,  False) -> return (sub : subs)
+%        (False, True)  -> Nothing
+%        (False, False) -> return (if n == n' then subs else sub : subs)
+% compatible' _ (PRef _ _) Placeholder subs = return subs
+% compatible' _ (PRef _ _) (PApp _ _ _) _ = Nothing
+% compatible' ctxt Placeholder (PRef _ n) subs
+%  | isConName n ctxt = Nothing
+%  | otherwise        = return subs
+% compatible' _ Placeholder Placeholder subs = return subs
+% compatible' _ Placeholder (PApp _ _ _) _ = Nothing
+% compatible' ctxt t@(PApp _ _ _) (PRef _ n) subs
+%  | isConName n ctxt = Nothing
+%  | otherwise        = return ((n, t) : subs)
+% compatible' _ (PApp _ _ _) Placeholder subs = return subs
+% compatible' ctxt (PApp _ (PRef _ n) args) (PApp _ (PRef _ n') args') subs
+%  | n == n'   = compatibleArgLists ctxt args args' subs
+%  | otherwise = Nothing
+% compatible' _ _ _ _ = Nothing
+% \end{lstlisting}
+%   \caption{A formalization of the compatibility relation.}
+%   \label{fig:compatibility_formalization}
+% \end{figure}
+
 \section{Discussion}
+\label{sec:copatterns-implementation-discussion}
 % Is this the best approach to desugaring?
 % Would a TT-based approach have been better?
 % Discuss 'Unnesting of copatterns' approach
 % fejlmeddelelser
 
+While our current approach to desugaring copatterns leads to maximum code
+sharing in the elaborator, it comes with its own set of challenges. Concretely
+limitations exist for the following:
+
+\begin{itemize}
+\item Error reporting
+\item Disambiguating names
+\item Merging and compatibility
+\item The \texttt{with}-rule
+\end{itemize}
+
+\subsection{Error Reporting}
+After a definition with copatterns has been desugared, errors from the remaining
+compilation process no longer occur on the definition provided by the user, but on the desugared version. Obviously,
+error messages about terms not written by the user are not very helpful. One way
+to alleviate this situation would be store information about the original
+copattern clauses in the desugared pattern clauses, such that it would be possible to
+retrieve which part of a right-hand side that originated from which copattern
+clause. Additionally, extending the delaborator \todo{Do we need to describe the
+  delaborator somewhere?} to create copattern clauses from
+pattern clauses would be necessary to enable the compiler to create error
+messages where the user is shown exactly where his or her implementation is faulty.
+
+\subsection{Disambiguating Names}
+Because desugaring of copatterns happens prior to elaboration, we cannot
+disambiguate names based on type information. The consequence is that if more
+than one projection is defined with the same name, the user must fully qualify
+the name for each of the copatterns affected at every application-site. Without
+additional information, a more advanced disambiguation scheme is not possible.
+
+\subsection{Merging and Compatibility}
+\label{sec:merg-comp}
+Merging pattern clauses as directed by the compatibility relation (see
+Figure~\ref{fig:compatibility_table}) becomes brittle when viewed from a larger
+perspective. Each time a new construct which can appear on a left-hand side is
+added to \IdrisM{}, the compatibility relation will have to be
+updated. Furthermore, some possible left-hand side constructs, such as functions
+and $\Sigma$-types, have no obvious reflexive compatibility relation. For
+example, the compatibility relation between two function patterns is difficult to
+define. Copattern clauses involving these are therefore currently not supported.
+
+\subsection{The \texttt{with}-rule}
+The current implementation does not allow users to use the \texttt{with}-rule on
+copattern clauses. Due to the merging step, allowing the \texttt{with}-rule on
+copattern clauses would require a procedure for merging two
+\texttt{with}-rules into one. At the time of writing, we are not aware of any
+such procedure.
+
+\subsection{An Alternative Solution}
+As a direct translation to pattern clauses exists for any definition with
+copattern clauses, elaborating copattern clauses by reusing the existing
+elaboration logic for pattern clauses seems like a logical solution at
+first. Working at the level of \IdrisM{} gives rise to many limitations, though,
+since most of the type information on terms, case trees, and coverage checking
+is not available until later in the compilation process, namely during and after
+elaboration. We believe that a more robust solution could be achieved by
+elaborating copattern clauses separately, i.e. as a direct transformation from
+\IdrisM{} to TT, discarding the solution presented
+above.
+
+\subsubsection{Parsing and Disambiguating Names}
+One benefit of elaborating copattern clauses separately is that it
+allows for name disambiguation from type information. The situation shown in
+Figure~\ref{fig:copatterns_type_disambiguation} cannot be solved prior to
+elaboration, because the type of \texttt{switcher} requires evaluation. The type
+of the pattern for \texttt{switcher} changes according to the boolean argument,
+and the corresponding copatterns applied to the pattern must therefore be
+derived from an evaluated type. In our current implementation, the user is required to fully
+qualify the name for each copattern as soon as more than one projection with the
+same name is defined, regardless of namespaces.
+
+Another benefit is that copatterns can be identified more
+elegantly. As discussed in Section~\ref{sec:parsing-copatterns}, prefixing all
+copatterns with a special character is not a satisfactory solution, neither
+aesthetically nor in terms of the concrete syntax of the remaining Idris
+constructs. If identification of copatterns is delayed until elaboration, the
+situation from Figure~\ref{fig:copatterns_parsing_hell} can be resolved by
+introducing a per-definition \texttt{copatterns} block, as exemplified in Figure~\ref{fig:copatterns_parsing_hell_fixed_copatterns_block}.
+\begin{figure}
 \begin{lstlisting}[mathescape]
-dupNth : Stream a -> Nat -> Nat -> Stream a
-head (dupNth s n m) = head s
-tail (dupNth s n m) = dupNth' s n m
+namespace A
+  corecord Stream a where
+    head : a
+    tail : Stream a
+namespace B
+  corecord Stream a where
+    head : a
+    tail : Stream a
 
-dupNth' : Stream a -> Nat -> Nat -> Stream a
-dupNth' s n Z = dupNthZ s n
-dupNth' s n (S m') = dupNthS s n m'
+switcher : (c : Bool) $\to$ a $\to$ b $\to$ if c
+                                    then A.Stream a 
+                                    else B.Stream b
+copatterns
+  head (switcher True  a _) = a
+  head (switcher False _ b) = b
+  tail (switcher True  a b) = switcher True a b
+  tail (switcher False a b) = switcher False a b   
+\end{lstlisting}
+  \caption{Elaborating copattern clauses separately allows us to solve this
+    situation. From top to bottom, the copatterns for \texttt{switcher} are
+    identified as: \texttt{A.Stream.head}, \texttt{B.Stream.head},
+    \texttt{A.Stream.tail}, and \texttt{B.Stream.tail}.}
+  \label{fig:copatterns_type_disambiguation}
+\end{figure}
 
-dupNthZ : Stream a -> Nat -> Stream a
-head (dupNthZ s n) = head s
-tail (dupNthZ s n) = tail (dupNth s n n)
+\begin{figure}
+\begin{lstlisting}[mathescape]
+zeros : Stream Nat
+head : Nat $\to$ Nat
+head zeros = Z     -- clause for function 'head'
+copatterns
+  head zeros = Z     -- copattern 'head' for function 'zeros'
+  tail zeros = zeros -- copattern 'tail' for function 'zeros'
+\end{lstlisting}
+  \caption{Resolving the ambiguity from Figure~\ref{fig:copatterns_parsing_hell}
+  by placing copattern clauses inside a per-definition \texttt{copatterns} block.}
+  \label{fig:copatterns_parsing_hell_fixed_copatterns_block}
+\end{figure}
 
-dupNthS : Stream a -> Nat -> Nat -> Stream a
-head (dupNthS s n m') = head (tail s)
-tail (dupNthS s n m') = tail (dupNth (tail s) n m')
+
+\subsubsection{Elaboration}
+Following Setzer et al.\,\citep{Setzer14Unnesting}, the
+complex left-hand side structure of the \texttt{dupNth} function from
+Figure~\ref{fig:dupNth} can be simplified as in
+Figure~\ref{fig:dupNth_unnesting}. This unnested version leaves us with only
+simple copatterns, which can trivially be converted to pattern clauses, as
+described in Section~\ref{sec:dual-betw-constr}. Figure~\ref{fig:dupNth_unnesting_pattern_clauses} shows the converted
+program. Compared to our current implementation, this strategy for simplifying
+copatterns has several advantages. First, it eliminates the need for merging
+right-hand sides by creating auxiliary functions. At the \IdrisM{} level,
+creating auxiliary functions is non-trivial, because computing the types of such
+functions may require evaluation. Secondly, the complex compatibility relation
+becomes unnecessary, because pattern matching and copatterns are separated, and
+all the resulting copatterns are simple. Thirdly, it enables support for the
+\texttt{with}-rule on copattern clauses, since clauses using the
+\texttt{with}-rule can be separated into distinct functions, as shown in
+Figure~\ref{fig:copatterns_with_rule}.
+
+As a final benefit, a separate elaboration eases meaningful error reporting
+considerably. Since user-provided constructs are handled directly, pointing the
+user to errors in the concrete syntax is possible without having the delaborator
+transform pattern clauses to copattern clauses.\todo{Should we have some sort of
+conclusion on this chapter?}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+copatterns
+ head (dupNth s n m) = head s
+ tail (dupNth s n m) = dupNth$^\prime$ s n m
+
+dupNth$^\prime$ : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+dupNth$^\prime$ s n Z = dupNthZ s n
+dupNth$^\prime$ s n (S m$^\prime$) = dupNthS s n m$^\prime$
+
+dupNthZ : Stream a $\to$ Nat $\to$ Stream a
+copatterns
+ head (dupNthZ s n) = head s
+ tail (dupNthZ s n) = tail (dupNth s n n)
+
+dupNthS : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+copatterns
+ head (dupNthS s n m$^\prime$) = head (tail s)
+ tail (dupNthS s n m$^\prime$) = tail (dupNth (tail s) n m$^\prime$)
+\end{lstlisting}
+  \caption{Unnesting the \texttt{dupNth} function from Figure~\ref{fig:dupNth}.}
+  \label{fig:dupNth_unnesting}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+dupNth s n m = head s :: dupNth$^\prime$ s n m
+
+dupNth$^\prime$ : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+dupNth$^\prime$ s n Z = dupNthZ s n
+dupNth$^\prime$ s n (S m$^\prime$) = dupNthS s n m$^\prime$
+
+dupNthZ : Stream a $\to$ Nat $\to$ Stream a
+dupNthZ s n = head s :: tail (dupNth s n n)
+
+dupNthS : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+dupNthS s n m$^\prime$ = head (tail s) :: tail (dupNth (tail s) n m$^\prime$)
+\end{lstlisting}
+  
+  \caption{Converting the unnested version of \texttt{dupNth} into pattern clauses.}
+  \label{fig:dupNth_unnesting_pattern_clauses}
+\end{figure}
+
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+filter : (a $\to$ Bool) $\to$ Stream a $\to$ Stream a
+head (filter p s) with (filter p (tail s))
+  | s$^\prime$ = if p (head s)) then head s else head s$^\prime$
+tail (filter p s) = filter p (tail s)
 \end{lstlisting}
 
+\begin{lstlisting}[mathescape]
+filter : (a $\to$ Bool) $\to$ Stream a $\to$ Stream a
+filter p s = headFilter p s :: filter p (tail s)
+
+headFilter : (a $\to$ Bool) $\to$ Stream a $\to$ a
+headFilter p s with (filter p (tail s))
+  | s$^\prime$ = if p (head s)) then head s else head s$^\prime$
+\end{lstlisting}
+  \caption{Above: A \texttt{filter} function on \texttt{Stream}s, showcasing the
+    combination of copatterns and the \texttt{with}-rule. Below: The reduced
+    version.}
+\label{fig:copatterns_with_rule}
+\end{figure}
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "../copatterns-thesis"
