@@ -155,8 +155,18 @@ Notice that some of the rules for the cumulativity relation requires terms to be
 convertible ($\simeq$), e.g. $S\simeq T$. Convertibility will be explained as
 part of the type checking phase in Section~\ref{sec:type-checking}.
 
-\section{Codata?}
-\todo{Should we include a section on the implementation of coinductive data?}
+\section{Coinductive Data Types}
+Idris supports inductive as well as coinductive type families. The latter is
+modeled as lazily evaluated inductive families, where the types of all recursive
+constructor arguments are tagged automatically with a special type constructor,
+\texttt{Inf}. Values with an \texttt{Inf} type are possibly infinite, and thus
+cannot be safely evaluated using a call-by-value strategy. In the vein of Abelson
+and Sussman\,\citep{Abelson96SICP}, evaluation of such values is handled by two
+special data constructors, \texttt{Delay} and \texttt{Force}. These provide
+call-by-name evaluation, in the sense that all \texttt{Inf} values are initally
+delayed, and then forced when needed. The compiler cannot always infer all possibly infinite arguments, e.g. when using mixed
+induction-coinduction, so in these cases the user must manually tag the correct
+argument types with \texttt{Inf}.
 
 \section{Elaboration}
 \label{sec:elaboration}
