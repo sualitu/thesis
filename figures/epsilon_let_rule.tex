@@ -1,0 +1,13 @@
+\AXD{\begin{matrix} \IEc \, \vdash \, \phi(A)\,=\,A' \quad \IEc \, \vdash \, A'\,:\,Type \\
+                    \IEc \, \vdash \, e\,:\,A \,\infer\, e'\,:\,A' \quad
+                    \IEc \, \vdash \, _{g}x \,:\, A' \\
+                    \iota;\Psi;\phi,(x,\,_{g}x);c;\Gamma, (x:A) \, \vdash \,b\,:\,B[e/x] \,\infer\, b'\,:\, B[e'/_{g}x]
+     \end{matrix}} 
+\RLabel{(\infer_{let})} 
+\UID{\IEc \, \vdash \, let\,x\,\mapsto\,e\,:\,A\, in\, b \, : \, B[e/x] \, \infer \,let\,_{g}x\,\mapsto\,e'\,:\,A' \, in\, b' \, : \, B[e'/_{g}x]}
+\DisplayProof
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../copatterns-thesis"
+%%% End:

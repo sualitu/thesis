@@ -1,0 +1,18 @@
+\AXD{ \begin{matrix} \IEc \, \vdash \, \phi(A) = A' \quad \IEc \, \vdash \, A' : Type \\
+                     \IEc \, \vdash \, _{g}a \, : \, A' \quad 
+                     \iota;\Psi;\phi,(a,\,_{g}a);c;\Gamma, (a:A) \, \vdash \, e\, : \, B \, \infer\, e'\, :\, B'
+    \end{matrix}} 
+\RLabel{(\infer_{\lambda})} 
+\UID{\IEc \, \vdash \, \lambda (a\,:\,A). \, e \, :\, (x\,:\,A) \, \to \, B  \,\infer\, \lambda (_{g}a\,:\,A'). \, e \, :\, (x \,:\,A') \, \to \, B'}
+\DisplayProof
+
+
+% \[
+% \frac { \begin{matrix} \phi ;c;\Gamma \, \vdash A\, :\, Type\, \overset { Type }{ \Longrightarrow  } \, A^{ \prime  }\, :\, Type \\ \phi ;c;\Gamma ,x:A\, \vdash \, e\, :\, B\, x\, \overset { B^{ \prime  }y }{ \Longrightarrow  } \, \phi ;c;\Gamma ,y:A^{ \prime  }\, \vdash \, e{ ^{ \prime  } }\, :\, B^{ \prime  }y \\ \phi ;c;\Gamma \, \vdash A,A^{ \prime  },B,B^{ \prime  }\, :\, Type \end{matrix} }{ \phi ;c ;\Gamma \, \vdash \, \lambda x.\, e\, :\, (x\, :\, A)\, \to \, B\, x\, \Longrightarrow \, \phi ;c;\Gamma \, \vdash \, \lambda x.\, e^{ \prime  }\, :\, (y\, :\, A^{ \prime  })\, \to \, B^{ \prime  }\, y\, :\, B^{ \prime  }y } \Longrightarrow _{ \lambda  }
+% \]
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../copatterns-thesis"
+%%% End:
