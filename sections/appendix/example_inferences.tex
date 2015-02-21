@@ -1,0 +1,64 @@
+\begin{landscape}
+\chapter{Inference of Guarded Recursion: Proofs}
+\label{app:infer-guard-recurs}
+\label{cha:example-inferences}
+
+  \begin{prooftree}
+\AxiomC{(1)}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash Z : Nat \infer Z : Nat$}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{$\begin{matrix} IE \vdash (::)\,Nat\,Z \ : Stream\,Nat \to Stream\,Nat \infer \\
+  (_g::)\,Nat\,Z \  : \later ^\kappa_1  \onk{Stream}\,Nat \to
+  \onk{Stream}\,Nat\end{matrix}$}
+\AxiomC{}
+\RightLabel{?}
+\UnaryInfC{$IE \vdash \phi(zeros) =\ _gzeros$}
+\AxiomC{}
+\RightLabel{Var}
+\UnaryInfC{$IE \vdash\ _gzeros : \forallk{Stream}\,Nat$}
+\RightLabel{$\infer _{Rec\causal}$}
+\BinaryInfC{$\begin{matrix} IE \vdash zeros : Stream\,Nat \infer \\ \onk{Next}\,apply\,
+  _gzeros : \later ^\kappa_1  \onk{Stream}\,Nat\end{matrix}$}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{ $IE \vdash (::)\,Nat\,Z\,zeros : Stream\,Nat\infer \,(_g::)\,Nat\,Z\,(\onk{Next}\,apply\,
+  _gzeros) : \forall \kappa.Stream^\kappa \,Nat$}
+  \end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{?}
+  \UnaryInfC{$IE \vdash \phi(::) =\ (_g::) $}
+\AxiomC{}
+\RightLabel{Var}
+  \UnaryInfC{$IE \vdash (_g::) : (a : Type) \to a \to
+    \later^\kappa_1\onk{Stream}\,a \to \onk{Stream}\,a$}
+\RightLabel{$\infer _{\phi}$}
+\BinaryInfC{$\begin{matrix}IE \vdash (::) : (a : Type) \to a \to Stream\,a \to
+    Stream\,a \infer \\
+    (_g::) : (a : Type) \to a \to \later^\kappa_1\onk{Stream}\,a \to \onk{Stream}\,a
+\end{matrix}$}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash Nat : Type \infer Nat : Type$}
+\LeftLabel{(1)}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{$
+IE \vdash (::)\,Nat : Nat \to Stream\,Nat \to Stream\,Nat \infer (_g::)\,Nat \  : Nat \to \later ^\kappa_1  \onk{Stream}\,Nat \to
+  \onk{Stream}\,Nat$}
+\end{prooftree}
+
+$IE = zeros;\, \causal ;\,\phi, (::,\ _g::), (zeros,\, _gzeros);\, \open;\,
+\Gamma,Z : Nat,\ zeros : Stream Nat,\,_gzeros : \forallk{Stream} Nat$
+
+\newpage
+
+
+\end{landscape}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../../copatterns-thesis"
+%%% End:

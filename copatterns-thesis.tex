@@ -46,7 +46,8 @@
 \newcommand{\forallkp}[1]{\forall\kappa'.#1^{\kappa'}}
 \newcommand{\flaterkp}[1]{\forall\kappa'.\later^{\!\!\!\kappa'}#1^{\kappa'}}
 \newcommand{\tensor}{\circledast}
-\newcommand{\quine}[1]{\ensuremath{$\ulcorner$}#1\ensuremath{$\urcorner$}}
+
+\newcommand{\quine}[1]{\ensuremath{\ulcorner}#1\ensuremath{\urcorner}}
 \newcommand{\eps}[6]{\ensuremath{#1\,\vdash\,#2\,:\,#3\,\xRightarrow{#6}\,#4\,\vdash\,#5\,:\,#6}}
 \newcommand{\causal}{\ensuremath{\curvearrowleft}}
 \newcommand{\noncausal}{\ensuremath{\leftrightarrows}}
@@ -60,6 +61,7 @@
 \newcommand{\IEclosedcausal}{\ensuremath{\iota;\causal;\phi;\closed;\Gamma}}
 \newcommand{\IEopennoncausal}{\ensuremath{\iota;\noncausal;\phi;\open;\Gamma}}
 \newcommand{\IEclosednoncausal}{\ensuremath{\iota;\noncausal;\phi;\closed;\Gamma}}
+
 
 %\lstset{basicstyle=\ttfamily}
 
@@ -119,8 +121,12 @@ This is an abstract
 
 \appendix
 
-\chapter{Inference of Guarded Recursion: Examples}
-\label{app:infer-guard-recurs}
+\include{sections/appendix/examples_programs}
+
+\include{sections/appendix/example_records}
+
+\include{sections/appendix/example_inferences}
+
 
 \end{document}
 

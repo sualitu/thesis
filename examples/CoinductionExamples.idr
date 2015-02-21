@@ -34,6 +34,11 @@ total causal zipWith : (a -> b -> c) -> Stream a -> Stream b -> Stream c
 &head zipWith f s t = f (head s) (head t)
 &tail zipWith f s t = zipWith f (tail s) (tail t)
 
+total causal fib : Stream Nat
+&head fib = Z
+&head &tail fib = S Z
+&tail &tail fib = zipWith (+) fib (tail fib)
+
 fst : (a, b) -> a
 fst (x, _) = x
 
@@ -77,21 +82,21 @@ infixr 10 <=
 (<=) (S n) (S m) = n <= m
 
 -- Crashes epsilon
--- total causal merge : Stream Nat -> Stream Nat -> Stream Nat
--- &head merge s t = case (head s <= head t) of
---                     True  => (head s) 
---                     False => (head t)
--- &tail merge s t = case (head s <= head t) of
---                     True  => case (head t <= head s) of
---                                True  => (merge (tail s) (tail t))
---                                False => (merge (tail s) t)
---                     False => (merge s (tail t))
+total causal merge : Stream Nat -> Stream Nat -> Stream Nat
+&head merge s t = case (head s <= head t) of
+                    True  => (head s) 
+                    False => (head t)
+&tail merge s t = case (head s <= head t) of
+                    True  => case (head t <= head s) of
+                               True  => (merge (tail s) (tail t))
+                               False => (merge (tail s) t)
+                    False => (merge s (tail t))
 
 corecord Tree : Type -> Type where
   value : Tree a -> a
   left  : Tree a -> Tree a
   right : Tree a -> Tree a
-  
+       
 total causal zerosTree : Tree Nat
 &value zerosTree = Z
 &left  zerosTree = zerosTree
@@ -107,11 +112,16 @@ total causal natTree : Tree Nat
 &left  natTree = natTree
 &right natTree = mapTree S natTree
 
-total causal calculateWilfully : Tree (Nat, Nat)
+data Maybe a = Just a | Nothing  
+  
+corecord PigTree : Type -> Type where
+  pigValue : PigTree a -> a
+  subTree : PigTree a -> Maybe (PigTree a, PigTree a)
+  constructor Oink
+
+total causal calculateWilfully : PigTree (Nat, Nat)
 calculateWilfully = grow((S Z), (S Z))
   where
-    total causal grow : (Nat, Nat) -> Tree(Nat, Nat)
-    grow (n, d) = MkTree (n, d) (grow (n, n + d)) (grow (n + d, d))
-
-
+    total causal grow : (Nat, Nat) -> PigTree(Nat, Nat)
+    grow (n, d) = Oink (n, d) (Just (grow(n, n + d), grow(n + d, d)))
 

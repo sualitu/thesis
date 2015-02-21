@@ -1,81 +1,63 @@
 module Test
 
-%default total
-{-
-data Nat : Type where
-  Z : Nat
-  S : Nat -> Nat
+import Data.Vect
+
+namespace GuardedRecursion
+  ||| A computation that is available later.
+  data Later' : Type -> Type where
+    Next : {a : Type} -> a -> Later' a
+
+  data Forall : Type -> Type where
+    LambdaKappa : {a : Type} -> a -> Forall a
+ 
+  apply : {a : Type} -> Forall a -> a
+  apply (LambdaKappa a) = a 
+
+  data Availability = Now | Tomorrow Availability
+
+  Later : Availability -> Type -> Type
+  Later Now a = a
+  Later (Tomorrow n) a = Later' (Later n a)
   
-data Vect : Nat -> Type -> Type where
-  Nil : Vect Z a
-  (::) : a -> Vect k a -> Vect (S k) a
--}
-corecord Stream' : Type -> Type where
-  hd : Stream' a -> a
-  tl : Stream' b -> Stream' a
-  constructor (::)
+  laterDist : Later' (a -> b) -> (Later' a -> Later' b)
+  laterDist (Next f) = \a => case a of
+                               (Next a') => Next (f a')
+                               
+  compose : {a, b : Type} -> 
+            {n : Availability} -> 
+            Later (Tomorrow n) (a -> b) -> 
+            Later (Tomorrow n) a -> 
+            Later (Tomorrow n) b
+  compose {n = Now} t u = compose' t u
+    where
+     compose' : {a, b : Type} -> Later' (a -> b) -> Later' a -> Later' b
+     compose' (Next t) (Next u) = Next (t u)
+  compose {n = Tomorrow n'} (Next t) (Next u) = Next (compose {n = n'} t u)
 
-zeros : Stream' Nat
-&hd zeros = Z
-&tl zeros = zeros
+  liftCompose : {a, b : Type} -> Later' (a -> b) -> (a -> Later' b)
+  liftCompose f = \x : a => compose {n = Now} f (Next x)
 
-repeat : a -> Stream' a
-&hd repeat a = a
-&tl repeat a = repeat a
+StreamCons : a -> Later' (Stream a) -> Stream a
+StreamCons a (Next s) = a :: s
 
-take' : (n : Nat) -> Stream' a -> Vect n a
-take' Z s = []
-take' (S k) s = (hd s) :: (take' k (tl s))
+tl : Stream a -> Later' (Stream a)
+tl (_ :: s) = Next s
 
-instance Functor Stream' where
-  map f (hd :: tl) = (f hd) :: (map f tl)
+fix : (Later' a -> a) -> a
+fix f = f(Next (fix f))
 
-partial
-nats : Stream' Nat
-&hd nats = Z
-&tl nats = map S nats
+mutual
+  cycle : (Later' (Nat -> Nat -> Stream Nat)) -> Nat -> Nat -> Stream Nat
+  cycle rec Z m = StreamCons Z (compose {n=Now} (compose {n=Now} rec (Next m)) (Next m))
+  cycle rec (S n) m = StreamCons (S n) (compose {n=Now} (compose {n=Now} rec (Next n)) (Next m))
 
-plus' : Nat -> Nat -> Nat
-plus' Z m = m
-plus' (S k) m = S (plus' k m)
+  cycle' : Forall (Nat -> Nat -> Stream Nat)
+  cycle' = LambdaKappa (fix(\rec, n, m => cycle rec n m))
+    
+mutual 
+  prepend : (Later' (Vect n a -> Stream a -> Stream a)) -> Vect n a -> Stream a -> Stream a
+  prepend rec [] s = s 
+  prepend rec (x :: xs) s = StreamCons x (compose {n=Now} (compose {n=Now} rec (Next xs)) (Next s))
 
-zipWith' : (a -> b -> c) -> Stream' a -> Stream' b -> Stream' c
-&hd zipWith' f s t = f (hd s) (hd t)
-&tl zipWith' f s t = zipWith' f (tl s) (tl t)
-
-partial
-fib : Stream' Nat
-&hd fib = Z
-&hd &tl fib = S Z
-&tl &tl fib = zipWith' (plus') fib (tl fib)
-
-prepend : Vect n a -> Stream' a -> Stream' a
-prepend [] s = s
-prepend (x :: xs) s = x :: (prepend xs s)
-
-deStreamCons : Stream' a -> (a, Stream' a)
-deStreamCons s = (hd s, tl s)
-
--- Names are odd. See issues #20
-corecord NatStream : Type where
-  thd : NatStream -> Nat
-  ttl : NatStream -> NatStream
-  
-deNatStreamCons : NatStream -> (Nat, NatStream)
-deNatStreamCons (MkNatStream thd ttl) = (thd, ttl)
-
-zeros' : NatStream
-&thd zeros' = Z
-&ttl zeros' = zeros'
-
-unfold : (s -> (a, s)) -> s -> Stream' a
-&hd unfold step s = fst (step s)
-&tl unfold step s = unfold step (snd (step s))
-
-foo : Stream' Nat
-foo = unfold deNatStreamCons zeros'
-
-namespace Alpha
-  foo : NatStream
-  &thd foo = Z
-  &ttl foo = foo
+  prepend' : Forall (Vect n a -> Stream a -> Stream a)
+  prepend' = LambdaKappa (fix(\rec, xs, s => prepend rec xs s))

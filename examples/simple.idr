@@ -1,29 +1,19 @@
 module Simple
 
-record Foo : Type where
-  MkFoo : (bar : Bool) -> (baz : if bar then Nat else Bool) -> Foo
-  
-test : Foo
-test = MkFoo True Z
+infixr 10 ::
 
-test2 : Foo
-test2 = MkFoo False True
+data Nat = Z | S n
 
-corecord Foo' : Type where
-  bar' : Foo' -> Bool
-  baz' : (f : Foo') -> if bar' f then Nat else Bool
+corecord Stream : Type -> Type where
+  head : Stream a -> a
+  tail : Stream a -> Stream a
+  constructor (::)
 
-test' : Foo'
-test' = MkFoo' True Z
+plus : Nat -> Nat -> Nat
+plus n m = plus n m
 
-test2' : Foo'
-test2' = MkFoo' False True
+total causal zipWith : (a -> b -> c) -> Stream a -> Stream b -> Stream c
+zipWith f s t = (f (head s) (head t)) :: (zipWith f (tail s) (tail t))
 
-mutual
-  corecord Alpha : Type where
-    bravo : Alpha -> (if test3 then Bool else Nat)
-    
-  test3 : Bool
-  test3 = True
- 
-
+total causal fib : Stream Nat
+fib = Z :: (S Z) :: (zipWith plus fib (tail fib))
