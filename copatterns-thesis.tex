@@ -10,18 +10,32 @@
 \usepackage{url}
 \usepackage{alltt}
 \usepackage{amssymb, amsfonts, amsmath, amsthm}
+\usepackage{mathtools}
 \usepackage{listings}
 \usepackage{natbib}
 \usepackage{pdflscape}
 \usepackage{todonotes}
 \bibliographystyle{alpha}
 \usepackage{semantic}
+\usepackage{fullpage}
+\usepackage[normalem]{ulem}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{bussproofs}
+ % Macros to get display-style math in proof trees.
+  \newcommand{\AXD}[1]{\AxiomC{\ensuremath{\displaystyle #1}}}
+  \newcommand{\UID}[1]{\UnaryInfC{\ensuremath{\displaystyle #1}}}
+  \newcommand{\BID}[1]{\BinaryInfC{\ensuremath{\displaystyle #1}}}
+  \newcommand{\TID}[1]{\TrinaryInfC{\ensuremath{\displaystyle #1}}}
+  \newcommand{\QID}[1]{\QuaternaryInfC{\ensuremath{\displaystyle #1}}}
+  \newcommand{\RLabel}[1]{\RightLabel{\ensuremath{#1}}}
 
 \newcommand{\IdrisM}{Idris$^{-}$}
 \newcommand{\later}{\rhd}
 % Kappa commands
 \newcommand{\onk}[1]{#1^\kappa}
-\newcommand{\laterkappa}{\later^{\!\!\!\kappa}}
+\newcommand{\laterkappa}{\later^{\!\!\kappa}}
+\newcommand{\laterkappan}{\later^{\!\!\kappa}_{\!\! n}}
 \newcommand{\laterk}[1]{\later^{\!\!\!\kappa}#1^\kappa}
 \newcommand{\forallk}[1]{\forall\kappa.#1^\kappa}
 \newcommand{\flaterk}[1]{\forall\kappa.\later^{\!\!\!\kappa}#1^\kappa}
@@ -33,6 +47,19 @@
 \newcommand{\flaterkp}[1]{\forall\kappa'.\later^{\!\!\!\kappa'}#1^{\kappa'}}
 \newcommand{\tensor}{\circledast}
 \newcommand{\quine}[1]{\ensuremath{$\ulcorner$}#1\ensuremath{$\urcorner$}}
+\newcommand{\eps}[6]{\ensuremath{#1\,\vdash\,#2\,:\,#3\,\xRightarrow{#6}\,#4\,\vdash\,#5\,:\,#6}}
+\newcommand{\causal}{\ensuremath{\curvearrowleft}}
+\newcommand{\noncausal}{\ensuremath{\leftrightarrows}}
+\newcommand{\open}{\ensuremath{\sqcup}}
+\newcommand{\closed}{\ensuremath{\sqcap}}
+\newcommand{\infer}{\ensuremath{\Longrightarrow}}
+\newcommand{\IEopen}{\ensuremath{\iota;\Psi;\phi;\open;\Gamma}}
+\newcommand{\IEclosed}{\ensuremath{\iota;\Psi;\phi;\closed;\Gamma}}
+\newcommand{\IEc}{\ensuremath{\iota;\Psi;\phi;c;\Gamma}}
+\newcommand{\IEopencausal}{\ensuremath{\iota;\causal;\phi;\open;\Gamma}}
+\newcommand{\IEclosedcausal}{\ensuremath{\iota;\causal;\phi;\closed;\Gamma}}
+\newcommand{\IEopennoncausal}{\ensuremath{\iota;\noncausal;\phi;\open;\Gamma}}
+\newcommand{\IEclosednoncausal}{\ensuremath{\iota;\noncausal;\phi;\closed;\Gamma}}
 
 %\lstset{basicstyle=\ttfamily}
 
@@ -78,7 +105,7 @@ This is an abstract
 
 \include{sections/copatterns_implementation}
 
-\include{sections/guarded_recursion_implementation}
+\include{sections/guarded_recursion_implementation_new}
 
 \include{sections/evaluation}
 
@@ -89,6 +116,11 @@ This is an abstract
 \include{sections/conclusion}
 
 \bibliography{bibliography}
+
+\appendix
+
+\chapter{Inference of Guarded Recursion: Examples}
+\label{app:infer-guard-recurs}
 
 \end{document}
 

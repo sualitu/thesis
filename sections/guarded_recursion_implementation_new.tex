@@ -492,11 +492,14 @@ their lateness. Because they are quantified over clocks, they are always availab
 %% Samspil mellem inferens og check
 %% Hvordan behandles causal vs. non-causal
 
-The inference of guarded recursive versions of possibly productive programs
+The inference of guarded recursive versions of productive programs
 happens in two steps: (1) the inference system infers a guarded
 recursive TT definition from an elaborated TT definition, and (2) the checking
 system verifies that the inferred guarded recursive definition is well-formed
-according to the typing rules in Figure~\ref{fig:gr_rules_sin_clock}.
+according to the typing rules in Figure~\ref{fig:gr_rules_sin_clock}. The two
+systems are implemented independently, and the checking system does not rely on
+any implementation-specific details of the inference system. Nevertheless, they do agree on
+the initial context in which a guarded recursive definition should hold.
 
 As explained in Section~\ref{sec:causal-non-causal}, the system distinguishes between
 causal and non-causal definitions. Before making an attempt to infer a guarded
@@ -982,7 +985,18 @@ constructor, later ($\laterkappa$). If other constructs can lead to infinite
 recursion, these must be identified separately. This is deferred as future work
 (see Chapter~\ref{cha:future-work}).
 
-\subsection{Dependencies}
+\subsection{Totality Dependencies}
+Currently, the system does not keep track of totality dependencies between
+functions. Consider the following program:
+\begin{lstlisting}[mathescape]
+nats : Stream Nat
+nats = Z :: map S nats
+\end{lstlisting}
+Here, \texttt{nats} depends on the totality of \texttt{map}. If \texttt{map}
+turns out to be partial, it is not currently detected that \texttt{nats} is also
+partial as a consequence thereof. The reason is that the productivity analysis
+of \texttt{nats} relies on the promise that a total version of \texttt{map} will
+or has been found, and not on the actual implementation of \texttt{map}.
 
 \subsection{User-provided Guarded Recursion}
 % Problem: Non-causal functions require two functions
@@ -990,11 +1004,17 @@ recursion, these must be identified separately. This is deferred as future work
 
 \subsection{Multiple Clocks}
 
+
 \subsection{Error Reporting}
 Giving helpful error messages concerning guarded recursion can be difficult,
-mainly because it may require that the user is familiar or at least partially familiar
-with the underlying theory. Aside from that, it should be possible to generate
-quite detailed error messages, considering that each rule may fail independently.
+mainly because it may require that the user is familiar or at least partially
+familiar with the underlying theory. Aside from that, it should be possible to
+generate quite detailed error messages, considering that each rule may fail
+independently. We have not yet put any effort into providing helpful error
+messages, but we imagine that such messages could have the form: ``The causal
+definition $f$ is not productive because $x$ at line $n$, column $c$, has no
+guarded recursive form of type $A'$ (inferred from type $A$)''. All information
+used in this example is directly available in each of the inference rules.
 
 
 
