@@ -1,8 +1,9 @@
+
 \begin{landscape}
 \chapter{Inference of Guarded Recursion: Proofs}
 \label{app:infer-guard-recurs}
 \label{cha:example-inferences}
-
+\begin{figure}[h]
   \begin{prooftree}
 \AxiomC{(1)}
 \AxiomC{}
@@ -22,8 +23,9 @@
 \BinaryInfC{$\begin{matrix} IE \vdash zeros : Stream\,Nat \infer \\ \onk{Next}\,apply\,
   _gzeros : \later ^\kappa_1  \onk{Stream}\,Nat\end{matrix}$}
 \RightLabel{$\infer _{app}$}
-\BinaryInfC{ $IE \vdash (::)\,Nat\,Z\,zeros : Stream\,Nat\infer \,(_g::)\,Nat\,Z\,(\onk{Next}\,apply\,
-  _gzeros) : \forall \kappa.Stream^\kappa \,Nat$}
+\BinaryInfC{ $IE \vdash (::)\,Nat\,Z\,zeros : Stream\,Nat\infer
+ \,(_g::)\,Nat\,Z\,(\onk{Next}\,apply\,
+  _gzeros) : Stream^\kappa \,Nat$}
   \end{prooftree}
 
 \begin{prooftree}
@@ -52,11 +54,251 @@ IE \vdash (::)\,Nat : Nat \to Stream\,Nat \to Stream\,Nat \infer (_g::)\,Nat \  
 $IE = zeros;\, \causal ;\,\phi, (::,\ _g::), (zeros,\, _gzeros);\, \open;\,
 \Gamma,Z : Nat,\ zeros : Stream Nat,\,_gzeros : \forallk{Stream} Nat$
 
+  
+  \caption{Inference of zeros.}
+  \label{fig:zero_inference}
+\end{figure}
 \newpage
 
+\begin{figure}[h]
+\begin{prooftree}
+\AxiomC{(2)}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash Z : Nat \infer Z : Nat$}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{$\begin{matrix} IE \vdash (::)\,Nat\,Z \ : Stream\,Nat \to Stream\,Nat \infer \\
+  (_g::)\,Nat\,Z \  : \later ^\kappa_1  \onk{Stream}\,Nat \to
+  \onk{Stream}\,Nat\end{matrix}$}
+\AxiomC{(3)}
+\RightLabel{$\infer_{app}$}
+\BinaryInfC{$\begin{matrix}IE \vdash (::)\,Nat\,Z\,(map\ Nat\ Nat\ S\ nats) :
+    Stream\,Nat \infer
+\\
+  (_g::)\,Nat\,Z\,(\onk{Next} ((apply\ _gmap)\ Nat \ Nat\,S) \tensor^\kappa_1
+  \,(\onk{Next}(apply\ _gnats))) : \onk{Stream}\ Nat\end{matrix}$}
+\end{prooftree}
 
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{?}
+  \UnaryInfC{$IE \vdash \phi(::) =\ (_g::) $}
+\AxiomC{}
+\RightLabel{Var}
+  \UnaryInfC{$IE \vdash (_g::) : (a : Type) \to a \to
+    \later^\kappa_1\onk{Stream}\,a \to \onk{Stream}\,a$}
+\RightLabel{$\infer _{\phi}$}
+\BinaryInfC{$\begin{matrix}IE \vdash (::) : (a : Type) \to a \to Stream\,a \to
+    Stream\,a \infer \\
+    (_g::) : (a : Type) \to a \to \later^\kappa_1\onk{Stream}\,a \to \onk{Stream}\,a
+\end{matrix}$}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash Nat : Type \infer Nat : Type$}
+\LeftLabel{(2)}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{$
+IE \vdash (::)\,Nat : Nat \to Stream\,Nat \to Stream\,Nat \infer (_g::)\,Nat \  : Nat \to \later ^\kappa_1  \onk{Stream}\,Nat \to
+  \onk{Stream}\,Nat$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{(4)}
+\AxiomC{}
+\RightLabel{?}
+\UnaryInfC{$IE \vdash \phi(nats) =\ _gnats$}
+\AxiomC{}
+\RightLabel{Var}
+\UnaryInfC{$IE \vdash\ _gnats : \forallk{Stream}\,Nat$}
+\RightLabel{$\infer _{Rec\causal}$}
+\BinaryInfC{$IE \vdash nats : Stream\ Nat \infer\ (\onk{Next}(apply\ _gnats)) : \onk{Stream}\ Nat$}
+\LeftLabel{(3)}
+\RightLabel{$\infer_{\tensor^\kappa_n}$}
+\BinaryInfC{$\begin{matrix} IE \vdash map\,Nat\,Nat\,S\,nats : Stream\,Nat\infer 
+\\
+    \,\onk{Next} ((apply\ _gmap)\ Nat \ Nat\,S) \tensor^\kappa_1 \,(\onk{Next}(apply\ _gnats)) :
+    \later^\kappa_1 Stream^\kappa \,Nat\end{matrix}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{(5)}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash Nat : Type \infer Nat : Type$}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{$\begin{matrix} IE \vdash
+map\ Nat\ Nat : (Nat \to Nat) \to Stream\ Nat \to Stream\ Nat \infer
+\\
+(apply\ _gmap)\ Nat\ Nat : (Nat \to Nat) \to \onk{Stream}\ Nat \to \onk{Stream}\ Nat
+\end{matrix}$}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash S : Nat \to Nat \infer S : Nat \to Nat$}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{$\begin{matrix}IE \vdash\ map\ Nat\ Nat\ S : Stream\ Nat \to Stream\
+    Nat \infer 
+\\
+  (apply\ _gmap)\ Nat\ Nat\ S) : \onk{Stream}\ Nat
+  \to \onk{Stream}\ Nat \end{matrix}$}  
+\RightLabel{$\infer _{Next^\kappa}$}
+\LeftLabel{(4)}
+\UnaryInfC{$\begin{matrix}IE \vdash\ map\ Nat\ Nat\ S : Stream\ Nat \to Stream\
+    Nat \infer 
+\\
+  \onk{Next} ((apply\ _gmap)\ Nat\ Nat\ S) : \later^\kappa_1 (\onk{Stream}\ Nat \to \onk{Stream}\ Nat) \end{matrix}$}  
+\end{prooftree}
+  
+$IE = nats;\, \curvearrowleft ;\,\phi, (::, _g::), (nats, _gnats), (map,
+_gmap);\, \sqcup;\, \Gamma$
+  \caption{Inference of nats.}
+  \label{fig:nats_inference}
+\end{figure}
+
+\begin{figure}[h]
+\begin{prooftree}
+\AxiomC{(6)}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash Nat : Type \infer Nat : Type$}
+\LeftLabel{(5)}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{$\begin{matrix}IE \vdash map\ Nat : (b : Type) \to (Nat \to b) \to Stream\ Nat \to
+  Stream\ Nat \infer 
+\\
+(apply\ _gmap) Nat : (b : Type) \to (Nat \to b) \to \onk{Stream}\ Nat \to
+2222  \onk{Stream}\ Nat
+\end{matrix}$}
+\end{prooftree}
+
+  
+
+\begin{prooftree}
+  \AxiomC{}
+\RightLabel{?}
+\UnaryInfC{$IE \vdash \phi(map) =\ _gmap$}
+\AxiomC{}
+\RightLabel{Var}
+\UnaryInfC{$IE \vdash\ _gmap : \forall \kappa . ((a : Type) \to (b : Type) \to (a \to b) \to \onk{Stream}\ a \to
+\onk{Stream}\ b)$}
+\RightLabel{$\infer _\phi$}
+\BinaryInfC{$\begin{matrix}IE \vdash map : (a : Type) \to (b : Type) \to (a \to b) \to Stream\
+  a \to Stream\ b \infer
+\\
+_gmap : \forall \kappa . ((a : Type) \to (b : Type) \to (a \to b) \to \onk{Stream}\ a \to
+\onk{Stream}\ b)
+\end{matrix}$}
+\RightLabel{$\infer _{[\kappa]}$}
+\LeftLabel{(6)}
+\UnaryInfC{$\begin{matrix}IE \vdash map : (a : Type) \to (b : Type) \to (a \to b) \to Stream\
+  a \to Stream\ b \infer
+\\
+apply\ _gmap : (a : Type) \to (b : Type) \to (a \to b) \to \onk{Stream}\ a \to
+\onk{Stream} b
+\end{matrix}$}
+
+\end{prooftree}
+  \caption{Inference of nats continued.}
+  \label{fig:nats_inference_2}
+\end{figure}
 \end{landscape}
 
+\begin{figure}[h]
+    \begin{prooftree}
+\AxiomC{(1)}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash n : a \infer n : a$}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{$\begin{matrix} IE \vdash (::)\,a\,n \ : Stream\,a \to Stream\,a \infer \\
+  (_g::)\,a\,n \  : \later ^\kappa_1  \onk{Stream}\,a \to
+  \onk{Stream}\,a\end{matrix}$}
+\AxiomC{(2)}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{ $\begin{matrix}IE \vdash (::)\,a\,n\,(repeat\ a\ n) : Stream\,a\infer
+\\ \,(_g::)\,a\,n\,((\onk{Next}\,apply\,  (_grepeat\ a)) \tensor^\kappa_1 (\onk{Next}
+n) : Stream^\kappa \,a\end{matrix}$}
+  \end{prooftree}
+
+\begin{prooftree}
+\AxiomC{(3)}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash a : Type \infer a : Type$}
+\LeftLabel{(1)}
+\RightLabel{$\infer _{app}$}
+\BinaryInfC{$
+\begin{matrix}IE \vdash (::)\,a : a \to Stream\,a \to Stream\,a \infer
+  \\ (_g::)\,a \  : a \to \later ^\kappa_1  \onk{Stream}\,a \to
+  \onk{Stream}\,a\end{matrix}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{(4)}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash n : a \infer n : a$}
+\RightLabel{$\infer _{\onk{Next}}$}
+\UnaryInfC{$IE \vdash n : a \infer \onk{Next}\ n : \later^\kappa_1 a$}
+\LeftLabel{(2)}
+\RightLabel{$\infer _{\tensor^\kappa_n}$}
+\BinaryInfC{$\begin{matrix}IE \vdash repeat\ a\ n : Stream\ a \infer \\ (\onk{Next}\,apply\,  (_grepeat\ a))
+  \tensor^\kappa_1 (\onk{Next}\ n) : \later^\kappa_1 \onk{Stream} a\end{matrix}$}
+\end{prooftree}
+
+\begin{prooftree}
+  \AxiomC{}
+\RightLabel{?}
+  \UnaryInfC{$IE \vdash \phi(::) =\ (_g::) $}
+\AxiomC{}
+\RightLabel{Var}
+  \UnaryInfC{$\begin{matrix}IE \vdash (_g::) : (a : Type) \to a \to \\
+    \later^\kappa_1\onk{Stream}\,a \to \onk{Stream}\,a\end{matrix}$}
+\RightLabel{$\infer _{\phi}$}
+\LeftLabel{(3)}
+\BinaryInfC{$\begin{matrix}IE \vdash (::) : (a : Type) \to a \to Stream\,a \to
+    Stream\,a \infer \\
+    (_g::) : (a : Type) \to a \to \later^\kappa_1\onk{Stream}\,a \to \onk{Stream}\,a
+\end{matrix}$}
+\end{prooftree}
+
+\begin{prooftree}
+  \AxiomC{(5)}
+\AxiomC{}
+\RightLabel{Var}
+\UnaryInfC{$\begin{matrix} IE \vdash _grepeat : (a\ :\ Type) \to  \forall
+    \kappa.( a \to \onk{Stream}\ a) \end{matrix}$}
+\AxiomC{}
+\RightLabel{Var}
+\UnaryInfC{$IE \vdash a : Type$}
+\RightLabel{App}
+\BinaryInfC{$IE \vdash _grepeat\ a : \forall \kappa.( a \to \onk{Stream}\ a)$}
+\RightLabel{$\infer _{Rec\causal}$}
+\LeftLabel{(4)}
+\BinaryInfC{$\begin{matrix}IE \vdash repeat\ a : a \to Stream\ a \infer \\ \onk{Next} apply (_grepeat\ a)
+  : a \to \onk{Stream}\ a\end{matrix}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{?}
+\LeftLabel{(5)}
+\UnaryInfC{$IE \vdash \phi(repeat\ a) = _grepeat\ a$}
+\end{prooftree}
+
+
+$\begin{matrix*}[l]IE = & repeat\ a;
+  \\ & \causal ;\\ &
+\phi, (::,\ _g::), (repeat\ a,\, _grepeat\ a);\\ &
+ \open;\\ &
+\Gamma,a : Type,\ n : a,\,_grepeat : (a\ :\ Type) \to \forall \kappa.( a \to \onk{Stream}\ a),\ 
+\\ & _g::\ : (a\ :\ Type)
+\to a \to \later^\kappa_1 \onk{Stream}\ a \to \onk{Stream}\ a
+\end{matrix*}$
+
+
+  \caption{Inference of repeat.}
+  \label{fig:repeat_inference}
+\end{figure}
 
 %%% Local Variables:
 %%% mode: latex
