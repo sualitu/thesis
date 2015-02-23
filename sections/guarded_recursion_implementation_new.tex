@@ -28,7 +28,7 @@ would be impractical as target languages. After elaboration, the resulting TT
 terms have all type information available, while program structure is still
 preserved. Hence, the productivity analysis is performed on elaborated TT terms.
 
-\subsection{Handling Parameters} % -- Subsubsection to forrige section?
+\subsection{Lifting Parameters} % -- Subsubsection to forrige section?
 \label{sec:handling-parameters}
 Recall the typing rule for the later composition operator, $\tensor^\kappa$, in
 Figure~\ref{fig:guarded_recursion_rules_clocks}:
@@ -140,7 +140,7 @@ output type or the type of other parameters. As such, any such parameter must be
 lifted out of the fixed-point in this manner.
 
 
-\subsection{The \texttt{fix$^\kappa$} Rule}
+\subsection{Eliminating the \texttt{fix$^\kappa$} Rule}
 \label{sec:fixkappa-rule}
 In the theoretical model of guarded recursion, all programs must be encoded
 inside a special fixed-point operator, as shown in
@@ -251,6 +251,7 @@ two central areas, namely the amount of clock variables supported and the types
 of inferred functions.
 
 \subsection{Singleton Clock}
+\label{sec:singleton-clock}
 % Argumenter:
 %% Hvornår bruger man hvilket ur?
 %% GR-regler for checkeren her
@@ -361,146 +362,355 @@ cycle (S n) m = (S n) :: (cycle n m)
 
 
 \section{Implementation}
+The inference of guarded recursive versions of productive programs happens in
+two steps: (1) the inference system infers a guarded recursive TT definition
+from an elaborated TT definition, and (2) the checking system verifies that the
+inferred guarded recursive definition is well-formed according to the typing
+rules in Figure~\ref{fig:gr_rules_sin_clock}. The two systems are implemented
+independently, and the checking system does not rely on any
+implementation-specific details of the inference system. Nevertheless, they do
+agree on the initial context in which a guarded recursive definition should
+hold.
+
 \subsection{Preparing Idris}
 % Preprocessing, how are guarded data types created?
+Before being able to infer guarded recursive terms, we must first define what it
+means for a term to be guarded recursive within Idris. To this end, we have
+added the definitions in Figure~\ref{fig:guarded_recursion_primitives} as
+built-in primitives in Idris. These include a fundamental type \texttt{Later'},
+modeling the later ($\laterkappa$) operator, and a type \texttt{Forall},
+modeling clock quantification ($\forall\kappa$). Accordingly, \texttt{apply}
+models clock application. We introduce the idea of \texttt{Availability} to
+model the ``lateness'' of a given type. Concretely, this idea is used for later
+composition with \texttt{compose}, in order to support later composition under
+arbitrarily many applications of \texttt{Later'}. We have delibrately chosen to
+add these as built-in primitives, and not as a part of the standard library,
+since totality checking is a fundamental feature of the compiler which should
+not require a that a specific library is in scope.
 
-\paragraph{Guarded Recursion Library}
-The first step to adding guarded recursion to Idris is to add the guarded
-recursive types and functions. We have added these to the Idris built-in
-library, and not as a part of the prelude. This is because the user should be
-able to check functions for productivity using our guarded recursion checker
-without having to rely on the standard library.  While most of the
-implementations are straight forward, and can be found in Appendix\todo{Add ref
-  to appendix. And add appendix!}, there are interesting parts to discuss. We
-have added the notion of \emph{how much later} something is, through the idea of
-\texttt{Availability}, seen in Figure~\ref{fig:availability}. This is, in
-conjunction with \texttt{Later} done so that we can many $\later$ applications
-as a single \texttt{Later} applications.
+Thus, a guarded recursive term is defined as a term which consists of one or more of
+these added primitives. However, a well-typed guarded recursive term is not
+necessarily productive, since the primitives do not model any of the side
+conditions from the rules in Figure~\ref{fig:gr_rules_sin_clock}. Therefore, the
+purpose of the inference system is to infer guarded recursive terms, while the
+purpose of the checking system is to make sure that the guarded recursive terms
+are actually productive.
 
 \begin{figure}[h]
   \begin{lstlisting}[mathescape]
-data Availability = Now | Tomorrow Availability
+namespace GuardedRecursion
+  ||| A computation that is available later (''tomorrow'').
+  data Later$'$ : Type $\to$ Type where
+    Next : {a : Type} $\to$ a $\to$ Later$'$ a
 
-data Later' : Type -> Type where
-  Next : {a : Type} -> a -> Later' a
+  ||| A universal quantification over clocks.
+  |||
+  ||| Since the implementation uses only one clock,
+  ||| no clock needs to be specified.
+  data Forall : Type $\to$ Type where
+    LambdaKappa : {a : Type} $\to$ a $\to$ Forall a
+ 
+  ||| Applies the singleton clock to a value of a
+  ||| universally quantified type.
+  apply : {a : Type} $\to$ Forall a $\to$ a
+  apply (LambdaKappa a) = a 
 
-Later : Availability -> Type -> Type
-Later Now a = a
-Later (Tomorrow n) a = Later' (Later n a)
+  ||| Specifies the time at which a computation is available.
+  data Availability = Now | Tomorrow Availability
+
+  ||| A computation that is available arbitrarily later.
+  Later : Availability $\to$ Type $\to$ Type
+  Later Now a = a
+  Later (Tomorrow n) a = Later$'$ (Later n a)
+  
+  ||| Composition of two values that are available later.                             
+  compose : {a, b : Type} $\to$ 
+            {n : Availability} $\to$ 
+            Later (Tomorrow n) (a $\to$ b) $\to$ 
+            Later (Tomorrow n) a $\to$ 
+            Later (Tomorrow n) b
+  compose {n = Now} t u = compose$'$ t u
+    where
+     compose$'$ : {a, b : Type} $\to$ Later$'$ (a $\to$ b) $\to$ Later$'$ a $\to$ Later$'$ b
+     compose$'$ (Next t) (Next u) = Next (t u)
+  compose {n = Tomorrow n$'$} (Next t) (Next u) = 
+                                           Next (compose {n = n$'$} t u)
 \end{lstlisting}
-  \caption{Availability.}
-  \label{fig:availability}
+  \caption{The guarded recursion primitives in Builtins.idr}
+  \label{fig:guarded_recursion_primitives}
 \end{figure}
 
-\paragraph{Guarded Names}
-As we want to infer new types and terms, and not override the existing ones, we
-need a system for creating a guarded name from an existing user written
-name. While this is fairly trivial, it is an important part of our system. We
-will hence forth refer to these as the \emph{guarded names} as oppose to their
-original \emph{Idris names}. We will mark these guarded names with a subscript
-$g$, such that a name $Name$ becomes $_gName$.
+% \paragraph{Guarded Recursion Library}
+% The first step to adding guarded recursion to Idris is to add the guarded
+% recursive types and functions. We have added these to the Idris built-in
+% library, and not as a part of the prelude. This is because the user should be
+% able to check functions for productivity using our guarded recursion checker
+% without having to rely on the standard library.  While most of the
+% implementations are straight forward, and can be found in Appendix\todo{Add ref
+%   to appendix. And add appendix!}, there are interesting parts to discuss. We
+% have added the notion of \emph{how much later} something is, through the idea of
+% \texttt{Availability}, seen in Figure~\ref{fig:availability}. This is, in
+% conjunction with \texttt{Later} done so that we can many $\later$ applications
+% as a single \texttt{Later} applications.
 
-During compilation we keep a map from Idris names to their guarded names. This
-means that we can for any Idris name find their guarded name, and vice
-versa. This comes in handy when we infer the guarded terms.
+% \begin{figure}[h]
+%   \begin{lstlisting}[mathescape]
+% namespace GuardedRecursion
+%   ||| A computation that is available later.
+%   data Later$'$ : Type $\to$ Type where
+%     Next : {a : Type} $\to$ a $\to$ Later$'$ a
 
-\paragraph{Clocked Types}
-These are made by inferring a new data declaration for any codata or corecord
-declaration. This new data declaration is simply constructed during the
-elaboration of the original and then elaborated by itself. This means that for
-any user written codata or corecord declaration a guarded version is an
-intrinsic part of the program. 
+%   ||| A universal quantification over clocks
+%   |||
+%   ||| Since the implementation uses only one clock,
+%   ||| no clock needs to be specified
+%   data Forall : Type $\to$ Type where
+%     LambdaKappa : {a : Type} $\to$ a $\to$ Forall a
+ 
+%   ||| Applies the singleton clock to a  universally
+%   ||| quantified value.
+%   apply : {a : Type} $\to$ Forall a $\to$ a
+%   apply (LambdaKappa a) = a 
 
-A such guarded version of a declaration is fairly straight forward. Guarded
-names are given to the type and to all constructors. Any recursive reference in
-the type of the constructor is placed under a $\later$-type, in a similar
-fashion to how Idris already handles lazy evaluation. The type constructor
-remains unchanged. An example of this inferences for a codata declaration can be
-seen in Figure~\ref{fig:guarded_stream_inf}. Note that the inferred declaration
-is a data declaration, not codata. This is because we do not need both Idris's
-built in laziness (\texttt{Inf}), and the guarded recursion laziness ($\later$)
-\todo{Explain why these are not the same}.
+%   ||| Specifies the time at which a computation is available
+%   data Availability = Now | Tomorrow Availability
+
+%   ||| A computation that is available arbitrarily later.
+%   Later : Availability $\to$ Type $\to$ Type
+%   Later Now a = a
+%   Later (Tomorrow n) a = Later$'$ (Later n a)
+  
+%   laterDist : Later$'$ (a $\to$ b) $\to$ (Later$'$ a $\to$ Later$'$ b)
+%   laterDist (Next f) = \a => case a of
+%                                (Next a$'$) => Next (f a$'$)
+  
+%   ||| Composition of two values that are available later.                             
+%   compose : {a, b : Type} $\to$ 
+%             {n : Availability} $\to$ 
+%             Later (Tomorrow n) (a $\to$ b) $\to$ 
+%             Later (Tomorrow n) a $\to$ 
+%             Later (Tomorrow n) b
+%   compose {n = Now} t u = compose$'$ t u
+%     where
+%      compose$'$ : {a, b : Type} $\to$ Later$'$ (a $\to$ b) $\to$ Later$'$ a $\to$ Later$'$ b
+%      compose$'$ (Next t) (Next u) = Next (t u)
+%   compose {n = Tomorrow n$'$} (Next t) (Next u) = Next (compose {n = n$'$} t u)
+% \end{lstlisting}
+%   \caption{The guarded recursion primitives in Builtins.idr}
+%   \label{fig:guarded_recursion_primitives_old}
+% \end{figure}
+
+\subsubsection{Guarded Names}
+Seeing as we want to infer guarded recursive versions of input programs, while not
+overwriting the names of the original names of the input programs, we have created a system for
+generating new names for guarded recursive definitions. Although it is fairly
+trivial, it is an important part of our system. During compilation, we build a
+map from the original name for a definition, $n$, to its generated guarded recursive name,
+$_gn$. If the original name is the name of a record projection function, an
+additional name $_{\forall}n$ is generated for its universally quantified
+projection. 
+
+Henceforth, we will refer to the name of an original definition as
+an \emph{Idris name} and its guarded recursive name as its \emph{guarded name}. For
+record projections, the name for the universally quantified projection will be
+referred to as the \emph{quantified name}. 
+
+% As we want to infer new types and terms, and not override the existing ones, we
+% need a system for creating a guarded name from an existing user written
+% name. While this is fairly trivial, it is an important part of our system. We
+% will hence forth refer to these as the \emph{guarded names} as oppose to their
+% original \emph{Idris names}. We will mark these guarded names with a subscript
+% $g$, such that a name $Name$ becomes $_gName$.
+
+% During compilation we keep a map from Idris names to their guarded names. This
+% means that we can for any Idris name find their guarded name, and vice
+% versa. This comes in handy when we infer the guarded terms.
+
+\subsubsection{Guarded Types}
+Guarded types are guarded recursive versions of coinductive data types. During
+elaboration, a guarded type is constructed for each coinductive data definition,
+and then elaborated separately. Constructing guarded types is
+straightforward. First, guarded names are invented for the type constructor and
+each of the data constructors. Then, the later type constructor ($\laterkappa$)
+is applied to the type of each recursive reference in each data
+constructor. The type of the type constructor remains unchanged. An example of a
+coinductive type and its guarded equivalent is shown in
+Figure~\ref{fig:guarded_stream_inf}. Note that the guarded type \texttt{$_g$Stream} is not coinductive, but
+inductive, since \texttt{$_g$Stream} is a positively finite encoding of the
+possibly infinite type \texttt{Stream}.
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
 codata Stream : Type -> Type where
   MkStream : a -> Stream a -> Stream a
-
+\end{lstlisting}
+\begin{lstlisting}[mathescape]
 data $_g$Stream : Type -> Type where
   $_g$MkStream : a -> $\later_g$Stream a -> $_g$Stream a
 \end{lstlisting}
-  \caption{Inference of the guarded stream declaration.}
+  \caption{Above: A coinductive type definition. Below: Its guarded equivalent.}
   \label{fig:guarded_stream_inf}
 \end{figure}
 
-In the corecord case, we take a similar approach. However, instead of
-constructors we have to guard projections. Again, any recursive projection is
-guarded such that $A \rightarrow A$ becomes $A \rightarrow \later A$, and all
-projections are given a guarded name. Figure~\ref{fig:guarded_tree_inf} shows an
-example of such an inference.
+The inferred applications of the later type constructor ($\laterkappa$, encoded
+as \texttt{Later'} in Figure~\ref{fig:guarded_recursion_primitives}) on
+recursive references matches the existing encoding for lazy evaluation, where
+recursive references in coinductive data constructors are guarded by the
+\texttt{Inf} type constructor (see
+Section~\ref{sec:coind-data-types}). Nevertheless, we have chosen to create a
+separate encoding of coinductive types for guarded recursion, because the
+semantics of \texttt{Inf} and later differ. The \texttt{Inf} constructor
+indicates that the data must be evaluated lazily, while the later constructor
+indicates availability. As such, the reading of
+$\laterkappa\laterkappa _{g}Stream$ is straightforward, namely that any value of
+this type is available two steps from now (i.e. ``the day after tomorrow''),
+whereas \texttt{Inf (Inf Stream)} is more obscure, saying that any value of this
+type may unfold infinitely unless it is delayed twice. Be that as it may, the
+later constructor could be encoded with \texttt{Inf}, if all of its primitives
+were ported to \texttt{Inf} as well.
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
 corecord Tree a where
-  left : Tree a -> Tree a
-  value : Tree a -> a
-  right : Tree a -> Tree a
-
-record $_g$Tree a where
-  $_g$left : $_g$Tree a -> $\later_g$Tree a
-  $_g$value : $_g$Tree a -> a
-  $_g$right : $_g$Tree a -> $\later_g$Tree a
+  left  : Tree a $\to$ Tree a
+  value : Tree a $\to$ a
+  right : Tree a $\to$ Tree a
 \end{lstlisting}
-  \caption{Inference of the guarded tree declaration.}
+\begin{lstlisting}[mathescape]
+record $_g$Tree a where
+  $_g$left  $\;$: $_g$Tree a $\to$ $\later_g$Tree a
+  $_g$value : $_g$Tree a $\to$ a
+  $_g$right : $_g$Tree a $\to$ $\later_g$Tree a
+\end{lstlisting}
+  \caption{Above: A coinductive record definition. Below: Its guarded equivalent.}
   \label{fig:guarded_tree_inf}
 \end{figure}
 
-Furthermore, for each projection we also generate what we call a \emph{forall
-  projection}, henceforth denoted as $_\forall Name$. We use this for
-projections on quantified types. Consider a coinductive type $A$ with a
-projection $p$ of type $A \rightarrow A$, and a variable $x$ of type $\forall
-\kappa.A$. In order to perform $p$ on $x$ and maintain the quantification in the
-type, we must first apply the clock to $x$, apply $_gp$, and then abstract over the
-clock again using $\Lambda \kappa$. This gives us:
+Guarded types are also created for corecords. Additionally, quantified
+projections are generated, which preserve clock quanfication under
+projections. Consider the example of the coinductive record type \texttt{Tree}
+in Figure~\ref{fig:guarded_tree_inf}. For the guarded record type $_{g}Tree$, the
+quantified projections defined in Figure~\ref{fig:tree_quantified_projections}
+are virtually generated. In order for them to be well-typed, we use the type
+isomorphism in Figure~\ref{fig:quantified_later_iso} introduced by
+Møgelberg\,\citep{Mogelberg:2014} for eliminating later constructors in a
+quantified context. When we say that these quantified projections are
+\emph{virtually} generated, it means that only their types are generated and
+added to the typing context as Idris postulates. Hence, they do not reduce
+during type checking. 
 
-\[
-\Lambda \kappa . _gp (apply\,x) : \forall \kappa . \later A
-\]
-
-The type of the above is isomorphic with $\forall \kappa . A$ according to the
-isomorphism described by Rasmus M\o gelberg\,\cite{Mogelberg:2014} seen in
-Figure~\ref{fig:quantified_later_iso}. As a short for all of this we simply use
-$_\forall p$ which has type $\forall A \rightarrow \forall A$, giving us the
-same result. As such these \emph{forall projections} do not add anything new,
-they are just a simpler way for us to perform projections on terms of quantified
-type. The intuition is that because of Figure~\ref{fig:quantified_later_iso} we
-can perform projections on quantified types without having to worrying about
-their lateness. Because they are quantified over clocks, they are always available.
+\begin{figure}[h]
+\begin{lstlisting}[mathescape]
+$_{\forall}$left$\ \;$ : $\forall\kappa.\,$$_g$Stream a $\,\to\,$ $\forall\kappa.\,$$_g$Stream a
+$_{\forall}$left   s = $\Lambda\kappa.$ iso$\,$($_{g}$left$\,$(s[$\kappa$]))
+$_{\forall}$value : $\forall\kappa.\,$$_g$Stream a $\,\to\,$ a
+$_{\forall}$value s = $_{g}$value$\,$(s[$\kappa$])
+$_{\forall}$right : $\forall\kappa.\,$$_g$Stream a $\,\to\,$ $\forall\kappa.\,$$_g$Stream a
+$_{\forall}$right s = $\Lambda\kappa.$ iso$\,$($_{g}$right$\,$(s[$\kappa$]))
+\end{lstlisting}
+  \caption{The quantified projections generated for $_{g}Tree$.}
+\label{fig:tree_quantified_projections}
+\end{figure}
 
 \begin{figure}[h]
 \[
-\forall \kappa .A\cong \forall \kappa .\rhd ^\kappa A
+iso = \forall \kappa .A\cong \forall\kappa.\laterkappa A
 \]
-  \caption{A type isomorphism describe by M\o gelberg\,\cite{Mogelberg:2014}.}
-  \label{fig:quantified_later_iso}
+\begin{lstlisting}[mathescape]
+postulate iso : $\forall\kappa.\,\laterkappa$a $\to$ $\forall\kappa.$a
+\end{lstlisting}
+  \caption{A type isomorphism for removing later types in a quantified context, and
+    its right-to-left Idris implementation.}
+\label{fig:quantified_later_iso}
 \end{figure}
 
+% \paragraph{Clocked Types}
+% These are made by inferring a new data declaration for any codata or corecord
+% declaration. This new data declaration is simply constructed during the
+% elaboration of the original and then elaborated by itself. This means that for
+% any user written codata or corecord declaration a guarded version is an
+% intrinsic part of the program. 
 
-\subsection{The Implementation of Guarded Recursion}
+% A such guarded version of a declaration is fairly straight forward. Guarded
+% names are given to the type and to all constructors. Any recursive reference in
+% the type of the constructor is placed under a $\later$-type, in a similar
+% fashion to how Idris already handles lazy evaluation. The type constructor
+% remains unchanged. An example of this inferences for a codata declaration can be
+% seen in Figure~\ref{fig:guarded_stream_inf}. Note that the inferred declaration
+% is a data declaration, not codata. This is because we do not need both Idris's
+% built in laziness (\texttt{Inf}), and the guarded recursion laziness ($\later$)
+% \todo{Explain why these are not the same}.
+
+% \begin{figure}[h]
+% \begin{lstlisting}[mathescape]
+% codata Stream : Type -> Type where
+%   MkStream : a -> Stream a -> Stream a
+
+% data $_g$Stream : Type -> Type where
+%   $_g$MkStream : a -> $\later_g$Stream a -> $_g$Stream a
+% \end{lstlisting}
+%   \caption{Inference of the guarded stream declaration.}
+%   \label{fig:guarded_stream_inf}
+% \end{figure}
+
+% In the corecord case, we take a similar approach. However, instead of
+% constructors we have to guard projections. Again, any recursive projection is
+% guarded such that $A \rightarrow A$ becomes $A \rightarrow \later A$, and all
+% projections are given a guarded name. Figure~\ref{fig:guarded_tree_inf} shows an
+% example of such an inference.
+
+% \begin{figure}[h]
+% \begin{lstlisting}[mathescape]
+% corecord Tree a where
+%   left : Tree a -> Tree a
+%   value : Tree a -> a
+%   right : Tree a -> Tree a
+
+% record $_g$Tree a where
+%   $_g$left : $_g$Tree a -> $\later_g$Tree a
+%   $_g$value : $_g$Tree a -> a
+%   $_g$right : $_g$Tree a -> $\later_g$Tree a
+% \end{lstlisting}
+%   \caption{Inference of the guarded tree declaration.}
+%   \label{fig:guarded_tree_inf}
+% \end{figure}
+
+% Furthermore, for each projection we also generate what we call a \emph{forall
+%   projection}, henceforth denoted as $_\forall Name$. We use this for
+% projections on quantified types. Consider a coinductive type $A$ with a
+% projection $p$ of type $A \rightarrow A$, and a variable $x$ of type $\forall
+% \kappa.A$. In order to perform $p$ on $x$ and maintain the quantification in the
+% type, we must first apply the clock to $x$, apply $_gp$, and then abstract over the
+% clock again using $\Lambda \kappa$. This gives us:
+
+% \[
+% \Lambda \kappa . _gp (apply\,x) : \forall \kappa . \later A
+% \]
+
+% The type of the above is isomorphic with $\forall \kappa . A$ according to the
+% isomorphism described by Rasmus M\o gelberg\,\cite{Mogelberg:2014} seen in
+% Figure~\ref{fig:quantified_later_iso}. As a short for all of this we simply use
+% $_\forall p$ which has type $\forall A \rightarrow \forall A$, giving us the
+% same result. As such these \emph{forall projections} do not add anything new,
+% they are just a simpler way for us to perform projections on terms of quantified
+% type. The intuition is that because of Figure~\ref{fig:quantified_later_iso} we
+% can perform projections on quantified types without having to worrying about
+% their lateness. Because they are quantified over clocks, they are always available.
+
+% \begin{figure}[h]
+% \[
+% \forall \kappa .A\cong \forall \kappa .\rhd ^\kappa A
+% \]
+%   \caption{A type isomorphism describe by M\o gelberg\,\cite{Mogelberg:2014}.}
+%   \label{fig:quantified_later_iso}
+% \end{figure}
+
+
+\subsection{Preprocessing Guarded Recursive Definitions}
 \label{sec:impl-guard-recurs}
 % Meta
 %% Samspil mellem inferens og check
 %% Hvordan behandles causal vs. non-causal
-
-The inference of guarded recursive versions of productive programs
-happens in two steps: (1) the inference system infers a guarded
-recursive TT definition from an elaborated TT definition, and (2) the checking
-system verifies that the inferred guarded recursive definition is well-formed
-according to the typing rules in Figure~\ref{fig:gr_rules_sin_clock}. The two
-systems are implemented independently, and the checking system does not rely on
-any implementation-specific details of the inference system. Nevertheless, they do agree on
-the initial context in which a guarded recursive definition should hold.
-
 As explained in Section~\ref{sec:causal-non-causal}, the system distinguishes between
 causal and non-causal definitions. Before making an attempt to infer a guarded
 recursive version of a definition, the definition is first preprocessed in order
@@ -513,150 +723,184 @@ preprocessed differently, although the steps are the same:
 \item Lift parameters out of the fixed-point.
 \item Eliminate the fixed-point by the fixed-point elimination rules from
   Figure~\ref{fig:fix_elim_rules}.
-\item $\beta$-reduction of recursive argument in auxiliary function.
+\item Eliminate the recursive argument in the auxiliary function(s).
 \end{enumerate}
 
 \subsubsection{Preprocessing Causal Functions}
+\label{sec:prepr-caus-funct}
  Consider the causal function \texttt{prepend}, here
 given as an ordinary Idris program:
 \begin{lstlisting}[mathescape]
-  total causal prepend : List a $\to$ Stream a $\to$ Stream a
-  prepend []        s = s
-  prepend (x :: xs) s = x :: (prepend xs s)
+  total causal prepend : (a : Type) $\to$ List a $\to$ Stream a $\to$ Stream a
+  prepend a []        s = s
+  prepend a (x :: xs) s = x :: (prepend a xs s)
 \end{lstlisting}
-(1) To infer a guarded recursive version of \texttt{prepend}, we first split the
+(1) To infer a guarded recursive version of \texttt{$_g$prepend}, we first split the
 definition in two, such that pattern matching happens in an auxiliary function,
-\texttt{prepend$'$}, which is then called inside the fixed-point of \texttt{prepend}:
+\texttt{$_g$prepend$'$}, which is then called inside the fixed-point of \texttt{$_g$prepend}:
 
+\newcommand{\prepend}[5]{\ensuremath{{\boxed{#1;\causal;\phi,(#2,#3);\open;\Gamma\,\vdash\,\text{#4}\,:\,\text{#5}\,\infer
+        \text{?}\,:\,_{g}\text{#5})}}}}}
+\newcommand{\prependm}[5]{\ensuremath{{\boxed{
+            \begin{matrix*}[l] #1;\causal;\phi,(#2,#3);\open;\Gamma\,\vdash \\
+                           \quad\text{#4}\,:\,\text{#5}\,\infer\,\text{?}\,:\,_{g}\text{#5})
+            \end{matrix*}
+            }}}}}
+% \newcommand{\prepend}[4]{\ensuremath{{\boxed{\text{#1};\causal;\phi,\text{#2};\open;\Gamma\,\vdash\,\text{#3}\,:\,\text{#4}\,\infer
+%         \\\text{?}\,:\,_{g}\text{#4})}}}}}
 \begin{lstlisting}[mathescape]
-  prepend$'$ : $\laterkappa$((a$\,$:$\,$Type) $\to$ List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a) $\to$ 
-             (a$\,$:$\,$Type) $\to$ List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-  prepend$'$ rec a []        s = $\uwave{\texttt{s }}$
-  prepend$'$ rec a (x :: xs) s = $\uwave{\texttt{x :: (rec a xs s)}}$
+  $_g$prepend$'$ : $\laterkappa$((a$\,$:$\,$Type) $\to$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a) $\to$ 
+             (a$\,$:$\,$Type) $\to$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a
+  $_g$prepend$'$ rec a []        $\;$s = 
+     $\prepend{\text{prepend}}{\text{prepend}}{\,_{g}\text{prepend}}{s}{Stream a}$
+  $_g$prepend$'$ rec a (x :: xs) s = 
+     $\prependm{\text{prepend}}{\text{prepend}}{\,_{g}\text{prepend}}{x :: (prepend a xs s)}{Stream a}$
 
-  causal prepend : $\forall\kappa.$ (a$\,$:$\,$Type) $\to$ List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-  prepend = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\lambda$a.$\lambda$xs.$\lambda$s.$\,$prepend$'\;$rec a xs s)
+  causal $_g$prepend : $\forall\kappa.$ (a$\,$:$\,$Type) $\to$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a
+  $_g$prepend = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\lambda$a.$\lambda$xs.$\lambda$s.$\,$$_g$prepend$'\;$rec a xs s)
 \end{lstlisting}
-As \texttt{prepend} is now defined with a fixed point, the recursive reference
+As \texttt{prepend} is now defined with a fixed-point, the recursive reference
 \texttt{rec} is inserted in place of the original recursive reference. The
-remainder of the right-hand sides from the original definition have been partially preserved
-in \texttt{prepend$'$}, but have been underlined to indicate that they are no
-longer well-typed according to the type specification.
+notation \prepend{\text{prepend}}{\text{prepend}}{\,_{g}\text{prepend}}{s}{Stream a} is introduced in
+Section~\ref{sec:inference-system}, but the intution is that \texttt{s} of type
+\texttt{A} will be replaced by the as yet unknown inferred guarded recursive term \texttt{?} of
+type $_{g}Stream$, thus making the right-hand sides well-typed.
 
 (2) The type parameter \texttt{a} is lifted out of the fixed-point to make up
 for the lack of type substitution in the later composition rule, as explained in
 Section~\ref{sec:handling-parameters}. Note that this also lifts \texttt{a} out
 of the type of the recursive reference, \texttt{rec}. Furthermore, \texttt{a} is
-no longer bound under the clock quantification in the type of \texttt{prepend}.
+no longer bound under the clock quantification in the type of \texttt{$_g$prepend}.
 \begin{lstlisting}[mathescape]
-  prepend$'$ : (a$\,$:$\,$Type) $\to$ $\laterkappa$(List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a) $\to$ 
-             List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-  prepend$'$ a rec []        s = $\uwave{\texttt{s }}$
-  prepend$'$ a rec (x :: xs) s = $\uwave{\texttt{x :: (rec xs s)}}$
+  $_g$prepend$'$ : (a$\,$:$\,$Type) $\to$ $\laterkappa$(List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a) $\to$ 
+             List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a
+  $_g$prepend$'$ a rec []        s =
+   $\prepend{\text{(prepend a)}}{\text{(prepend a)}}{\,(_{g}\text{prepend a})}{s}{Stream a}$
+  $_g$prepend$'$ a rec (x :: xs) s =
+   $\prependm{\text{(prepend a)}}{\text{(prepend a)}}{\,(_{g}\text{prepend a})}{x :: (prepend a xs s)}{Stream a}$
 
-  causal prepend : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
-  prepend a = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\lambda$xs.$\lambda$s.$\,$prepend$'$ a rec xs s)
+  causal $_g$prepend : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a)
+  $_g$prepend a = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\lambda$xs.$\lambda$s.$\,$prepend$'$ a rec xs s)
 \end{lstlisting}
 (3) The fixed-point is eliminated by replacing all references to
-\texttt{rec} with \texttt{Next~(prepend~a)~[$\kappa$]} in \texttt{prepend}, since this term has
+\texttt{rec} with \texttt{Next~(($_g$prepend~a)~[$\kappa$])} in \texttt{$_g$prepend}, since this term has
 exactly the same type as \texttt{rec} in step 2.
 \begin{lstlisting}[mathescape]
-  prepend$'$ : (a$\,$:$\,$Type) $\to$ $\laterkappa$(List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a) $\to$ 
-             List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-  prepend$'$ a rec []        s = $\uwave{\texttt{s }}$
-  prepend$'$ a rec (x :: xs) s = $\uwave{\texttt{x :: (rec xs s)}}$
+  $_g$prepend$'$ : (a$\,$:$\,$Type) $\to$ $\laterkappa$(List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a) $\to$ 
+             List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a
+  $_g$prepend$'$ a rec []        s =
+    $\prepend{\text{(prepend a)}}{\text{(prepend a)}}{\,(_{g}\text{prepend a})}{s}{Stream a}$
+  $_g$prepend$'$ a rec (x :: xs) s =
+    $\prependm{\text{(prepend a)}}{\text{(prepend a)}}{\,(_{g}\text{prepend a})}{x :: (prepend a xs s)}{Stream a}$
 
-  causal prepend : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
-  prepend a = $\Lambda\kappa.\,$$\lambda$xs.$\lambda$s.$\,$prepend$'$ a (Next (prepend a)[$\kappa$]) xs s
+  causal $_g$prepend : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a)
+  $_g$prepend a = $\Lambda\kappa.\,$$\lambda$xs.$\lambda$s.$\,$prepend$'$ a (Next ((prepend a)[$\kappa$])) xs s
 \end{lstlisting}
-(4) The \texttt{rec} argument to \texttt{prepend'} is eliminated by
-$\beta$-reduction.
+(4) The \texttt{rec} argument to \texttt{$_g$prepend$'$} is eliminated, but will
+be recovered by the inference system when the rule for causal recursive
+references is used (see Figure~\ref{fig:epsilon_rec_causal}).
 \begin{lstlisting}[mathescape]
-  prepend$'$ : (a$\,$:$\,$Type) $\to$ List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-  prepend$'$ a []        s = $\uwave{\texttt{s }}$
-  prepend$'$ a (x :: xs) s = $\uwave{\texttt{x :: ((Next (prepend a)}[\kappa]\texttt{) xs s)}}$
+  $_g$prepend$'$ : (a$\,$:$\,$Type) $\to$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a
+  $_g$prepend$'$ a []        s =
+    $\prepend{\text{(prepend a)}}{\text{(prepend a)}}{\,(_{g}\text{prepend a})}{s}{Stream a}$
+  $_g$prepend$'$ a (x :: xs) s =
+    $\prependm{\text{(prepend a)}}{\text{(prepend a)}}{\,(_{g}\text{prepend a})}{x :: (prepend a xs s)}{Stream a}$
 
-  causal prepend : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ List a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
-  prepend a = $\Lambda\kappa.\,$$\lambda$xs.$\lambda$s.$\,$prepend$'$ a xs s
+  causal $_g$prepend : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a)
+  $_g$prepend a = $\Lambda\kappa.\,$$\lambda$xs.$\lambda$s.$\,$prepend$'$ a xs s
 \end{lstlisting}
 After preprocessing, the inference system will attempt to build well-typed
-guarded recursive right-hand sides for the underlined right-hand sides above.
+guarded recursive right-hand sides as specified in the boxes.
 
+\newcommand{\evens}[5]{\ensuremath{\boxed{#1;\noncausal;\phi,(#2,#3);\open;\Gamma\,\vdash\,\text{#4}\,:\,\text{#5}\,\infer
+        \text{?}\,:\,\forall\kappa\,_{g}\text{#5})}}}
+\newcommand{\evensm}[5]{\ensuremath{\boxed{
+            \begin{matrix*}[l] #1;\causal;\phi,(#2,#3);\open;\Gamma\,\vdash \\
+                           \quad\text{#4}\,:\,\text{#5}\,\infer\,\text{?}\,:\,\forall\kappa.\,_{g}\text{#5})
+            \end{matrix*}
+            }}}
 \subsubsection{Preprocessing Non-causal Functions}
 Non-causal definitions are preprocessed slightly differently, mainly because the
 recursive reference has a different form on account of the use of the indexed
 fixed-point introduced in Section~\ref{sec:guarded-recursion}. Consider the
 following non-causal program, \texttt{evens}:
 \begin{lstlisting}[mathescape]
-evens : Stream a $\to$ Stream a
-evens s = head s :: evens (tail (tail s))
+evens : (a : Type) $\to$ Stream a $\to$ Stream a
+evens a s = head s :: evens a (tail (tail s))
 \end{lstlisting}
-(1) Initially, two auxiliary functions are created, \texttt{evens$'$} and
-\texttt{evens$''$}. The \texttt{evens$'$} function is necessary because its type
+(1) Initially, two auxiliary functions are created, \texttt{$_{g}$evens$'$} and
+\texttt{$_{g}$evens$''$}. The \texttt{$_{g}$evens$'$} function is necessary because its type
 enables us to use the indexed fixed-point, \texttt{pfix$^\kappa$}, to provide a recursive reference
 without clock quantification in its result type.
 \begin{lstlisting}[mathescape]
-evens$''$ : ($\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ $\laterkappa$Stream$^\kappa$ a) $\to$ 
-          $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-evens$''$ rec a s = $\uwave{\texttt{head s :: rec a (tail (tail s))}}$
+$_g$evens$''$ : ($\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\laterkappa$$_{g}$Stream a) $\to$ 
+          $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$''$ rec a s = 
+          $\evensm{\text{evens}}{\text{evens}}{\,_{g}\text{evens}}{head s :: evens a (tail (tail s))}{Stream a}$
 
-evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-evens$'$ = pfix$^\kappa$($\lambda$rec.$\lambda$a.$\lambda$s. evens$''$ rec s)
+$_g$evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$'$ = pfix$^\kappa$($\lambda$rec.$\lambda$a.$\lambda$s. evens$''$ rec s)
 
-evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ $\forall\kappa.\,$Stream$^\kappa$ a
-evens = $\Lambda\kappa.\,$evens$'$
+$_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
+$_g$evens = $\Lambda\kappa.\,$evens$'$
 \end{lstlisting}
-(2) Exactly as for the causal case, the type parameter is lifted out of the fixed-point.
+(2) Exactly as for the causal case, the type parameter, \texttt{a}, is lifted out of the fixed-point.
 \begin{lstlisting}[mathescape]
-evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$Stream$^\kappa$ a $\to$ $\laterkappa$Stream$^\kappa$ a) $\to$ 
-         $\forall\kappa.\,$Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-evens$''$ a rec s = $\uwave{\texttt{head s :: rec (tail (tail s))}}$
+$_g$evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$$_{g}$Stream a $\to$ $\laterkappa$$_{g}$Stream a) $\to$ 
+         $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$''$ a rec s =
+          $\evensm{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
 
-evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-evens$'$ a = pfix$^\kappa$($\lambda$rec.$\lambda$s. evens$''$ a rec s)
+$_g$evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$'$ a = pfix$^\kappa$($\lambda$rec.$\lambda$s. evens$''$ a rec s)
 
-evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ $\forall\kappa.\,$Stream$^\kappa$ a
-evens a = $\Lambda\kappa.\,$evens$'$ a
+$_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
+$_g$evens a = $\Lambda\kappa.\,$evens$'$ a
 \end{lstlisting}
 (3.1) The indexed fixed-point is replaced by the equivalent ordinary guarded
 recursive fixed-point. This step requires that the recursive reference is
-placed inside a function which lifts its argument into a $\laterkappa$ context.
+placed inside a function which lifts its argument into a later ($\laterkappa$) context.
 \begin{lstlisting}[mathescape]
-evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$Stream$^\kappa$ a $\to$ $\laterkappa$Stream$^\kappa$ a) $\to$ 
-         $\forall\kappa.\,$Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-evens$''$ a rec s = $\uwave{\texttt{head s :: rec (tail (tail s))}}$
+$_g$evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$$_{g}$Stream a $\to$ $\laterkappa$$_{g}$Stream a) $\to$ 
+         $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$''$ a rec s =
+         $\evensm{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
 
-evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-evens$'$ a = fix$^\kappa$($\lambda$rec.$\lambda$s. evens$''$ a ($\lambda$x.$\,$rec $\tensor^\kappa$ (Next x)) s)
+$_g$evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$'$ a = fix$^\kappa$($\lambda$rec.$\lambda$s. evens$''$ a ($\lambda$x.$\,$rec $\tensor^\kappa$ (Next x)) s)
 
-evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ $\forall\kappa.\,$Stream$^\kappa$ a
-evens a = $\Lambda\kappa.\,$evens$'$ a
+$_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
+$_g$evens a = $\Lambda\kappa.\,$evens$'$ a
 \end{lstlisting}
 (3.2) The fixed-point is eliminated according to the rules in Figure~\ref{fig:fix_elim_rules}.
 \begin{lstlisting}[mathescape]
-evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$Stream$^\kappa$ a $\to$ $\laterkappa$Stream$^\kappa$ a) $\to$ 
-         $\forall\kappa.\,$Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-evens$''$ a rec s = $\uwave{\texttt{head s :: rec (tail (tail s))}}$
+$_g$evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$$_{g}$Stream a $\to$ $\laterkappa$$_{g}$Stream a) $\to$ 
+         $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$''$ a rec s =
+         $\evensm{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
 
-evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-evens$'$ a = $\lambda$s. evens$''$ a ($\lambda$x.$\,$Next (evens$'$ a) $\tensor^\kappa$ (Next x)) s
+$_g$evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$'$ a = $\lambda$s. evens$''$ a ($\lambda$x.$\,$Next (evens$'$ a) $\tensor^\kappa$ (Next x)) s
 
-evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ $\forall\kappa.\,$Stream$^\kappa$ a
-evens a = $\Lambda\kappa.\,$evens$'$ a
+$_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
+$_g$evens a = $\Lambda\kappa.\,$evens$'$ a
 \end{lstlisting}
-(4) The \texttt{rec} argument to \texttt{evens$''$} is eliminated by $\beta$-reduction.
+(4) The \texttt{rec} argument to \texttt{$_{g}$evens$''$} is eliminated, but will
+be recovered by the inference system when the rules for non-causal recursive
+references is used (see Figure~\ref{fig:epsilon_rec_causal}).
 \begin{lstlisting}[mathescape]
-evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-evens$''$ a s = $\uwave{\texttt{head s :: (}\lambda\texttt{x.}\,\texttt{Next (evens}'\texttt{ a) }\tensor^\kappa\texttt{ (Next x)) (tail (tail s))}}$
+$_g$evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$''$ a s =
+         $\evensm{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
 
-evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-evens$'$ a = $\lambda$s. evens$''$ a s
+$_g$evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$'$ a = $\lambda$s. $_g$evens$''$ a s
 
-evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$Stream$^\kappa$ a $\to$ $\forall\kappa.\,$Stream$^\kappa$ a
-evens a = $\Lambda\kappa.\,$evens$'$ a
+$_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
+$_g$evens a = $\Lambda\kappa.\,$$_g$evens$'$ a
 \end{lstlisting}
-The inference system can now attempt to infer a guarded recursive version of the
-underlined right-hand sides.
+The inference system can now attempt to infer a guarded recursive version as
+specified in the box.
 
 For neither the causal or the non-causal case, all the steps presented above are
 actually performed. Instead, we provide the setup for the inference system by
@@ -680,8 +924,7 @@ proceeding directly to the last step.
 
 Inference of guarded recursive TT terms from elaborated TT terms happens by a
 bottom-up, type-directed derivation according to the rules given in
-Figure~\ref{fig:epsilon_rules}\todo{Behøver vi tjekke :Type præmisserne
-  her?}. Let $\Gamma$ be a typing environment and $\iota$ be the recursive
+Figure~\ref{fig:epsilon_rules}. Let $\Gamma$ be a typing environment and $\iota$ be the recursive
 reference for the function which is currently being analysed. Then the inference
 environment ($IE$) in which guarded recursive TT terms are built is defined as follows:
 \begin{align*}
@@ -692,7 +935,7 @@ environment ($IE$) in which guarded recursive TT terms are built is defined as f
    IE &::= \iota;\Psi;\phi;\,c;\,\Gamma & \text{(inference environment)}
 \end{align*}
 The singleton clock is either open (\open) or closed (\closed). Tuples given as $\rho$ match an Idris name $n$ to a
-guarded name $_gn$. For record projections, a name for its forall-projection,
+guarded name $_gn$. For record projections, a name for its quantified projection,
 $_{\forall}n$, is also specified in $\rho$. Modality is specified by $\Psi$, and
 is either causal (\causal) or non-causal (\noncausal). Inference (\infer) of a guarded recursive TT
 term $e'$ of type $B$ from an elaborated TT term $e$ of type $A$ is then defined as
@@ -805,57 +1048,242 @@ is necessary since the recursive case for $e$ is different from the $\infer_{Rec
 \subcaptionbox{
 This rule ensures that a \texttt{Next} is always applied to any non-causal recursive reference.
 }{\input{figures/epsilon_rec_noncausal}}
-  \caption{Rules for non-causal recursive references. All types used in typing judgments are assumed to be well-formed.}
+  \caption{Rules for non-causal recursive references. All types used in typing
+    judgments are assumed to be well-formed.}
+  \label{fig:epsilon_rec_noncausal}
 \end{figure}
 
 \begin{figure}
   \centering
 \input{figures/epsilon_rec_causal}
-  \caption{The rule for recursive references for causal functions. All types used in typing judgments are assumed to be well-formed.}
+  \caption{The rule for recursive references for causal functions. All types
+    used in typing judgments are assumed to be well-formed. This rule recovers
+    the eliminated recursive reference for causal functions, since it is the
+    only rule that applies for the recursive reference.}
+   \label{fig:epsilon_rec_causal}
 \end{figure}
 
-\paragraph{An Example}
+\subsubsection{An Example}
+As an example, we show how to infer the guarded recursive version of the
+function \texttt{repeat} in Figure~\ref{fig:repeat_proof_example_program}. The
+proof is given in Figure~\ref{fig:repeat_inference_proof}. Here, all side
+conditions have been elided, but can be easily proven by testing for equality
+with the recursive reference, \texttt{repeat a}. The proof proceeds by
+continually taking apart the input term, until the inference of the subterms can
+be resolved by either renaming ($\infer_\phi$) or reflexivity
+($\infer_{Refl}$). As soon as the type of one subterm has been inferred, its
+type trickles down into the rest of the proof tree, leading more inferences to
+resolution. None of the inferred terms are given prior to the inference, but the
+type of the first step is known after preprocessing. Additional examples of the
+inference of guarded terms can be found in Appendix~\ref{app:infer-guard-recurs}.
 
-Figure~\ref{fig:epsilon_zeros} shows how a guarded recursive version of
-\texttt{zeros} can be inferred using the rules presented in Figure~\ref{fig:epsilon_rules}. The
-derivation proceeds by continually pushing type requirements down into the
-syntax tree, until these can be resolved either trivially (using the
-$\Longrightarrow_{Refl}$ rule), or by renaming (using the
-$\Longrightarrow_{\phi}$ rule). Note that all premises ensuring type consistency
-have been omitted for brevity. A full example, along with a more advanced one,
-can be found in Appendix~\ref{app:infer-guard-recurs}.\todo{Make this appendix}
-\begin{figure}
+%All side conditions have been elided, but can be easily proven for each rule.
+%Should be read top-down, but must be understood bottom-up. 
+%Only the right-hand side of _grepeat' is inferred
+%A full example, along with a more advanced one, can be found in
+%Appendix~\ref{app:infer-guard-recurs}.\todo{Make this appendix}
+%The derivation proceeds by continually pushing type requirements down into the syntax tree
+
+\begin{figure}[h]
 \begin{lstlisting}[mathescape]
-causal zeros : Stream Nat
-zeros = Z :: zeros
-
-$_g$zeros : $\forall\kappa.$ $_g$Stream Nat
-$_g$zeros = $\Lambda\kappa.$ Z $_g$:: (Next (apply $_g$zeros))
+repeat : (a : Type) -> a -> Stream a
+repeat a n = (::) a n (repeat a n)
 \end{lstlisting}
-  % \[
-  % \frac{x}{\eps{IE}{Z :: zeros}{Stream Nat}{IE}{Z :: gzeros}{gStream Nat}}
-  % \]
-%\input{figures/epsilon_zeros}
-  \caption{Above: The user-provided program \texttt{zeros}, along with the
-    inferred program $_g$\texttt{zeros}. Below: Inferring $_g$\texttt{zeros} from \texttt{zeros} using the rules from
-  Figure~\ref{fig:epsilon_rules}.}
-  \label{fig:epsilon_zeros}
+\begin{lstlisting}[mathescape]
+  $_g$repeat$'$ : (a$\,$:$\,$Type) $\to$ a $\to$ $_{g}$Stream a
+  $_g$repeat$'$ a n = $(_g::)$ a n $(\onk{\text{Next}}\,((_g$repeat$\ $a$)[\kappa]) \tensor^\kappa_1 (\onk{\text{Next}}\,
+$n$))$
+
+  causal $_g$repeat : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ a $\to$ $_{g}$Stream a)
+  $_g$repeat a = $\Lambda\kappa.\,$$\lambda$n.$\,$$_g\text{repeat}'$ a n$
+\end{lstlisting}
+  \caption{Above: A simple causal function \texttt{repeat}. The data constructor for
+    Stream, \texttt{(::)} is used in a prefix manner. Below: The guarded
+    recursive version. Note that only the right-hand side of
+    \texttt{$_g$repeat$'$} is inferred by the inference system, while the
+    remaining changes happen by preprocessing.}
+\label{fig:repeat_proof_example_program}
 \end{figure}
 
-\subsubsection{Implementing the Inference System}
 
-\paragraph{Preprocessing} Two aspects of the inference system, renaming and
-delaying the recursive reference, are mandatory, and these 
-are therefore handled in a separate preprocessing step. Both must take modality
-into account.
+% Figure~\ref{fig:epsilon_zeros} shows how a guarded recursive version of
+% \texttt{zeros} can be inferred using the rules presented in Figure~\ref{fig:epsilon_rules}. The
+% derivation proceeds by continually pushing type requirements down into the
+% syntax tree, until these can be resolved either trivially (using the
+% $\Longrightarrow_{Refl}$ rule), or by renaming (using the
+% $\Longrightarrow_{\phi}$ rule). 
 
-Renaming, i.e. all applications of the $\Longrightarrow_{\phi}$ rule, is
-performed by substituting all Idris names in $\phi$ with their guarded
-versions. Special care must be taken when substituting names of projection
-functions, since the modality of the function in question, $f$, influences the choice
-of guarded name. If $f$ is causal, 
+% Note that all premises ensuring type consistency
+% have been omitted for brevity. 
 
-Delaying the recursive reference
+
+\begin{figure}[h]
+\centering
+
+\subcaptionbox{
+The derivation proceeds within this inference environment. From top to bottom:
+The recursive reference is \texttt{repeat a}, and \texttt{repeat} is causal
+(\causal). The renaming environment, $\phi$, is extended with entries for the
+stream constructor \texttt{(::)} and \texttt{repeat a}, and the clock is
+initially open (\open) due to preprocessing (see
+Section~\ref{sec:prepr-caus-funct}). Finally, the typing environment, $\Gamma$,
+is extended as shown.
+}{
+$\begin{matrix*}[l]IE = & \text{repeat\ a};
+  \\ & \causal ;\\ &
+\phi, (::,\ _g::), (\text{repeat\ a},\, _g\text{repeat\ a});\\ &
+ \open;\\ &
+\Gamma,\text{a} : \text{Type},\ \text{n} : \text{a},\,_g\text{repeat} : (\text{a}\ :\ \text{Type}) \to \forall \kappa.(\text{a} \to \onk{\text{Stream}}\ \text{a}),\ 
+\\ & \ \ \ _{g}::\ : (\text{a}\ :\ \text{Type})
+\to \text{a} \to \later^\kappa_1 \onk{\text{Stream}}\ \text{a} \to \onk{\text{Stream}}\ \text{a}
+\end{matrix*}$
+}
+$\vspace{1em}$
+\subcaptionbox{
+We begin with the conclusion, namely that the guarded recursive version of the
+right-hand side of \texttt{repeat} is the term shown to the right of the double arrow (\infer) in
+the conclusion. In this first step, we use the $\infer_{App}$-rule to take apart the two outermost applications.
+}{
+\AxiomC{(1)}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash n : a \infer n : a$}
+\RightLabel{$\infer _{App}$}
+\BinaryInfC{$\begin{matrix} IE \vdash (::)\,a\,n \ : Stream\,a \to Stream\,a \infer \\
+  (_g::)\,a\,n \  : \later ^\kappa_1  \onk{Stream}\,a \to
+  \onk{Stream}\,a\end{matrix}$}
+\AxiomC{(2)}
+\RightLabel{$\infer _{App}$}
+\BinaryInfC{ $\begin{matrix}IE \vdash (::)\,a\,n\,(repeat\ a\ n) : Stream\,a\infer
+\\ \,(_g::)\,a\,n\,((\onk{Next}\,((_grepeat\ a)[\kappa]) \tensor^\kappa_1 (\onk{Next}\,
+n) : Stream^\kappa \,a\end{matrix}$}
+\DisplayProof
+}
+$\vspace{1em}$
+\subcaptionbox{
+The third application is taken apart in the same manner.
+}{
+\AxiomC{(3)}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash a : Type \infer a : Type$}
+\LeftLabel{(1)}
+\RightLabel{$\infer _{App}$}
+\BinaryInfC{$
+\begin{matrix}IE \vdash (::)\,a : a \to Stream\,a \to Stream\,a \infer
+  \\ (_g::)\,a \  : a \to \later ^\kappa_1  \onk{Stream}\,a \to
+  \onk{Stream}\,a\end{matrix}$}
+\DisplayProof
+}
+$\vspace{1em}$
+\subcaptionbox{
+Here, we need to show that the recursive reference can be applied to the $n$
+argument by using the rule for later composition (\tensor).
+}{
+\AxiomC{(4)}
+\AxiomC{}
+\RightLabel{$\infer _{Refl}$}
+\UnaryInfC{$IE \vdash n : a \infer n : a$}
+\RightLabel{$\infer _{\onk{Next}}$}
+\UnaryInfC{$IE \vdash n : a \infer \onk{Next}\ n : \later^\kappa_1 a$}
+\LeftLabel{(2)}
+\RightLabel{$\infer _{\tensor^\kappa_n}$}
+\BinaryInfC{$\begin{matrix}IE \vdash repeat\ a\ n : Stream\ a \infer \\ (\onk{Next}\,apply\,  (_grepeat\ a))
+  \tensor^\kappa_1 (\onk{Next}\ n) : \later^\kappa_1 \onk{Stream} a\end{matrix}$}
+\DisplayProof
+}
+$\vspace{1em}$
+\subcaptionbox{
+The $\infer_\phi$-rule is used to show that the data constructor
+\texttt{($_g$::)} for $_g$Stream is the guarded recursive
+version of the \texttt{(::)} constructor for \texttt{Stream}.
+}{
+  \AxiomC{}
+  \UnaryInfC{$IE \vdash \phi(::) =\ (_g::) $}
+\AxiomC{}
+  \UnaryInfC{$\begin{matrix}IE \vdash (_g::) : (a : Type) \to a \to \\
+    \later^\kappa_1\onk{Stream}\,a \to \onk{Stream}\,a\end{matrix}$}
+\RightLabel{$\infer _{\phi}$}
+\LeftLabel{(3)}
+\BinaryInfC{$\begin{matrix}IE \vdash (::) : (a : Type) \to a \to Stream\,a \to
+    Stream\,a \infer \\
+    (_g::) : (a : Type) \to a \to \later^\kappa_1\onk{Stream}\,a \to \onk{Stream}\,a
+\end{matrix}$}
+\DisplayProof
+}
+\end{figure}
+
+\begin{figure}
+\centering
+\ContinuedFloat
+\subcaptionbox{
+The rule for the recursive reference in the causal case is used to eliminate the
+recursive reference \texttt{repeat a}.
+}{
+  \AxiomC{(5)}
+\AxiomC{}
+\UnaryInfC{$\begin{matrix} IE \vdash _grepeat : (a\ :\ Type) \to  \forall
+    \kappa.( a \to \onk{Stream}\ a) \end{matrix}$}
+\AxiomC{}
+\UnaryInfC{$IE \vdash a : Type$}
+\RightLabel{App}
+\BinaryInfC{$IE \vdash \, _grepeat\ a : \forall \kappa.( a \to \onk{Stream}\ a)$}
+\RightLabel{$\infer _{Rec\causal}$}
+\LeftLabel{(4)}
+\BinaryInfC{$\begin{matrix}IE \vdash repeat\ a : a \to Stream\ a \infer \\ \onk{Next} apply (_grepeat\ a)
+  : a \to \onk{Stream}\ a\end{matrix}$}
+\DisplayProof
+}
+
+$\vspace{2em}$
+
+\subcaptionbox{
+Follows directly from the inference environment.
+}{
+\AxiomC{}
+\LeftLabel{(5)}
+\UnaryInfC{$IE \vdash \phi(repeat\ a) = \,_grepeat\ a$}
+\DisplayProof
+}
+
+\caption{An inference of the guarded recursive version of repeat.}
+\label{fig:repeat_inference_proof}
+\end{figure}
+
+
+% \begin{figure}
+% \begin{lstlisting}[mathescape]
+% causal zeros : Stream Nat
+% zeros = Z :: zeros
+
+% $_g$zeros : $\forall\kappa.$ $_g$Stream Nat
+% $_g$zeros = $\Lambda\kappa.$ Z $_g$:: (Next (apply $_g$zeros))
+% \end{lstlisting}
+%   % \[
+%   % \frac{x}{\eps{IE}{Z :: zeros}{Stream Nat}{IE}{Z :: gzeros}{gStream Nat}}
+%   % \]
+% %\input{figures/epsilon_zeros}
+%   \caption{Above: The user-provided program \texttt{zeros}, along with the
+%     inferred program $_g$\texttt{zeros}. Below: Inferring $_g$\texttt{zeros} from \texttt{zeros} using the rules from
+%   Figure~\ref{fig:epsilon_rules}.}
+%   \label{fig:epsilon_zeros}
+% \end{figure}
+
+% \subsubsection{Implementing the Inference System}
+% \label{sec:impl-infer-syst}
+
+% \paragraph{Preprocessing} Two aspects of the inference system, renaming and
+% delaying the recursive reference, are mandatory, and these 
+% are therefore handled in a separate preprocessing step. Both must take modality
+% into account.
+
+% Renaming, i.e. all applications of the $\Longrightarrow_{\phi}$ rule, is
+% performed by substituting all Idris names in $\phi$ with their guarded
+% versions. Special care must be taken when substituting names of projection
+% functions, since the modality of the function in question, $f$, influences the choice
+% of guarded name. If $f$ is causal, 
+
+% Delaying the recursive reference
 %Preprocessing
 %Modality and Recursive reference
 %When rules clash
@@ -959,7 +1387,7 @@ to be open in order to be well-formed.
 \section{Discussion}
 Although the system presented throughout this chapter can prove productive quite
 a few realistic programs (see Chapter~\ref{cha:evaluation}), it currently has
-several shortcomings and limitations
+several shortcomings and limitations.
 %\subsection{Guarded Recursion and Dependent Types}
 
 \subsection{Preservation of Semantics}
@@ -974,6 +1402,19 @@ rule reduce to the same or equivalent TT semantics. The TT
 semantics are defined by Brady\,\citep{BradyIdrisImpl13}.
 
 \subsection{Type Class Instances}
+The inference system does not support function definitions given in type class
+instances at present, as these require special treatment. Type classes in Idris
+are implemented by dictionary passing, and type class constraints are modeled as
+additional parameters. Consequently, Idris expects that for each type class
+instance for a coinductive type $A$, its guarded type $_gA$ has an equivalent
+instance. Type class instances for guarded types are not derived at the moment,
+so no guarded recursive definition involving type classes can be
+well-typed. Deriving type class instances should be possible during elaboration,
+since it is merely a question of inferring guarded recursive versions of each
+instance function, taking modality into account.
+
+% An alternative to deriving guarded type class instances is to eliminate the idea of
+% type classes entirely in the inference system, such that 
 
 \subsection{Mutual Recursion}
 Since our productivity analysis emerges from the use of the guarded recursive
@@ -995,15 +1436,61 @@ nats = Z :: map S nats
 Here, \texttt{nats} depends on the totality of \texttt{map}. If \texttt{map}
 turns out to be partial, it is not currently detected that \texttt{nats} is also
 partial as a consequence thereof. The reason is that the productivity analysis
-of \texttt{nats} relies on the promise that a total version of \texttt{map} will
-or has been found, and not on the actual implementation of \texttt{map}.
+is a type-level check, so the analysis of \texttt{nats} relies on the promise that
+a total version of \texttt{map} has been found, and not on the actual
+implementation of \texttt{map}. This can quite easily be fixed by checking that
+any non-recursive reference has already been proven total before it is accepted
+as the guarded recursive version of a term.
 
-\subsection{User-provided Guarded Recursion}
+\subsection{User-written Guarded Recursion}
 % Problem: Non-causal functions require two functions
 %% However, the checker checks non-causal definitions in an open clock
+Our system does not currently allow the user to circumvent the inference
+system. This means that users cannot have the checking system verify whether
+their hand-written guarded recursive definitions are productive, since the
+checking system assumes that all input definitions have been preprocessed
+according to the procedure described in Section~\ref{sec:inference-system}.
+
+However, allowing users to write guarded recursive programs is not merely a
+question of adapting the checking system. Consider the following well-typed
+Idris program, potentially written by a user:
+\begin{lstlisting}[mathescape]
+total force : Later (Tomorrow Now) a $\to$ a
+force (Next a) = a
+
+total f : Stream Nat
+f = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\,$force$\,$rec)
+\end{lstlisting}
+Here, \texttt{fix$^\kappa$} is used correctly in \texttt{f}, but the use of
+\texttt{force} means that \texttt{f} is not productive. Although the recursive
+reference is well-typed, infinite recursion results from the application of
+\texttt{force}. In practice, this leads to a situation where users can add
+arbitrary axioms to the checking system, since the checking system cannot
+readily dispute the correctness of the well-typed and total definition of
+\texttt{force}.
+
+In order to allow users to write guarded recursive programs manually,
+restrictions must therefore be implemented in the Idris compiler. Concretely,
+the example above is problematic because the user is allowed to define pattern
+matching on a value of type \texttt{Later}. Restricting users from writing such
+definitions would therefore be necessary. Further exploration into this area is
+needed in order to determine whether additional restrictions are required.
 
 \subsection{Multiple Clocks}
+In Section~\ref{sec:singleton-clock}, we explained that the inference system has
+been restricted to only inferring guarded recursive terms that require at most
+one clock variable. The $\infer_{\Lambda\kappa}$ and $\infer_{[\kappa]}$ rules
+take advantage of this restriction, since they assume that the clock in question
+is always the singleton clock. Extending these rules to multiple clocks would
+most likely be hard, because the $\infer_{[\kappa]}$ rule would have to infer
+which clock to apply in any given situation.
 
+In contrast, the checking system could probably be successfully extended to
+accommodate multiple clocks. It merely has to check whether a given situation is
+allowed according to the rules in Figure~\ref{fig:gr_rules_sin_clock}, and does
+not perform any inference whatsoever. Therefore, user-written guarded recursive
+definitions with multiple clocks could most likely be supported by extending the
+checking system.
 
 \subsection{Error Reporting}
 Giving helpful error messages concerning guarded recursion can be difficult,

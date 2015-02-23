@@ -17,6 +17,7 @@ Coinduction principle
 
 \subsection{Product vs. Coproduct Structure}
 \label{sec:prod-vs.-copr}
+% Recursive types!
 
 \subsection{Recovering Subject Reduction}
 %#########
@@ -27,6 +28,26 @@ Coinduction principle
 
 % Ny viden: Copatterns kan være et værktøj til at undgå at man mister subject reduction
 %#########
+
+\begin{figure}
+\begin{lstlisting}[mathescape]
+codata A : Type where
+  MkA : A -> A
+
+b : A
+b = MkA b
+
+force : A -> A
+force (MkA (Delay (MkA (Delay a)))) = MkA (Delay (MkA (Delay a)))
+
+forceEq : (x : A) -> x = force x
+forceEq (MkA (Delay (MkA (Delay a)))) = Refl
+
+p : b = MkA (MkA b)
+p = forceEq b
+\end{lstlisting}
+  \caption{An example of the loss of subject reduction in Idris.}
+\end{figure}
 
 \section{Less Restrictive Productivity Checking} 
 \label{sec:less-restr-prod}
