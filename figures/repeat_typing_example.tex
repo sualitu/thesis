@@ -1,0 +1,88 @@
+\begin{figure}[h]
+
+  
+\subcaptionbox{
+The type check takes place in this checking environment. From the top the
+environment is: The recursive reference is $repeat\ a$, which is a causal
+(\causal) function, and due to the earlier described preprocessing, the clock starts as
+open (\open). Finally the typing environment $\Gamma$, is extended as shown.
+}{
+$\begin{matrix*}[l]CE = & _g\text{repeat\ a};
+  \\ & \causal ;\\ &
+
+ \open;\\ &
+\Gamma,\text{a} : \text{Type},\ \text{n} : \text{a},\,_g\text{repeat} : (\text{a}\ :\ \text{Type}) \to \forall \kappa.(\text{a} \to \onk{\text{Stream}}\ \text{a}),\ 
+\\ & \ \ \ _{g}::\ : (\text{a}\ :\ \text{Type})
+\to \text{a} \to \later^\kappa_1 \onk{\text{Stream}}\ \text{a} \to \onk{\text{Stream}}\ \text{a}
+\end{matrix*}$
+}
+\centering
+\subcaptionbox{
+Starting with the inferred term in the conclusion, we first apply the $App$
+rule, an Idris typing rule, as we have a regular application between $(_g::)\ a\
+n$ and $(\onk{Next}\,((_grepeat\ a)[\kappa])) \tensor^\kappa_1
+(\onk{Next}\,n)$. Repeating the application rule we end up having to show that
+$n$ is of type $a$ which we know from the environment.
+}{
+\AxiomC{(1)}
+\AxiomC{}
+\RightLabel{$Var_1$}
+\UnaryInfC{$CE \vdash n : a$}
+\RightLabel{$App$}
+\BinaryInfC{$CE \vdash (_g::)\ a\ n : \later^\kappa_1 \onk{Stream}\ a \to
+  \onk{Stream}\ a$}
+\AxiomC{(2)}
+\RightLabel{$App$}
+\BinaryInfC{$CE \vdash \,(_g::)\,a\,n\,((\onk{Next}\,((_grepeat\ a)[\kappa])) \tensor^\kappa_1 (\onk{Next}\,
+n)) : Stream^\kappa \,a$}
+\DisplayProof
+}
+\vspace{1em}
+\subcaptionbox{
+This application is taken apart in the same way, leaving us with two things we
+know from the environment.
+}{
+\AxiomC{}
+\RightLabel{$Var_{1_\open}$}
+\UnaryInfC{$CE \vdash (_g::) : (a : Type) \to a \to \later^\kappa_1 \onk{Stream}\ a \to
+  \onk{Stream}\ a$}
+\AxiomC{}
+\RightLabel{$Var_1$}
+\UnaryInfC{$CE \vdash a : Type$}
+\LeftLabel{(1)}
+\RightLabel{$App$}
+\BinaryInfC{$CE \vdash (_g::)\ a : a \to \later^\kappa_1 \onk{Stream}\ a \to
+  \onk{Stream}\ a$}
+\DisplayProof
+}
+\vspace{1em}
+\subcaptionbox{
+Here, we start by applying the $\tensorkappan$-rule, leaving us with two new
+obligations, both $\laterkappan$. To the first we can apply the rule for the
+recursive references rule in the causal case. Lastly, the $\onk{Next}\ a$-case
+is trivially shown by the $I_{\onk{Next}}$-rule and from the environment.
+}
+{
+\AxiomC{}
+\RightLabel{$Var_1$}
+\UnaryInfC{$CE \vdash \ _grepeat\ a : \forall \kappa . (a \to \onk{Stream}\ a)$}
+\RightLabel{$Rec_\causal$}
+\UnaryInfC{$CE \vdash (\onk{Next} (_grepeat\ a))[\kappa] : \later^\kappa_1 (a \to \onk{Stream}\ a)$}
+\AxiomC{}
+\RightLabel{$Var_1$}
+\UnaryInfC{$CE \vdash n : a$}
+\RightLabel{$I_{\onk{Next}}$}
+\UnaryInfC{$CE \vdash \onk{Next}\ n : \later^\kappa_1 a$}
+\LeftLabel{(2)}
+\RightLabel{$I_{\tensorkappan}$}
+\BinaryInfC{$CE \vdash (\onk{Next} (_grepeat\ a))[\kappa] \tensor^\kappa_1 (\onk{Next}\,
+n) : \later^\kappa_1 \onk{Stream}\ a$}
+\DisplayProof
+}
+  \caption{Proof of repeat.}
+  \label{fig:repeat_typing_example}
+\end{figure}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../copatterns-thesis"
+%%% End:

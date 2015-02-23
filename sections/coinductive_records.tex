@@ -1,4 +1,4 @@
-\chapter{Coinductive Records in Idris}
+\chapter{Record Types by Observation in Idris}
 \label{cha:coind-records-idris}
 We have previously discussed the concept of data with a top-level product
 structure. In this chapter we discuss how we have modified the current
@@ -25,7 +25,7 @@ record Pair : Type -> Type -> Type where
 The difference between a record and a data declaration does not appear until just
 before elaboration. Here the record is elaborated as a data declaration
 (literally Figure~\ref{fig:records_in_idris}, with the keyword \texttt{data}
-instead of \texttt{record}), with a set of functions generated. Both a
+instead of \texttt{record}), and a set of functions generated. Both a
 \emph{projection} and an \emph{update} function is generated for each named
 parameter in the constructor, in the \texttt{Pair} example \texttt{fst} and
 \texttt{snd}. These projection functions are then placed in a namespace with the
@@ -66,7 +66,7 @@ approach to corecords, with a flag denoting whether the declaration should be
 desugared to a data or codata declaration. 
 
 \section{Implementation}
-Our implementation is a syntactic desugared. In the following we will describe
+Our implementation is a syntactic desugaring. In the following we will describe
 how each component of the new syntax translates to what in a desugared
 version. So without further ado, we present the following record syntax: 
 
@@ -81,12 +81,12 @@ record <name> <parameters> where
 
 \paragraph{Parameters}
 The parameters desugar to the type constructor. A parameter can be either (1) a
-name binded to a type, e.g. \texttt{(name : Type)} or (2) a free name,
-e.g. \texttt{a}. If just a free name is given it is assumed to be of type
+name bound to a type, e.g. \texttt{(name : Type)} or (2) a name by itself,
+e.g. \texttt{a}. If a name not bound to a type is given it is assumed to be of type
 \texttt{Type}. As such writing \texttt{a} is interpreted as \texttt{(a : Type)}
 
-Be default, the parameters are given as explicit parameters to the type
-constructor and implicit parameters to the data constructor. Both of these
+Be default, the parameters are explicit arguments to the type
+constructor and implicit arguments to the data constructor. Both of these
 defaults can be overridden. A parameter can be marked as implicit by
 surrounding it with curly braces, replacing any existing parentheses. How we
 stop parameters from being implicit to the data constructor will be discussed later.
@@ -97,14 +97,24 @@ fields will, again by default, be explicit arguments to the data
 constructor. Similar to the original Idris-record implementation, projection and
 update functions are generated for each field.
 \paragraph{Data Constructor}
-The line starting with the \texttt{constructor} keyword is an, optional,
-customizing of the data constructor. This allows the user to define a name for
-the constructor if desired, but it can also be omitted in which case a name
+The last line of the declaration is an, optional, customization of the data constructor. This
+allows the user to define a custom name for the constructor, and change how its
+arguments act.
+
+\begin{lstlisting}
+constructor <constructor name> <field or parameter names>
+\end{lstlisting}
+
+This, forgetting the \texttt{constructor} keyword, consists of two things, a
+constructor name and a list of field and parameter names. Starting with the
+constructor name, this allows the user to define a name for
+the constructor if desired. If omitted a name
 based on the type, avoiding name clashes, will be created during elaboration.
 
-The last part, \texttt{field names}, is again optional. The programmer can list
-the parameters and fields in order to change how they behave in the generated
-data constructor. Here, a name on its own will be forced to be explicit, and a
+The last part, \texttt{field and parameter names}, is again optional, but can only be defined
+if a custom constructor name is defined. Here,
+the parameters and fields can be listed in order to change how they behave in the generated
+data constructor. A name on its own will be forced to be explicit, and a
 name surrounded by curly braces will be forced implicit. Names can be omitted,
 leaving them untouched.
 
@@ -116,15 +126,25 @@ constructor from the parameters and fields to a record value.
 record Pair a b where
   fst : a
   snd : b
+  -- No custom constructor is defined. MkPair is inferred.
 
 record Foo (param : Nat) where
   num : Int
-  constructor ConsFoo param
+  constructor MkFoo param 
+  -- param is forced explicit 
+
+record C {a} (n : Nat) where
+  unhelpful : a
+  xs : Vect n a
+  constructor MkC {unhelpful} n
+  -- unhelpful is forced implicit
+  -- n is forced explicit
 
 corecord Stream a where
   head : a
   tail : Stream a
-  constructor (::)
+  constructor (::) 
+  -- Custom name (::) is defined for the constructor
 \end{lstlisting}
   \caption{Record examples.}
   \label{fig:new_record_examples}
@@ -132,14 +152,19 @@ corecord Stream a where
 
 \begin{figure}[h]
 \begin{lstlisting}
-data Pair : Type -> Type -> Type where
-  MkPair : (fst : a) -> (snd : b) -> Pair a b
+data Pair : (a : Type) -> (b : Type) -> Type where
+  MkPair : {a : Type} -> {b : Type} -> 
+                (fst : a) -> (snd : b) -> Pair a b
 
 data Foo : (param : Nat) -> Type where
-  ConsFoo : (param : Nat) -> (num : Int) -> Foo param
+  MkFoo : (param : Nat) -> (num : Int) -> Foo param
 
-codata Stream a where
-  (::) : (head : a) -> (tail : Stream a) -> Stream a
+data C : {a : Type} -> (n : Nat) -> Type where
+  MkC {a : Type} -> {unhelpful : a} -> 
+           (n : Nat) -> (xs : Vect n a) -> C {a=a} n
+
+codata Stream : (a : Type) -> Type where
+  (::) : {a : Type} -> (head : a) -> (tail : Stream a) -> Stream a
 \end{lstlisting}
   \caption{The (co)data declaration resulting from desugaring the (co)record
     declarations from Figure~\ref{fig:new_record_examples}}
@@ -149,11 +174,8 @@ codata Stream a where
 In Figure~\ref{fig:new_record_examples} a few examples of the above described
 syntax can be seen, and Figure~\ref{fig:new_record_examples_desugared} depicts how
 they desugar. For the sake of simplicity only the desugared data and codata
-declarations are shown. More desugaring examples can be found in
+declarations are shown, and the generated projection and update functions are omitted. More desugaring examples can be found in
 Appendix~\ref{cha:record-examples}.
-
-Note that at the time of writing, while almost done, this is not yet fully
-implemented.
 
 %%% Local Variables:
 %%% mode: latex

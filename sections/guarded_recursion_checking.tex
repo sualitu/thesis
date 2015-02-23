@@ -1,0 +1,37 @@
+\subsection{The Guarded Recursion Checker}
+The term inferred by the inference system could potentially not conform to the
+guarded recursion type rules. If the inferred term is not well-typed within
+these rules, the input term can not be guaranteed to be productive. We
+therefore need a way of checking the type of guarded terms.
+
+This checking algorithm takes its origin in the typing rules defined by Rasmus
+M\o gelberg\,\citep{Mogelberg:2014}. We have previously discussed the alterations
+to the guarded system we have made, and have thusly redefined these rules to
+match our guarded recursive system. In Figure~\ref{fig:gr_rules_sin_clock} we
+present our typing rules. Each rule is presented along side the typing rule it
+stems from, and the translation is explained. Note that the
+environment is expanded with a recursive reference, $\iota$, a modality, $\Psi$,
+and that the clock environment is a singleton environment. These environment extensions
+represent the same semantics as in Figure~\ref{fig:epsilon_rules}. Also note,
+that the $fix^\kappa$-rule from M\o gelberg's set of rules is missing. Because of our
+fixed-point elimination from Section~\ref{sec:fixkappa-rule}, the fixed pointed
+operator is replaced by recursive reference. In a similar fashion, so has the
+$fix^\kappa$ rule been replaced by a set of recursive reference rules, both for
+the causal and the non-causal case.
+
+As the checker is checking Idris terms, the standard Idris typing
+rules\,\citep{BradyIdrisImpl13} do also apply, however the guarded recursive
+rules take precedence and will be applied if possible.
+
+\input{figures/guarded_typing_rules}
+\subsubsection{An Example}
+In Figure~\ref{fig:repeat_inference_proof} we showed an inference of the
+function \texttt{repeat}. As a continuation of this, in Figure~\ref{fig:repeat_typing_example}, we show that the inferred
+$_g$\texttt{repeat} follows the guarded recursion typing rules we have set up, and is therefore
+productive. Additional examples of such proofs can be found in Appendix~\ref{app:check-guard-recurs}.
+
+\input{figures/repeat_typing_example}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../copatterns-thesis"
+%%% End:

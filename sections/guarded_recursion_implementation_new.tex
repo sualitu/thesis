@@ -282,15 +282,9 @@ evaluation in Chapter~\ref{cha:evaluation}, where we show a that significant num
 realistic programs have guarded recursive versions which require only one clock.
 
 Incorporating this simplification means that we must adjust the typing rules for
-guarded recursion accordingly. The adjusted rules are shown in
+guarded recursion accordingly. The adjusted rules are discussed later, in
 Figure~\ref{fig:gr_rules_sin_clock}. Instead of having a specific clock
 environment, the singleton clock is either open ($\sqcup$) or closed ($\sqcap$). 
-
-\begin{figure}[h]
-  
-  \caption{Guarded Recursion rules with singleton clock.}
-  \label{fig:gr_rules_sin_clock}
-\end{figure}
 
 While deriving this set of adjusted rules from the original rules has not followed a specific
 methodology, a general trend is:
@@ -303,14 +297,14 @@ methodology, a general trend is:
   environment at all.
 \end{itemize}
 
-Note that the $\kappa$, indicating which clock that applies for a given term,
-has been removed from most of the types and terms. Seeing as the rules can only
-express properties about the singleton clock, it is unnecessary to specify the
-current clock explicitly. For example, all $\later$ types now always operate on the
-same clock. However, $\kappa$ remains in some cases, such as $\forall \kappa$ and
-$\Lambda \kappa$. These still only mention the singleton clock, but the
-$\kappa$ has been kept in order to disambiguate $\forall \kappa$ from standard universal quantification and
-$\Lambda \kappa$ from standard lambda abstractions.
+% Note that the $\kappa$, indicating which clock that applies for a given term,
+% has been removed from most of the types and terms. Seeing as the rules can only
+% express properties about the singleton clock, it is unnecessary to specify the
+% current clock explicitly. For example, all $\later$ types now always operate on the
+% same clock. However, $\kappa$ remains in some cases, such as $\forall \kappa$ and
+% $\Lambda \kappa$. These still only mention the singleton clock, but the
+% $\kappa$ has been kept in order to disambiguate $\forall \kappa$ from standard universal quantification and
+% $\Lambda \kappa$ from standard lambda abstractions.
 
 \subsection{Causal and Non-causal Functions}
 \label{sec:causal-non-causal}
@@ -740,12 +734,12 @@ definition in two, such that pattern matching happens in an auxiliary function,
 \texttt{$_g$prepend$'$}, which is then called inside the fixed-point of \texttt{$_g$prepend}:
 
 \newcommand{\prepend}[5]{\ensuremath{{\boxed{#1;\causal;\phi,(#2,#3);\open;\Gamma\,\vdash\,\text{#4}\,:\,\text{#5}\,\infer
-        \text{?}\,:\,_{g}\text{#5})}}}}}
+        \text{?}\,:\,_{g}\text{#5})}}}}
 \newcommand{\prependm}[5]{\ensuremath{{\boxed{
             \begin{matrix*}[l] #1;\causal;\phi,(#2,#3);\open;\Gamma\,\vdash \\
                            \quad\text{#4}\,:\,\text{#5}\,\infer\,\text{?}\,:\,_{g}\text{#5})
             \end{matrix*}
-            }}}}}
+            }}}}
 % \newcommand{\prepend}[4]{\ensuremath{{\boxed{\text{#1};\causal;\phi,\text{#2};\open;\Gamma\,\vdash\,\text{#3}\,:\,\text{#4}\,\infer
 %         \\\text{?}\,:\,_{g}\text{#4})}}}}}
 \begin{lstlisting}[mathescape]
@@ -928,7 +922,7 @@ Figure~\ref{fig:epsilon_rules}. Let $\Gamma$ be a typing environment and $\iota$
 reference for the function which is currently being analysed. Then the inference
 environment ($IE$) in which guarded recursive TT terms are built is defined as follows:
 \begin{align*}
-   c,\,c^\prime &::=\,\open\,|\,\closed & \text{(singleton clock)} \\
+   \clockEnv,\,\clockEnv^\prime &::=\,\open\,|\,\closed & \text{(singleton clock)} \\
    \Psi &::=\,\causal\,|\,\noncausal & \text{(modality)} \\
    \rho &::= (n,\, _gn)\,|\,(n,\, _gn,\, _{\forall}n) & \text{(renaming)} \\
    \phi &::=\,\cdot\,|\,\rho\,\phi & \text{(collection of renamings)} \\
@@ -1095,7 +1089,7 @@ repeat a n = (::) a n (repeat a n)
 $n$))$
 
   causal $_g$repeat : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ a $\to$ $_{g}$Stream a)
-  $_g$repeat a = $\Lambda\kappa.\,$$\lambda$n.$\,$$_g\text{repeat}'$ a n$
+  $_g$repeat a = $\Lambda\kappa.\,$$\lambda$n.$\,$$_g\text{repeat}'$ a n
 \end{lstlisting}
   \caption{Above: A simple causal function \texttt{repeat}. The data constructor for
     Stream, \texttt{(::)} is used in a prefix manner. Below: The guarded
@@ -1288,100 +1282,7 @@ Follows directly from the inference environment.
 %Modality and Recursive reference
 %When rules clash
 
-
-\subsection{The Guarded Recursion Checker}
-% How are side conditions handled?
-% How are recursive references?
-To check that what we infer actually conforms to the guarded recursion rules, we
-have implemented a checker. This algorithm simply checks a term to have a given
-type within the rule from Figure~\ref{fig:gr_rules_sin_clock}. To the algorithm
-less error prone it is implemented in the simplest fashion possible and as
-attempts to stick strictly to the typing rules. This means that the checking
-algorithm is very simple, conservative, and rigid. It expect types and terms to
-be of a specific structure, and it discards anything it can guarantee the
-correctness off. 
-
-The checker traverses a term, and unfolds them according to the rules. Any rules
-that requires a type equality is done by asking the Idris type system for
-conversion equality, and if the type of a term is needed it is checked using the
-Idris type checker.
-
-The structure of the code itself aims to take care of as much as the check using
-pattern matching. While not always possible, ideally the conclusion of a rule
-should be represented by a pattern match, and the premise(s) by a right-hand
-side. By doing this we can, through different patterns, be very selective about
-what is accepted by the checker and discard anything that does not match the
-conclusion of a rule.
-
-Getting more into the actual implementation the checking algorithm is a function
-\texttt{check}, with the type signature seen in Figure~\ref{fig:check_type}. The
-parameters are as follows:\todo{Is this too low level?}
-
-\begin{itemize}
-\item \texttt{Clock} is the clock under which we are checking the term. A clock
-  is simply either open or closed.
-\item \texttt{Env} is the local environment, usually generated from the
-  left-hand side of the clause being checked.
-\item \texttt{(Name, Type)} is name and the type of the recursive
-  reference. 
-\item \texttt{Term} is the term being checked.
-\item \texttt{Type} is the type the term is being checked to have.
-\item \texttt{Idris Totality} is the result of the algorithm wrapped in the
-  Idris monad\todo{Is the Idris monad explained at this point?}. 
-\end{itemize}
-
-\begin{figure}[h]
-\begin{lstlisting}
-check :: Clock -> 
-         Env -> 
-         (Name, Type) -> 
-         Term -> 
-         Type -> 
-         Idris Totality
-\end{lstlisting}  
-  \caption{Checking algorithm type.}
-  \label{fig:check_type}
-\end{figure}
-
-The majority of the conclusions of the rules can be reflected as patterns. If we
-wish to e.g. delay a term, the $Next_i$-rule requires that, (1) the clock is
-open, (2) the term is on the form $Next t$, and (3) the type is on the form
-$\later A$. These requirements are expressed as a pattern in
-Figure~\ref{fig:next_pattern}. The view-patterns can be read as regular pattern
-match, such that \texttt{next -> Extracted t} is \texttt{Next t}. The premise
-from the rule is reflected on the right-hand side. simply check that given the
-same environments \texttt{t} has type \texttt{a}.
-
-\begin{figure}[h]
-\begin{lstlisting}
-check Open g n (next -> Extracted t) (later -> Extracted a) 
-     =
-     check Open g n t a
-\end{lstlisting}
-  \caption{$Next_{i}$ pattern. Note the use of view-patterns (the -> syntax).}
-  \label{fig:next_pattern}
-\end{figure}
-
-\paragraph{No Free Clocks in Environment}
-% No free clocks in finished definitions.
-% Check everything in local environment with closed clock.
-Some rules have a side condition dictating that there must no free clocks in the
-variable environment. These are checked by checking that every term in the
-variable can be checked under a closed clock. This is the same as no clocks
-being free, because any term or type with a free clock would require the clock
-to be open in order to be well-formed. 
-\paragraph{Identifying the Recursive Reference}
-\todo{This paragraph needs more implementation to be written}
-%##########
-% To faser: Inferens og check - bør kunne beskrives separat
-% Inferens - regler
-% Check - regler
-% Correctness claim - Hvordan kan vi være sikre på at vi inferer guarded
-% recursion?
-% Preservation of semantics - Har den infererede term samme semantik som
-% input-termen?
-% Tensor-regel og parametre
-%##########
+\input{sections/guarded_recursion_checking}
 
 
 \section{Discussion}
