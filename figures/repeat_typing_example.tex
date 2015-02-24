@@ -1,6 +1,5 @@
-\begin{figure}[h]
-
-  
+\begin{figure}[H]
+\centering
 \subcaptionbox{
 The type check takes place in this checking environment. From the top the
 environment is: The recursive reference is $repeat\ a$, which is a causal
@@ -16,7 +15,10 @@ $\begin{matrix*}[l]CE = & _g\text{repeat\ a};
 \to \text{a} \to \later^\kappa_1 \onk{\text{Stream}}\ \text{a} \to \onk{\text{Stream}}\ \text{a}
 \end{matrix*}$
 }
+\end{figure}
+\begin{figure}[H]
 \centering
+\ContinuedFloat
 \subcaptionbox{
 Starting with the inferred term in the conclusion, we first apply the $App$
 rule, an Idris typing rule, as we have a regular application between $(_g::)\ a\
@@ -37,7 +39,10 @@ $n$ is of type $a$ which we know from the environment.
 n)) : Stream^\kappa \,a$}
 \DisplayProof
 }
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 This application is taken apart in the same way, leaving us with two things we
 know from the environment.
@@ -55,7 +60,10 @@ know from the environment.
   \onk{Stream}\ a$}
 \DisplayProof
 }
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 Here, we start by applying the $\tensorkappan$-rule, leaving us with two new
 obligations, both $\laterkappan$. To the first we can apply the rule for the

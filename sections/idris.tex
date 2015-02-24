@@ -135,19 +135,134 @@ confidence in its correctness. A simple core type theory is also easier to
 type check and optimise, and as will be shown in
 Chapter~\ref{cha:infer-guard-recurs}, greatly simplifies the implementation of
 our inference system for guarded recursion.
-\begin{figure}
-TT typing rules here.
+\begin{figure}[h]
+\centering
+\AxiomC{$\Gamma \vdash$ \underline{valid}}
+\LeftLabel{Type}
+\UnaryInfC{$\Gamma \vdash Type_n : Type_{n+1}$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\Gamma \vdash$ \underline{valid}}
+\LeftLabel{Const$_1$}
+\UnaryInfC{$\Gamma \vdash i : Int$}
+\DisplayProof
+\quad
+\AxiomC{$\Gamma \vdash$ \underline{valid}}
+\LeftLabel{Const$_2$}
+\UnaryInfC{$\Gamma \vdash str : String$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\Gamma \vdash$ \underline{valid}}
+\LeftLabel{Const$_3$}
+\UnaryInfC{$\Gamma \vdash Int : Type_0$}
+\DisplayProof
+\quad
+\AxiomC{$\Gamma \vdash$ \underline{valid}}
+\LeftLabel{Const$_4$}
+\UnaryInfC{$\Gamma \vdash String : Type_0$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$(\lambda x:S) \in \Gamma$}
+\LeftLabel{Var$_1$}
+\UnaryInfC{$\Gamma \vdash x : S$}
+\DisplayProof
+\quad
+\AxiomC{$(\forall x:S) \in \Gamma$}
+\LeftLabel{Var$_2$}
+\UnaryInfC{$\Gamma \vdash x : S$}
+\DisplayProof
+\quad
+\AxiomC{$(\underline{let} \mapsto s:S) \in \Gamma$}
+\LeftLabel{Val}
+\UnaryInfC{$\Gamma \vdash x : S$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\Gamma \vdash f : (x : S) \to T$}
+\AxiomC{$\Gamma \vdash s : S$}
+\LeftLabel{App}
+\BinaryInfC{$\Gamma \vdash f\ s : T[{s} / {x}]$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\Gamma; \lambda x : S \vdash e : T $}
+\AxiomC{$\Gamma \vdash (x : S) \to T : Type_n$}
+\LeftLabel{Lam}
+\BinaryInfC{$\Gamma \vdash \lambda x : S . e : (x : S) \to T$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\Gamma; \forall x : S \vdash T : Type_m$}
+\AxiomC{$\Gamma \vdash S : Type_n$}
+\LeftLabel{Forall}
+\RightLabel{$\exists p.m \leq p, n \leq p$}
+\BinaryInfC{$\Gamma \vdash (s : S) \to T : Type_p$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\begin{matrix}
+\Gamma \vdash e_1 : S
+\\
+\Gamma \vdash S : Type_n
+\end{matrix}$}
+\AxiomC{$\begin{matrix}
+\Gamma; \underline{let} \x \mapsto e_1 : S \vdash e_2 : T
+\\
+\Gamma; \underline{let} \x \mapsto e_1 : T : Type_n
+\end{matrix}$}
+\LeftLabel{Let}
+\BinaryInfC{$\Gamma \vdash \underline{let}\ x \mapsto e_1 : S.\ e_2 : T[{e_1}/{x}]$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\Gamma \vdash x : A$}
+\AxiomC{$\Gamma \vdash A' : Type_n$}
+\AxiomC{$\Gamma \vdash A \preceq A'$}
+\LeftLabel{Conv}
+\TrinaryInfC{$\Gamma \vdash x : A'$}
+\DisplayProof
 \caption{The typing rules for the core type theory TT.}
 \label{fig:TT_typing_rules}
 \end{figure}
-The typing rules for TT are shown in Figure~\ref{fig:TT_typing_rules} \todo{Make
-  this figure}. Most of these rules are standard, keeping in mind that types may
+The typing rules for TT are shown in Figure~\ref{fig:TT_typing_rules}. Most of these rules are standard, keeping in mind that types may
 depend on values. In order to avoid Girard's paradox, i.e. that the type of
 \texttt{Type} is \texttt{Type} (which is a logical inconsistency), a
 cumulativity relation ($\preceq$) on universes is used, defined by the rules in
-Figure~\ref{fig:TT_cumulativity_relation} \todo{Make this figure}.
+Figure~\ref{fig:TT_cumulativity_relation}.
 \begin{figure}
-Cumulativity relation here.
+\centering
+\AxiomC{$\Gamma \vdash S \simeq T$}
+\UnaryInfC{$\Gamma \vdash S \preceq T$}
+\DisplayProof
+\quad
+\AxiomC{}
+\UnaryInfC{$\Gamma \vdash Type_n \preceq Type_{n+1}$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\Gamma \vdash R \preceq S$}
+\AxiomC{$\Gamma \vdash S \preceq T$}
+\BinaryInfC{$\Gamma \vdash R \preceq T$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\Gamma \vdash S_1 \simeq S_2$} 
+\AxiomC{$\Gamma; x : S_1 \vdash T_1 \preceq T_2$}
+\BinaryInfC{$\Gamma \vdash \forall x:S_1.T_1 \preceq \forall x:S_2.T_2$}
+\DisplayProof
 \caption{The rules for the cumulativity relation.}
 \label{fig:TT_cumulativity_relation}
 \end{figure}

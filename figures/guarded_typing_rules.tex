@@ -1,7 +1,7 @@
 % New things in env
-\begin{figure}
+\begin{figure}[H]
 \textbf{The Typing Rules}
-\begin{center}
+\centering
 \subcaptionbox{
 Looking at the clock environment in the premise $\Delta, \kappa$ it is clear
 that this translates to the open clock ($\open$). In the conclusion we translate
@@ -22,7 +22,10 @@ be free in $\Gamma$ then no clock is allowed free in $\Gamma$.
     \BinaryInfC{$\CEclosed \vdash \forall \kappa . A : Type$}
 \DisplayProof
 }
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 The interesting thing to note in this rule is $\kappa \in \Delta$. If $\kappa$ is in
 $\Delta$ and $\kappa$ is the only clock, then $\Delta$ must translate to the
@@ -37,9 +40,11 @@ open clock for this side condition to hold. This eliminates the side condition, 
     \RightLabel{$I_{\laterkappan}$}
     \UnaryInfC{$\CEopen \vdash \laterkappan A : Type$}
 \DisplayProof  
-\vspace{1em}
 }
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 The only change in this rule is how we consider the environment. We translate
 $\Delta$ to the open clock, as $\onk{Next}$ implies a need for
@@ -53,9 +58,11 @@ a clock.
     \RightLabel{$I_{\onk{Next}}$}
     \UnaryInfC{$\CEopen \vdash \onk{Next}\ t : \laterkappan A$}
 \DisplayProof
-\vspace{1em}
 }
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 For the same reason as in the $I_\forall$-rule, $\Delta, \kappa$ becomes the open clock, and
 just $\Delta$ becomes the closed clock. As before, $\kappa \notin fc(\Gamma)$
@@ -78,7 +85,10 @@ becomes $nofc(\Gamma)$.
 \AxiomC{$\Delta, \kappa' ; \Gamma, \Gamma' \vdash t : \forall \kappa. A$}
 \TrinaryInfC{$\Delta, \kappa' ; \Gamma , \Gamma ' \vdash t[\kappa'] : A[{  \kappa'}/{\kappa  }]$}
 \DisplayProof
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 
 \subcaptionbox{
 Since, originally, this rule mentions two different clocks $\kappa$ and
@@ -98,19 +108,20 @@ clock. As usual,  $\kappa \notin fc(\Gamma)$ becomes $nofc(\Gamma)$.
 \TrinaryInfC{$\CEopen ,\Gamma ' \vdash t[\kappa] : A$}
 \DisplayProof
 }
-\end{center}
-\vspace{2em}
-\end{figure}
 
-\begin{figure}
-\begin{center}
+\end{figure}
+\begin{figure}[H]
+\centering
 \ContinuedFloat
 \AxiomC{$\Delta ; \Gamma \vdash t : \laterkappa (A \to B)$}
 \AxiomC{$\Delta ; \Gamma \vdash u : \laterkappa A$}
 \BinaryInfC{$\Delta ; \Gamma \vdash t \tensor^\kappa u : \laterkappa B$}
 \DisplayProof
 
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 While there is nothing that states anything about the clock environment in the
 original rule, both the later types ($\later$) and later composition ($\tensor$)
@@ -124,7 +135,10 @@ open.
     \BinaryInfC{$\CEopen \vdash t \tensorkappan u : \laterkappan B$}
 \DisplayProof  
 }
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 This rule does not have a direct counter part in the original model, but is
 rather a consequence of our fixed point elimination from
@@ -138,7 +152,10 @@ the one of $\iota$, given that $e = \iota$ and $\iota : \forall \kappa . A$.
 \UnaryInfC{$\CEopencausal \vdash \onk{Next}\ e[\kappa] : \laterkappan A$}
 \DisplayProof
 }
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{To recover from eliminating the indexed fixed point, this rule ensures that
   all arguments to the non-causal recursive references has a $\later^\kappa_1$
   type.}{
@@ -151,7 +168,10 @@ the one of $\iota$, given that $e = \iota$ and $\iota : \forall \kappa . A$.
   \cdots \tensor^\kappa_1 (\onk{Next}\ x_n) : \later^\kappa_1B$}
 \DisplayProof
 }
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{Here, the non-causal references with one argument is
   handled. This rule is necessary as a base case for the $Rec_{\noncausal_n}$ rule.}{
 \AxiomC{$\begin{matrix}\CEopennoncausal \vdash (\onk{Next}\ e) : \later^\kappa_1(A \to B)\end{matrix}$}
@@ -160,7 +180,10 @@ the one of $\iota$, given that $e = \iota$ and $\iota : \forall \kappa . A$.
 \BinaryInfC{$\CEopennoncausal \vdash (\onk{Next}\ e) \tensor^\kappa_1 (\onk{Next}\ x_0) : \later^\kappa_1B$}
 \DisplayProof
 }
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 This rule ensures that the recursive reference has the correct lateness compared
 to $\iota$.
@@ -170,7 +193,10 @@ to $\iota$.
 \UnaryInfC{$\CEopennoncausal \vdash \onk{Next}\ e : \laterkappan A$}
 \DisplayProof
 }
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 
 \subcaptionbox{
 This is an extension of the Idris $Var$ rules. They state that types with a free
@@ -187,7 +213,6 @@ clock can only occur if clock is open.
 \DisplayProof
 }
 
-\end{center}
   \caption{Guarded Recursion rules with singleton clock.}
   \label{fig:gr_rules_sin_clock}
 

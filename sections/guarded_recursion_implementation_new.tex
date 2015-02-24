@@ -952,41 +952,59 @@ ${IE\vdash e : A \Longrightarrow e^\prime : B}$.
 % $\Longrightarrow_{Refl}$ rule is used. \todo{Say something about abstraction and
 % let-rules here, when they have been formulated.}
 
-\begin{figure}
+\begin{figure}[H]
 \centering
 \textbf{The Inference System}$\hfill \boxed{IE\vdash e : A \infer e' : B}$
 \vspace{1em}
 \subcaptionbox{
 The rule for inferring \texttt{Next} applications.
 }{\input{figures/epsilon_next_rule}}
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 The $\infer_{\Lambda\kappa}$-rule opens the closed clock. Due to the use of
 a singleton clock, it is impossible to open a new clock in a context where the
 clock is already open.
 }{\input{figures/epsilon_lambdakappa_rule}}
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 The $\infer_{[\kappa]}$-rule is dual to the  $\infer_{\Lambda\kappa}$-rule,
 closing the open clock by clock application.
 }{\input{figures/epsilon_apply_rule}}
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 This rule replaces one reference to a name with another. In particular, if the
 renaming context, $\phi$, contains an entry for the name referred to by $e$,
 then $_{g}e$ can be substituted for $e$.
 }{\input{figures/epsilon_renaming_rule}}
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 Similar to the $\infer_{\phi}$-rule, this rules disambiguates between the
 guarded renaming and the forall-renaming for a term, when both are available.
 }{\input{figures/epsilon_renaming_rule_forall}}
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 This rule ensures that the system is invoked recursively on the subterms
 of an application which is not expected to be in a $\laterkappa$ context.
 }{\input{figures/epsilon_app_rule}}
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 The $\infer_{\tensor^\kappa_n}$ rule is used when the guarded recursive version
 of an application is expected to be in a $\laterkappa$ context. Here, $n$ is a natural number denoting the
@@ -994,10 +1012,8 @@ required availability of both input. Specifically, ${\laterkappa_{\!\!1} B \cong
 \cong \laterkappa\laterkappa B}$ and so on. Note that as discussed in
 Section~\ref{sec:fixkappa-rule}, this rule does not apply to dependent function spaces.
 }{\input{figures/epsilon_tensor_rule}}
-\vspace{2em}
 \end{figure}
-
-\begin{figure}
+\begin{figure}[H]
 \centering
 \ContinuedFloat
 \subcaptionbox{
@@ -1006,25 +1022,29 @@ rule is used for terms which occur in both the elaborated TT term and the guarde
 recursive TT term, e.g. constants.
 }{\input{figures/epsilon_refl_rule}}
 
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
   The $\infer_\lambda$-rule handles the recursive case by adding a new renaming
   entry to the renaming environment, $\phi$, such that all occurrences of the
   bound variable $a$ in $e$ can be renamed to $_{g}a$.
 }{\input{figures/epsilon_lambda_rule}}
 
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 As for the $\infer_\lambda$-rule, the $\infer_{let}$-rule uses the renaming
 environment for the recursive case for $b$.  
 }{\input{figures/epsilon_let_rule}}
-  \caption{Rules for inferring guarded recursive terms, excluding the rules for
-    recursive references. All types used in typing judgments are assumed to be well-formed.}
-  \label{fig:epsilon_rules}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
 \centering
+\ContinuedFloat
 \subcaptionbox{
 Due to the elimination of the indexed fixed-point, this rule ensures that no
 arguments to the non-causal recursive reference has a type in a $\laterkappa$
@@ -1032,29 +1052,36 @@ context. The $e\, \overset{\rightarrow}{x_n}$ notation denotes the recursive ref
 $e$, applied to arguments $x_0,\,x_1\,\cdots\,x_n$.
 }{\input{figures/epsilon_rec_noncausal_n}}
 
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 Handles the non-causal recursive reference applied to one argument. This rule
 is necessary since the recursive case for $e$ is different from the $\infer_{Rec_{\noncausal{_n}}}$-rule.
 }{\input{figures/epsilon_rec_noncausal_1}}
 
-\vspace{1em}
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 This rule ensures that a \texttt{Next} is always applied to any non-causal recursive reference.
 }{\input{figures/epsilon_rec_noncausal}}
-  \caption{Rules for non-causal recursive references. All types used in typing
-    judgments are assumed to be well-formed.}
-  \label{fig:epsilon_rec_noncausal}
 \end{figure}
-
-\begin{figure}
-  \centering
-\input{figures/epsilon_rec_causal}
-  \caption{The rule for recursive references for causal functions. All types
+\begin{figure}[H]
+\centering
+\ContinuedFloat
+\subcaptionbox{
+  The rule for recursive references for causal functions. All types
     used in typing judgments are assumed to be well-formed. This rule recovers
     the eliminated recursive reference for causal functions, since it is the
     only rule that applies for the recursive reference.}
-   \label{fig:epsilon_rec_causal}
+{\input{figures/epsilon_rec_causal}}
+  \caption{Rules for inferring guarded recursive terms, excluding the rules for
+    recursive references. All types used in typing judgments are assumed to be
+    well-formed.}
+  \label{fig:epsilon_rules}
 \end{figure}
 
 \subsubsection{An Example}
@@ -1111,7 +1138,7 @@ $n$))$
 % have been omitted for brevity. 
 
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
 
 \subcaptionbox{
@@ -1132,7 +1159,10 @@ $\begin{matrix*}[l]IE = & \text{repeat\ a};
 \to \text{a} \to \later^\kappa_1 \onk{\text{Stream}}\ \text{a} \to \onk{\text{Stream}}\ \text{a}
 \end{matrix*}$
 }
-$\vspace{1em}$
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 We begin with the conclusion, namely that the guarded recursive version of the
 right-hand side of \texttt{repeat} is the term shown to the right of the double arrow (\infer) in
@@ -1153,7 +1183,10 @@ the conclusion. In this first step, we use the $\infer_{App}$-rule to take apart
 n) : Stream^\kappa \,a\end{matrix}$}
 \DisplayProof
 }
-$\vspace{1em}$
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 The third application is taken apart in the same manner.
 }{
@@ -1169,7 +1202,10 @@ The third application is taken apart in the same manner.
   \onk{Stream}\,a\end{matrix}$}
 \DisplayProof
 }
-$\vspace{1em}$
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 Here, we need to show that the recursive reference can be applied to the $n$
 argument by using the rule for later composition (\tensor).
@@ -1182,11 +1218,14 @@ argument by using the rule for later composition (\tensor).
 \UnaryInfC{$IE \vdash n : a \infer \onk{Next}\ n : \later^\kappa_1 a$}
 \LeftLabel{(2)}
 \RightLabel{$\infer _{\tensor^\kappa_n}$}
-\BinaryInfC{$\begin{matrix}IE \vdash repeat\ a\ n : Stream\ a \infer \\ (\onk{Next}\,apply\,  (_grepeat\ a))
+\BinaryInfC{$\begin{matrix}IE \vdash repeat\ a\ n : Stream\ a \infer \\ (\onk{Next}\,  (_grepeat\ a)[\kappa])
   \tensor^\kappa_1 (\onk{Next}\ n) : \later^\kappa_1 \onk{Stream} a\end{matrix}$}
 \DisplayProof
 }
-$\vspace{1em}$
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 \subcaptionbox{
 The $\infer_\phi$-rule is used to show that the data constructor
 \texttt{($_g$::)} for $_g$Stream is the guarded recursive
@@ -1206,8 +1245,7 @@ version of the \texttt{(::)} constructor for \texttt{Stream}.
 \DisplayProof
 }
 \end{figure}
-
-\begin{figure}
+\begin{figure}[H]
 \centering
 \ContinuedFloat
 \subcaptionbox{
@@ -1224,12 +1262,14 @@ recursive reference \texttt{repeat a}.
 \BinaryInfC{$IE \vdash \, _grepeat\ a : \forall \kappa.( a \to \onk{Stream}\ a)$}
 \RightLabel{$\infer _{Rec\causal}$}
 \LeftLabel{(4)}
-\BinaryInfC{$\begin{matrix}IE \vdash repeat\ a : a \to Stream\ a \infer \\ \onk{Next} apply (_grepeat\ a)
+\BinaryInfC{$\begin{matrix}IE \vdash repeat\ a : a \to Stream\ a \infer \\ \onk{Next} (_grepeat\ a)[\kappa]
   : a \to \onk{Stream}\ a\end{matrix}$}
 \DisplayProof
 }
-
-$\vspace{2em}$
+\end{figure}
+\begin{figure}[H]
+\centering
+\ContinuedFloat
 
 \subcaptionbox{
 Follows directly from the inference environment.
