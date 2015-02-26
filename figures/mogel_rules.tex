@@ -1,0 +1,53 @@
+\centering
+\textbf{Wellformed Types} 
+
+\vspace{1em}
+
+\AxiomC{$\Delta, \kappa ; \Gamma \vdash A : Type$}
+\AxiomC{$\kappa \notin fc(\Gamma)$}
+\BinaryInfC{$\Delta ; \Gamma \vdash \forall \kappa . A : Type$}
+\DisplayProof
+\quad
+\AxiomC{$\Delta ; \Gamma \vdash A : Type$}
+\AxiomC{$\kappa \in \Delta$}
+\BinaryInfC{$\Delta ; \Gamma \vdash \laterkappa A : Type$}
+\DisplayProof
+
+\vspace{1em}
+
+\textbf{Typing Rules} 
+
+\vspace{1em}
+
+\AxiomC{$\Delta ; \Gamma \vdash t : A$}
+\UnaryInfC{$\Delta ; \Gamma \vdash \onk{next}\ t : \laterkappa A$}
+\DisplayProof
+\quad
+\AxiomC{$\Delta ; \Gamma \vdash t : \laterkappa (A \to B)$}
+\AxiomC{$\Delta ; \Gamma \vdash u : \laterkappa A$}
+\BinaryInfC{$\Delta ; \Gamma \vdash t \tensor^\kappa u : \laterkappa B$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\Delta ; \Gamma , x : \laterkappa A \vdash t : A$}
+\UnaryInfC{$\Delta ; \Gamma \vdash \onk{fix}x.t : A$}
+\DisplayProof
+\quad
+\AxiomC{$\Delta, \kappa ; \Gamma \vdash t : A$}
+\AxiomC{$\kappa \notin fc(\Gamma)$}
+\BinaryInfC{$\Delta ; \Gamma \vdash \Lambda \kappa. t : \forall \kappa. A$}
+\DisplayProof
+
+\vspace{1em}
+
+\AxiomC{$\kappa \notin fc(\Gamma)$}
+\AxiomC{$\Delta, \kappa ; \Gamma \vdash A : Type$}
+\AxiomC{$\Delta, \kappa' ; \Gamma, \Gamma' \vdash t : \forall \kappa. A$}
+\TrinaryInfC{$\Delta, \kappa' ; \Gamma , \Gamma ' \vdash t[\kappa'] : A[{  \kappa'}/{\kappa  }]$}
+\DisplayProof
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../copatterns-thesis"
+%%% End:
