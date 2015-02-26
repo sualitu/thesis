@@ -1,7 +1,10 @@
 
 \chapter{Motivation}
-This chapter explains why we want copatterns, and which problems they
-(potentially) solve
+In this chapter, we describe the motivations behind adding copatterns to
+Idris. We find that copatterns can be a means of recovering from an unfortunate
+loss of subject reduction. However, copatterns might not be the universal tool
+for coinductive reasoning. Additionally, we motivate the addition of an
+inference system for guarded recursion.
 
 \subsection{Recovering Subject Reduction}
 \label{sec:recov-subj-reduct}
@@ -13,20 +16,24 @@ This chapter explains why we want copatterns, and which problems they
 
 % Ny viden: Copatterns kan være et værktøj til at undgå at man mister subject reduction
 %#########
-In some dependently typed systems with explicit coinductive types, e.g. Coq and
-Idris, values of such types are given as (potentially) infinite trees of
-constructors. Accordingly, they can be analysed with (dependent) pattern
-matching. However, this leads to a loss of subject reduction. The problem was
-first identified by Gim\'{e}nez\,\citep{Gimenez96uncalcul} for the Calculus of
-(Co)Inductive constructions, but was later (in 2008) shown by Oury to persist in
-both Coq and Agda\,\citep{OuryCounterexampleCoq,OuryCounterexampleAgda}.
+Subject reduction is a property of a type system. Also called type preservation,
+a type system has the property of subject reduction if evaluation of a
+well-typed term does not cause its type to change\,\citep[Section~8.3.3]{Pierce:2002:TPL:509043}.
+In some dependently typed programming languages with explicit coinductive types,
+e.g. Coq and Idris, values of such types are given as (potentially) infinite
+trees of constructors. Accordingly, they can be analysed with (dependent)
+pattern matching. However, this leads to a loss of subject reduction. The
+problem was first identified by Gim\'{e}nez\,\citep{Gimenez96uncalcul} for the
+Calculus of (Co)Inductive constructions, but was later (in 2008) shown by Oury
+to persist in both Coq and
+Agda\,\citep{OuryCounterexampleCoq,OuryCounterexampleAgda}.
 
 By implementing Oury's counterexample
 (Figure~\ref{fig:ourys_counterexample_idris}), we have found that the problem
 arises in Idris as well. Oury's counterexample unfolds as follows: Given a
 coinductive type \texttt{A} with a single constructor \texttt{A} $\to$ \texttt{A}, which we may call
 \texttt{In}, and an inhabitant \texttt{b} of \texttt{A} (of which there exists only one,
-namely the fixed-point of \texttt{In}), we can show that \texttt{b} is definitionally
+namely the fixed point of \texttt{In}), we can show that \texttt{b} is definitionally
 equal to its own unfolding by exploiting dependent pattern matching. When
 \texttt{b} is given as argument to \texttt{forceEq} in
 Figure~\ref{fig:ourys_counterexample_idris}, \texttt{b} is reduced to \texttt{In
@@ -61,7 +68,7 @@ p = forceEq b
 \label{fig:ourys_counterexample_idris}
 \end{figure}
 
-So, dependent pattern matching on coinductive data is problematic, but we cannot
+Dependent pattern matching on coinductive data is problematic, but we cannot
 simply disallow it, since we then lose the ability to write any interesting
 programs involving coinductive data. This ability can be regained by introducing
 copatterns. Instead of analysing coinductive data with dependent pattern
@@ -71,8 +78,8 @@ counterexample to an Idris implementation with copatterns, where we have
 refrained from using dependent pattern matching. Using copatterns, we can still
 define both \texttt{b} and \texttt{force}, but we cannot provide an
 implementation for \texttt{p}, since the reduction behaviour from dependent
-pattern matching is (virtually) unavailable. Hence, we have regained
-expressiveness without losing subject reduction.
+pattern matching is (virtually) unavailable. Hence, we have both regained
+expressiveness and avoided this particular loss of subject reduction.
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
@@ -99,17 +106,20 @@ p = $\uwave{\text{forceEq b}}$
 \label{fig:ourys_counterexample_copatterns}
 \end{figure}
 
-In Agda, pattern matching on coinductive data is currently disallowed, providing
-the user with copatterns instead. By implementing copatterns in Idris, we
-provide a stepping stone in the same direction. However, the reader will be
-forgiven for being sceptical at this point, since this solution may seem to
-avoid the problem, rather than solving it. As pointed out by
-McBride\,\citep{McBride:2009}, the underlying problem is that we can have
-intensional equalities between coinductive values which are merely bisimilar. To
-remedy the situation, he proposes that one could have an observational
-propositional equality, which takes into account both functional extensionality
-and bisimilarity for coinductive values. But until this idea is incorporated into a
-practical system, avoiding the problem seems superior to ignoring it.
+In Agda, pattern matching on coinductive data is currently
+disallowed\,\citep{Danielsson09}, providing the user with copatterns instead. By
+implementing copatterns in Idris, we provide a stepping stone in the same
+direction. However, this solution may seem to avoid the problem, rather than
+solving it. As pointed out by McBride\,\citep{McBride:2009}, the underlying
+problem is that we can have intensional equalities between coinductive values
+which are merely bisimilar. To remedy the situation, he proposes that one could
+have an observational propositional equality, which takes into account both
+functional extensionality and bisimilarity for coinductive values. Also,
+Altenkirch et al.\,\citep{Altenkirch:2007} proposes the adoption of an
+observational type theory, which is essentially an intensional type theory where
+one can have propsitional equalities up to observation, as opposed to
+construction. But until these ideas are incorporated into a practical system,
+avoiding the problem seems superior to ignoring it.
 
 
 \section{The Use Case for Copatterns}
@@ -154,11 +164,12 @@ practical system, avoiding the problem seems superior to ignoring it.
 % Recursive types!
 \label{sec:prod-vs.-copr}
 If we must disallow pattern matching on coinductive data to preserve subject
-reduction, has far does the power of copatterns extend? At present, not as far
-as one might have hoped. Copatterns are well-suited for working with data that
-has a top-level product structure. In the general sense of recursive types, this
-means that copatterns can be readily used for types which has a product-of-sums
-structure, i.e. ${\mu X.\,A\times B\times\cdots\times X}$ or
+reduction, how much expressiveness can we recover by using copatterns? At
+present, not as far as one might have hoped. Copatterns are well-suited for
+working with data that has a top-level product structure. In the general sense
+of recursive types, this means that copatterns can be readily used for types
+which has a product-of-sums structure, i.e.
+${\mu X.\,A\times B\times\cdots\times X}$ or
 ${\nu X.\,A\times B\times\cdots\times X}$, since a well-defined projection
 exists for each $A,\,B,\,\cdots,\,X$. From the definition of coinductive types
 (Definition~\ref{sec:coinductive-types}), these are the types that can be
@@ -167,7 +178,7 @@ structure map for the coalgebra to be defined as a product of projections. In
 Idris, this amounts exactly to the types which can be defined as (co)inductive
 record types. Consider the deterministic finite automaton defined in
 Figure~\ref{fig:state_machine}, which accepts strings of binary numbers that
-contain an even amount of zeros (a graphical representation is given for
+contain an even number of zeros (a graphical representation is given for
 reference in Figure~\ref{fig:state_machine_graphical}). Inspired by
 Jacobs\,\citep{JacobsCoalgebra}, we define a state as a type
 ${\mu S. (A\,\to\,S)\times Bool}$, where $A\,\to\,S$ is the transition function
@@ -177,6 +188,7 @@ ${\mu S. (A\,\to\,S)\times Bool}$, where $A\,\to\,S$ is the transition function
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
+data Binary = Zero | One
 
 record State a where
   transitions : a $\to$ State a 
@@ -249,7 +261,7 @@ cannot be elegantly handled with copatterns. We can try to eliminate the need
 for further analysis by tagging all values with an indicator of its state, as
 shown with the modified CoList in Figure~\ref{fig:dependent_colist}. However, as
 soon as the value of the tag is given indirectly, e.g. by reference to other values,
-the type checker may become unable to reduce the tag to a normal form, thereby
+the type checker may become unable to reduce the tag to a canonical form, thereby
 defeating its purpose.
 
 \begin{figure}[h]
@@ -282,8 +294,8 @@ induction-coinduction\,\citep{Danielsson09mixinginduction}, \texttt{co}patterns
 are therefore not necessarily a valuable tool for defining all kinds of
 \texttt{co}inductive data. Instead, they provide elegant definitions when your data can be
 clearly defined by its external properties, rather than by its internal
-structure. Hence, we find copatterns at this stage to be universally applicable, but not
-universally useful.
+structure. Hence, we find copatterns at this stage to be universally \emph{applicable}, but not
+universally \emph{useful}.
 
 
 \section{Less Restrictive Productivity Checking} 
@@ -299,7 +311,7 @@ universally useful.
 
 % Ny viden: Hvorfor vil vi gerne inferere guarded recursion?
 %###########
-Seeing as the current productivity checker in Idris uses the syntactic
+Because the current productivity checker in Idris uses the syntactic
 guardedness principle to prove productivity, users writing programs on
 coinductive types must place all recursive calls directly under a call to a
 coinductive constructor. This limitation means that we cannot have simple
@@ -336,11 +348,11 @@ toggle = $\Lambda\kappa.$ fix$^\kappa$($\lambda$rec.$\lambda$n.$\lambda$m. toggl
 \end{figure}
 
 Although guarded recursion widens the range of programs we can prove total as
-compared to syntactic guardedness, it is evident that requiring the user to
-write guarded recursive programs is not feasible due to their complexity. Even
-disregarding this complexity, building such programs quickly becomes an onerous
+compared to syntactic guardedness, requiring the user to write guarded recursive
+programs is probably not feasible due to their complexity. Even disregarding
+this complexity, building such programs quickly becomes an onerous
 task. Consequently, we would like to have a system which can automatically build
-guarded recursive versions of user-written programs, lifting the burden of
+guarded recursive versions of at least some user-written programs, lifting the burden of
 building productivity proofs by guarded recursion from the user and onto the
 compiler. The structure and implementation of such a system will be the subject
 of Chapter~\ref{cha:infer-guard-recurs}.
