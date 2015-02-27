@@ -3,7 +3,7 @@
 In Section~\ref{sec:less-restr-prod}, we provided the motivation behind
 extending Idris with a less restrictive productivity checker using guarded
 recursion. As we saw in Section~\ref{sec:guarded-recursion}, defining guarded
-recursive programs can be quite tedious and requires the user to thoroughly
+recursive programs can be quite tedious. Also, it requires the user to thoroughly
 understand guarded recursion in order to write provably productive programs. In
 this chapter, we propose a system where the productivity of programs can be
 verified using guarded recursion with only a minimal amount of user
@@ -16,21 +16,21 @@ that we must address several practical issues concerning the Idris compiler.
 \subsection{Target Language}
 As discussed in Chapter~\ref{cha:idris}, an Idris program has multiple different
 representations throughout the compilation process, namely concrete Idris,
-\IdrisM{}, TT, IBC, and binary. Therefore, the compilation
-stage and program reprensentation chosen for the productivity analysis has great
+\IdrisM{}, TT, and machine code. Therefore, the compilation
+stage and program representation chosen for the productivity analysis has great
 impact on how a solution unfolds.
 
 Since guarded recursion is a typing discipline, the system needs the ability to
-resolve the type for an arbitrary term. This is not possible prior to
-elaboration, because type resolution may require evaluation. Seeing as program
-structure is important for the analysis, both IBC and the binary representation
-would be impractical as target languages. After elaboration, the resulting TT
+both infer and check types of arbitrary terms. This is not possible prior to
+elaboration, because type resolution may require evaluation. Because program
+structure is important for the analysis, the machine code would be impractical
+as a target language. After elaboration, the resulting TT
 terms have all type information available, while program structure is still
 preserved. Hence, the productivity analysis is performed on elaborated TT terms.
 
-\subsection{Lifting Parameters} % -- Subsubsection to forrige section?
+\subsection{Lifting Parameters} % -- Subsubsection til forrige section?
 \label{sec:handling-parameters}
-Recall the typing rule for the later composition operator, $\tensor^\kappa$, in
+Recall the typing rule for the later application operator, $\tensor^\kappa$, in
 Figure~\ref{fig:guarded_recursion_rules_clocks}:
 
 \input{figures/guarded_tensor_intro_rule}
@@ -48,9 +48,9 @@ repeat = $\Lambda\kappa.$ fix$^{\kappa}$($\lambda{}$rec$.\lambda{}$a$.\lambda{}$
              StreamCons a n ((rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ a)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)))
 \end{lstlisting}
 
-By fixed-point elimination, the recursive reference is under an application
+By fixed point elimination, the recursive reference is under an application
 of \texttt{Next$^\kappa$}, making it available later. Therefore, it must be
-applied to its type argument by later composition, but such an application
+applied to its type argument by later application, but such an application
 is not well-typed, as shown in Figure~\ref{fig:repeat_failed_typing}. In
 particular, the type argument is not bound as the type variable \texttt{a},
 since this connection is not expressed in the typing rule.
@@ -69,11 +69,11 @@ since this connection is not expressed in the typing rule.
       \tensor ^{\kappa} \, (Next^{\kappa}\, a)\, :\, \later ^{\kappa}(a\, \rightarrow \, Stream^{\kappa}\,
       a)\ }  & \inference { \inference {  }{ \Gamma '\, \vdash \, n\, :\, a }  }{
       \Gamma '\, \vdash \, Next^{\kappa}\, n\, :\, \later ^{\kappa} \, a }  \end{matrix} }{
-  \Gamma '\, \vdash \, ((Next^{\kappa}\,repeat[\kappa])\, \tensor ^{\kappa} \, (Next^{\kappa}\, a))\, \tensor ^{\kappa} \,
+  \Gamma '\, \vdash \, ((Next^{\kappa}\,(repeat[\kappa]))\, \tensor ^{\kappa} \, (Next^{\kappa}\, a))\, \tensor ^{\kappa} \,
   (Next^{\kappa}\, n))\, :\, \later ^{\kappa} Stream^{\kappa}\, a }
 \]
 \[
-\Gamma '\, =\, \Gamma ,\, (Next^{\kappa}\,repeat[\kappa])\, :\, \later ^{\kappa}((a\, :\, Type)\, \rightarrow \,
+\Gamma '\, =\, \Gamma ,\, repeat\, :\, \forall\kappa.((a\, :\, Type)\, \rightarrow \,
 a\, \rightarrow \, Stream^{\kappa}\, a),\, a\, :\, Type,\, n\, :\, a
 \]
   \caption{A failed attempt at typing the tail argument to the
@@ -93,29 +93,31 @@ yet to be proven sound.
   \Gamma \, \vdash \, t\, \tensor ^{\kappa} \, u\, :\, \later^{\kappa} B[{ u
   }/{ a }] } 
 \]
-  \caption{Rule for later composition with substitution in types.}
+  \caption{A potential rule for later application with substitution in
+    types. However, the type $\later^{\kappa} B[{ u }/{ a }]$ in the conclusion
+    is not well-formed according to the rules of guarded recursion presented in Figure~\ref{fig:guarded_recursion_dependent_rules}.}
   \label{fig:tensor_with_subst}
 \end{figure}
 
-Instead, we can change which arguments that appear under the fixed-point. Any
+Instead, we can change which arguments appear under the fixed point. Any
 parameter which would have to be substituted in the type is therefore lifted out
-of the fixed-point operator, 
+of the fixed point operator, 
 thus changing the type of the recursive reference. This gives us
 the definition of \texttt{repeat} in
 Figure~\ref{fig:repeat_guarded_example_new}, where the type of the recursive
 reference is \texttt{$\later ^{\kappa}$(a~$\rightarrow$~Stream$^{\kappa}$
   a)}. This allows us to type part of \texttt{repeat} as exemplified in
 Figure~\ref{fig:repeat_typing_new}, because the type parameter is now fixed
-outside of the fixed-point operator.
+outside of the fixed point operator.
 
 \begin{figure}[h]
   \begin{lstlisting}[mathescape]
 repeat : (a : Type) $\to$ $\forall \kappa.$ (a $\to$ Stream$^{\kappa}$ a)
-repeat a = $\Lambda \kappa$ fix$^{\kappa}$($\lambda{}$rec$.\lambda{}$n$.$ 
-             StreamCons a n (rec $\tensor ^{\kappa}$ (Next$^{\kappa}$$^{\kappa}$ n)))
+repeat a = $\Lambda\kappa.$ fix$^{\kappa}$($\lambda{}$rec$.\lambda{}$n$.$ 
+             StreamCons a n (rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)))
 \end{lstlisting}
   \caption{A definition of \texttt{repeat} where the type parameter is fixed
-    outside of the fixed-point operator.}
+    outside of the fixed point operator.}
   \label{fig:repeat_guarded_example_new}
 \end{figure}
 
@@ -135,17 +137,29 @@ repeat a = $\Lambda \kappa$ fix$^{\kappa}$($\lambda{}$rec$.\lambda{}$n$.$
   \label{fig:repeat_typing_new}
 \end{figure}
 
-The problem described here applies to all function parameters which refine the
-output type or the type of other parameters. As such, any such parameter must be
-lifted out of the fixed-point in this manner.
-
+The problem described here applies to all names bound by dependent function
+types that occur free in the body type. Therefore, any such parameter must be
+lifted out of the fixed point in this manner. Note that names bound to a type
+depending on a clock, e.g. $Stream^{\kappa}$, cannot be lifted out of the clock
+quantification. Presently, support for clock-dependent types has been deemed out
+of scope. For further elaboration, see Section~\ref{sec:guarded-types}.
 
 \subsection{Eliminating the \texttt{fix$^\kappa$} Rule}
 \label{sec:fixkappa-rule}
+In the following, we describe how one can supposedly encode dependent functions
+under clock quantification by eliminating the guarded recursive fixed
+point. While eliminating the fixed point seems to work as intended up to polymorphic
+types, the theory behind it does not cover dependent function types. This
+limitation was discovered late in the process, and is therefore a part of the
+current implementation. Since it does work for non-dependent functions, we
+describe the technique here, and use it throughout the remainder of the
+chapter. The implications of using this technique for dependent function types
+is discussed in Section~\ref{sec:depend-funct-types}.
+
 In the theoretical model of guarded recursion, all programs must be encoded
-inside a special fixed-point operator, as shown in
+inside a special fixed point operator, as shown in
 Section~\ref{sec:guarded-recursion}. Ideally, we could simply port this idea to
-Idris, encoding TT programs inside a TT definition of the fixed-point
+Idris, encoding TT programs inside a TT definition of the fixed point
 operator. While this would work fine for single-clause definitions, it becomes
 problematic when we consider definitions with multiple clauses, such as the
 following: 
@@ -156,39 +170,48 @@ cycle Z     m = Z :: (cycle m m)
 cycle (S n) m = (S n) :: (cycle n m)
 \end{lstlisting}
 
-When transforming \texttt{cycle} to guarded recursive form, both clauses must be part
-of the same fixed-point definition. A seemingly obvious solution is to convert
-the left-hand side pattern matching structure in \texttt{cycle} into right-hand
-side \texttt{case}-expressions. For two reasons, this is not possible: (1) the
-definition of \texttt{cycle} is elaborated into two TT clauses, and (2) Idris
+When transforming \texttt{cycle} to guarded recursive form, both clauses must be
+part of the same fixed point definition. A seemingly obvious solution is to
+convert the left-hand side pattern matching structure in \texttt{cycle} into
+right-hand side \texttt{case}-expressions. For two reasons, this is not
+possible: (1) TT does not have \texttt{case}-expressions, so the definition of
+\texttt{cycle} is elaborated into two TT clauses, and (2) Idris
 \texttt{case}-expressions only support non-dependent pattern matching. Hence,
 the problem persists after elaboration.
 
 Instead, we could attempt to define \texttt{cycle} as two functions: A
-single-clause definition with the fixed-point operator, and an auxiliary
-function where pattern matching is performed, as seen in
-Figure~\ref{fig:cycle_guarded}. With this solution, all the clauses of
-\texttt{cycle} are part of the same fixed-point, where the guarded recursive reference,
-\texttt{rec}, is given to \texttt{cycle} as an argument.
+single-clause definition with the fixed point operator, and an auxiliary
+function where pattern matching is performed. With this solution, all the clauses of
+\texttt{cycle} are part of the same fixed point, where the guarded recursive reference,
+\texttt{rec}, is given to \texttt{cycle} as an argument:
 
-\begin{figure}[h]
 \begin{lstlisting}[mathescape]
 cycle$'$ : $\laterkappa\,$(Nat $\to$ Nat $\to$ Stream$^{\kappa}\,$Nat) $\to$ Nat $\to$ Nat $\to$ Stream$^{\kappa}$ Nat
 cycle$'$ rec  Z    m = StreamCons Z  ((rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ m)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ m))
 cycle$'$ rec (S n) m = StreamCons (S n) ((rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ m))
 
 cycle : $\forall \kappa.\,$(Nat $\to$ Nat $\to$ Stream$^{\kappa}\,$Nat)
-cycle = $\Lambda \kappa.\,$fix$^{\kappa}$($\lambda$rec.$\lambda$n.$\lambda$m. cycle rec n m)
+cycle = $\Lambda \kappa.\,$fix$^{\kappa}$($\lambda$rec.$\lambda$n.$\lambda$m. cycle$'$ rec n m)
 \end{lstlisting}
-  \caption{A guarded recursive definition of \texttt{cycle}, where the pattern
-    matching is handled by an auxiliary function \texttt{cycle'}. The
-    \texttt{Stream$^\kappa$ type is defined in Figure~\ref{fig:guarded_recursion_stream}.} }
-  \label{fig:cycle_guarded}
-\end{figure}
 
-Up to polymorphic types, this approach works as expected, but it becomes
-insufficient once we consider dependent types. When the recursive reference is
-placed under the fixed-point operator, its type is fixed as well. For example, in the function \texttt{prepend} from
+% \begin{figure}[h]
+% \begin{lstlisting}[mathescape]
+% cycle$'$ : $\laterkappa\,$(Nat $\to$ Nat $\to$ Stream$^{\kappa}\,$Nat) $\to$ Nat $\to$ Nat $\to$ Stream$^{\kappa}$ Nat
+% cycle$'$ rec  Z    m = StreamCons Z  ((rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ m)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ m))
+% cycle$'$ rec (S n) m = StreamCons (S n) ((rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ m))
+
+% cycle : $\forall \kappa.\,$(Nat $\to$ Nat $\to$ Stream$^{\kappa}\,$Nat)
+% cycle = $\Lambda \kappa.\,$fix$^{\kappa}$($\lambda$rec.$\lambda$n.$\lambda$m. cycle rec n m)
+% \end{lstlisting}
+%   \caption{A guarded recursive definition of \texttt{cycle}, where the pattern
+%     matching is handled by an auxiliary function \texttt{cycle'}. The
+%     \texttt{Stream$^\kappa$ type is defined in Figure~\ref{fig:guarded_recursion_stream}.} }
+%   \label{fig:cycle_guarded}
+% \end{figure}
+
+This approach works as expected, until we consider dependent types. In
+particular, the problem is that we cannot have dependent quantification under
+clock quantification. For example, in the function \texttt{prepend} from
 Figure~\ref{fig:guarded_prepend}, the \texttt{n} in the type of \texttt{rec} is
 fixed. But \texttt{n} is refined to \texttt{Z} in first clause and \texttt{S n}
 in the the second clause, respectively, so \texttt{rec} can never be applied to
@@ -196,61 +219,113 @@ in the the second clause, respectively, so \texttt{rec} can never be applied to
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
-prepend$'$ : ($\laterkappa\,$(Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a)) $\to$ 
+prepend$'$ : (n : Nat) $\to$ (a : Type) $\to$
+           $\laterkappa\,$(Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a) $\to$ 
            Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a
-prepend$'$ rec []        s = s 
-prepend$'$ rec (x :: xs) s = StreamCons x ((rec $\tensor$ (Next xs)) $\tensor$ (Next s))
+prepend$'$ n a rec []        s = s 
+prepend$'$ n a rec (x :: xs) s = 
+                    StreamCons x ((rec $\tensor$ (Next xs)) $\tensor$ (Next s))
 
-prepend : $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
-prepend = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\lambda$xs.$\lambda$s. prepend rec xs s)
+prepend : (n : Nat) $\to$ (a : Type) $\to$ 
+          $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
+prepend n a = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\lambda$xs.$\lambda$s. prepend$'$ n a rec xs s)
 \end{lstlisting}
   \caption{A function prepending a vector on a stream. This definition is not well-typed.}
   \label{fig:guarded_prepend}
 \end{figure}
 
-To circumvent all of these issues, we eliminate the fixed-point operator altogether according
+To circumvent this issue, the current implementation eliminates the fixed point operator altogether according
 to the elimination rules in Figure~\ref{fig:fix_elim_rules}. By eliminating the
-fixed-point, the type of the recursive reference is no longer fixed. The
-elimination of the fixed-point is well-typed, since \texttt{Next$^{\kappa}$ f}
-and the recursive reference, here denoted \texttt{rec}, always have the same
-type according to the guarded recursive typing rules in Figure~\ref{fig:guarded_recursion_rules_clocks}.
+fixed point, the type of the recursive reference is no longer fixed. This
+elimination should allow us to write prepend as shown in
+Figure~\ref{fig:guarded_prepend_bad}. However, as described in
+Section~\ref{sec:depend-funct-types}, it does not.
+
+
+% The
+% elimination of the fixed point is well-typed, since \texttt{Next$^{\kappa}$ f}
+% and the recursive reference, here denoted \texttt{rec}, always have the same
+% type according to the guarded recursive typing rules in Figure~\ref{fig:guarded_recursion_rules_clocks}.
 
 \begin{figure}[h]
-  \[
-\frac { \Delta ,\, \kappa ; \, \Gamma \, \vdash \, f\, =\, { fix }^{ \kappa  }(\lambda
-  rec.\, e)\, :\, A }{ \Delta ,\, \kappa \, ; \Gamma \vdash \, f\, =\, e[{ (Next^{ \kappa
-    }\,f) }/{ rec }]\, :\, A } fix_{E_1}
-\]
+\centering
 
-\[
-\frac { \Delta \, ; \Gamma \vdash \, f\, =\, \Lambda \kappa .{ fix }^{ \kappa  }(\lambda
-  rec.\, e)\, :\, \forall \kappa .A }{ \Delta \, ; \Gamma \vdash \, f\, =\, \Lambda
-  \kappa .e[{ (Next^{ \kappa  }\, f[\kappa ]) }/{ rec }]\, :\, \forall \kappa .A
-} fix_{E_2}
-\]
-  \caption{Rules for fix elimination}
+\begin{prooftree}
+\def\fCenter{\vdash}
+\Axiom$\Delta,\kappa;\Gamma,f:A\fCenter \texttt{fix}^{\kappa}(\lambda rec.e) :
+  A$
+\UnaryInf$\Delta,\kappa;\Gamma,f:A\fCenter
+  e[(\texttt{Next}^{\kappa}\,f)/rec]:A$
+\end{prooftree}
+
+\begin{prooftree}
+\def\fCenter{\vdash}
+\Axiom$\Delta,\kappa;\Gamma,f:\forall\kappa.A\fCenter
+\Lambda\kappa.\,\texttt{fix}^{\kappa}(\lambda rec.e) : \forall\kappa.A$
+\UnaryInf$\Delta,\kappa;\Gamma,f:\forall\kappa.A\fCenter \Lambda\kappa.\,e[(\texttt{Next}^{\kappa}\,f[\kappa])/rec]:\forall\kappa.A$
+\end{prooftree}
+
+% \def\fCenter{\vdash}
+% \AXD{\Delta,\kappa;\Gamma,f:\forall\kappa.A\fCenter \texttt{fix}^{\kappa}(\lambda rec.e) :
+%   A}
+% \UID{\Delta,\kappa;\Gamma,f:\forall\kappa.A\fCenter
+%   e[(Next^{\kappa}\,f)/rec]:A}
+% \DisplayProof
+
+% %\AXD{\Delta,\kappa;\Gamma,f:\forall\kappa.A\vdash \texttt{fix}^{\kappa}(\lambda \texttt{rec}.e :
+% %  A}
+
+%   \[
+% \frac { \Delta ,\, \kappa ; \, \Gamma \, \vdash \, f\, =\, { fix }^{ \kappa  }(\lambda
+%   rec.\, e)\, :\, A }{ \Delta ,\, \kappa \, ; \Gamma \vdash \, f\, =\, e[{ (Next^{ \kappa
+%     }\,f) }/{ rec }]\, :\, A } fix_{E_1}
+% \]
+
+% \[
+% \frac { \Delta \, ; \Gamma \vdash \, f\, =\, \Lambda \kappa .{ fix }^{ \kappa  }(\lambda
+%   rec.\, e)\, :\, \forall \kappa .A }{ \Delta \, ; \Gamma \vdash \, f\, =\, \Lambda
+%   \kappa .e[{ (Next^{ \kappa  }\, f[\kappa ]) }/{ rec }]\, :\, \forall \kappa .A
+% } fix_{E_2}
+% \]
+  \caption{The rules for fixed point elimination.}
   \label{fig:fix_elim_rules}
 \end{figure}
 \todo{Is there a better way express the fix elimination rules?}
 
-After elimination of the fixed-point operator, the guarded recursive version of
-\texttt{prepend} can be defined as follows:
-
+\begin{figure}[h]
 \begin{lstlisting}[mathescape]
-prepend : $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
-prepend []        s = $\Lambda\kappa.\,$s
-prepend (x :: xs) s = $\Lambda\kappa.\,$StreamCons x 
-                          (((Next$^\kappa$ prepend) $\tensor$ (Next$^\kappa$ xs)) $\tensor$ (Next$^\kappa$ s))
-\end{lstlisting}
+prepend$'$ : (n : Nat) $\to$ (a : Type) $\to$
+           Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a
+prepend$'$ n a []        s = s 
+prepend$'$ n a (x :: xs) s = 
+   StreamCons x (((Next$^{\kappa}$ ((prepend[$\kappa$]) n a)) $\tensor$ (Next xs)) $\tensor$ (Next s))
 
-An elaboration upon this solution will be provided in Section~\ref{sec:impl-guard-recurs}.
+prepend : (n : Nat) $\to$ (a : Type) $\to$ 
+          $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
+prepend n a = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$xs.$\lambda$s. prepend$'$ n a xs s)
+\end{lstlisting}
+  \caption{The implementation of \texttt{prepend} after fixed point elimination.}
+  \label{fig:guarded_prepend_bad}
+\end{figure}
+
+% After elimination of the fixed point operator, the guarded recursive version of
+% \texttt{prepend} can be defined as follows:
+
+% \begin{lstlisting}[mathescape]
+% prepend : $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
+% prepend []        s = $\Lambda\kappa.\,$s
+% prepend (x :: xs) s = $\Lambda\kappa.\,$StreamCons x 
+%                           (((Next$^\kappa$ prepend) $\tensor$ (Next$^\kappa$ xs)) $\tensor$ (Next$^\kappa$ s))
+% \end{lstlisting}
+
+% An elaboration upon this solution will be provided in Section~\ref{sec:impl-guard-recurs}.
 
 \section{Scope}
 To reduce the complexity of the implementation, we have narrowed the scope for
-two central areas, namely the amount of clock variables supported and the types
+two central areas, namely the number of clock variables supported and the types
 of inferred functions.
 
-\subsection{Singleton Clock}
+\subsection{A Singleton Clock}
 \label{sec:singleton-clock}
 % Argumenter:
 %% Hvornår bruger man hvilket ur?
@@ -263,15 +338,18 @@ of inferred functions.
 % e1 = rhs[Next(f[k])/rec]
 % e2 = 
 The theoretical model for guarded recursion with clock variables, due to Atkey
-and McBride\,\citep{Atkey:2013}, imposes no limitations on the amount
-simultaneous of clock variables. This means that their system is very
+and McBride\,\citep{Atkey:2013}, imposes no limitations on the number of
+simultaneous clock variables. This means that their system is very
 expressive, but can lead to quite complicated definitions where the user must
-explicitly specify which clock variable that is applicable in a given situation to ensure
+explicitly specify which clock variable is applicable in a given situation to ensure
 productivity. Automating the process of choosing the right clock variable for
-any given scenario is not feasible in general, since for $n$ scenarios with $c$
-clocks in scope, the number of possible combinations is $O(c^n)$.
+any given scenario is not feasible in general, since for $n$ clock applications with $c$
+clocks in scope, the number of possible combinations is $c^n$. Any linear
+inference process would thus be in $O(c^n)$, and doing better would require
+heuristics for common clock combinations. Presently, we have no knowledge of the
+existence of such heuristics.
 
-To avoid the problem of finding the correct combination clock variable, we
+To avoid the problem of finding the correct combination of clock variables, we
 simplify our system such that at most one clock is in scope at any given
 time. The implication is that our productivity analysis will never return a
 positive answer for programs whose guarded recursive equivalent requires more
@@ -283,11 +361,9 @@ realistic programs have guarded recursive versions which require only one clock.
 
 Incorporating this simplification means that we must adjust the typing rules for
 guarded recursion accordingly. The adjusted rules are discussed later, in
-Figure~\ref{fig:gr_rules_sin_clock}. Instead of having a specific clock
-environment, the singleton clock is either open ($\sqcup$) or closed ($\sqcap$). 
-
-While deriving this set of adjusted rules from the original rules has not followed a specific
-methodology, a general trend is:
+Section~\ref{sec:guard-recurs-check}. While deriving this set of adjusted rules
+from the original rules has not followed a specific methodology, a general trend
+is:
 
 \begin{itemize}
 \item If the original rule required a specific clock in the environment, the
@@ -312,31 +388,36 @@ methodology, a general trend is:
 % may be correct.
 When defining a guarded recursive function, one has to consider the clock
 quantification in its type. For example, in the definition of \texttt{cycle}
-from Figure~\ref{fig:cycle_guarded}, the clock quantification is on
-the entire type, whereas in the definition of \texttt{evens} from
+from Figure~\ref{fig:cycle_guarded}, the clock quantification is on the entire
+type, whereas in the definition of \texttt{evens} from
 Figure~\ref{fig:guarded_recursion_evens}, the clock quantification is on each
 individual parameter type. As the number of arguments to a function is
-increased, the number of different ways we could quantify the function increases
-as well.
+increased, the number of different ways we could quantify over clocks in the
+type of the function increases as well.
 
 Since we cannot in general infer the correct combination of clock
 quantifications for an arbitrary type, we simplify the problem by introducing
 the idea of \emph{modality}. Modality is a property of a function definition,
-specifying that it is in one of two disjoint modes: \emph{causal} or
-\emph{non-causal}. If a function is causal, the clock quantification is on the
-entire type, since this models Definition~\ref{def:causality}. Informally, the
+specifying that it is in one of two disjoint classes: \emph{causal} or
+\emph{non-causal}. 
+
+\begin{definition}[\textit{Causality}]
+\label{def:causality}
+  Given a function $f : (x : A) \to B$ and an element $x : A$, where $B$ is a
+  coinductive type, $f$ is \emph{causal} if the computation of the first $n$
+  unfoldings of $f x$ only depends on the result of the first $n$ unfoldings of $x$.
+\end{definition}
+
+If a function is causal, the clock quantification is over the
+outermost type, since this means that all function arguments operate on the same
+clock. Definition~\ref{def:causality}. Informally, the
 output of a causal function at time $n$ can only depend on the input at time
 $n$. If a function is non-causal, the quantification is on each individual
 guarded type, since the output of a non-causal function may depend arbitrarily
 on its input. Therefore, the definition of \texttt{evens} in
 Figure~\ref{fig:guarded_recursion_evens} is non-causal.
 
-\begin{definition}[\textit{Causality}]
-\label{def:causality}
-  Given a function $f : A \to B$ and an element $x : A$, where $B$ is a
-  coinductive type, $f$ is \emph{causal} if the computation of the first $n$
-  unfoldings of $f x$ only depends on the result of the first $n$ unfoldings of $x$.
-\end{definition}
+
 
 While inferring the modality of a function is possible, simply by trying all
 possible combinations of clock quantification on its type, some functions may
@@ -360,11 +441,11 @@ The inference of guarded recursive versions of productive programs happens in
 two steps: (1) the inference system infers a guarded recursive TT definition
 from an elaborated TT definition, and (2) the checking system verifies that the
 inferred guarded recursive definition is well-formed according to the typing
-rules in Figure~\ref{fig:gr_rules_sin_clock}. The two systems are implemented
+rules in Section~\ref{sec:guard-recurs-check}.. The two systems are implemented
 independently, and the checking system does not rely on any
 implementation-specific details of the inference system. Nevertheless, they do
-agree on the initial context in which a guarded recursive definition should
-hold.
+agree on the initial inference environment in which a guarded recursive definition should
+hold. Inference environments will be introduced in Section~\ref{sec:inference-system}.
 
 \subsection{Preparing Idris}
 % Preprocessing, how are guarded data types created?
@@ -376,19 +457,11 @@ modeling the later ($\laterkappa$) operator, and a type \texttt{Forall},
 modeling clock quantification ($\forall\kappa$). Accordingly, \texttt{apply}
 models clock application. We introduce the idea of \texttt{Availability} to
 model the ``lateness'' of a given type. Concretely, this idea is used for later
-composition with \texttt{compose}, in order to support later composition under
+composition with \texttt{compose}, in order to support later application under
 arbitrarily many applications of \texttt{Later'}. We have delibrately chosen to
 add these as built-in primitives, and not as a part of the standard library,
 since totality checking is a fundamental feature of the compiler which should
 not require a that a specific library is in scope.
-
-Thus, a guarded recursive term is defined as a term which consists of one or more of
-these added primitives. However, a well-typed guarded recursive term is not
-necessarily productive, since the primitives do not model any of the side
-conditions from the rules in Figure~\ref{fig:gr_rules_sin_clock}. Therefore, the
-purpose of the inference system is to infer guarded recursive terms, while the
-purpose of the checking system is to make sure that the guarded recursive terms
-are actually productive.
 
 \begin{figure}[h]
   \begin{lstlisting}[mathescape]
@@ -433,6 +506,15 @@ namespace GuardedRecursion
   \caption{The guarded recursion primitives in Builtins.idr}
   \label{fig:guarded_recursion_primitives}
 \end{figure}
+
+
+Thus, a guarded recursive term is defined as a term which consists of one or more of
+these added primitives. However, a well-typed guarded recursive term is not
+necessarily productive, since the primitives do not model any of the side
+conditions from the rules in Figure~\ref{fig:gr_rules_sin_clock}. Therefore, the
+purpose of the inference system is to infer guarded recursive terms, while the
+purpose of the checking system is to make sure that the guarded recursive terms
+are actually productive.
 
 % \paragraph{Guarded Recursion Library}
 % The first step to adding guarded recursion to Idris is to add the guarded
@@ -521,10 +603,10 @@ referred to as the \emph{quantified name}.
 % versa. This comes in handy when we infer the guarded terms.
 
 \subsubsection{Guarded Types}
+\label{sec:guarded-types}
 Guarded types are guarded recursive versions of coinductive data types. During
 elaboration, a guarded type is constructed for each coinductive data definition,
-and then elaborated separately. Constructing guarded types is
-straightforward. First, guarded names are invented for the type constructor and
+and then elaborated separately. First, guarded names are invented for the type constructor and
 each of the data constructors. Then, the later type constructor ($\laterkappa$)
 is applied to the type of each recursive reference in each data
 constructor. The type of the type constructor remains unchanged. An example of a
@@ -546,7 +628,7 @@ data $_g$Stream : Type -> Type where
   \label{fig:guarded_stream_inf}
 \end{figure}
 
-The inferred applications of the later type constructor ($\laterkappa$, encoded
+The inferred applications of the later type constructor ($\laterkappa$, represented
 as \texttt{Later'} in Figure~\ref{fig:guarded_recursion_primitives}) on
 recursive references matches the existing encoding for lazy evaluation, where
 recursive references in coinductive data constructors are guarded by the
@@ -714,8 +796,8 @@ preprocessed differently, although the steps are the same:
 \begin{enumerate}
 \item Create auxiliary functions to circumvent the limitations of the
   \texttt{fix$^\kappa$} rule.
-\item Lift parameters out of the fixed-point.
-\item Eliminate the fixed-point by the fixed-point elimination rules from
+\item Lift parameters out of the fixed point.
+\item Eliminate the fixed point by the fixed point elimination rules from
   Figure~\ref{fig:fix_elim_rules}.
 \item Eliminate the recursive argument in the auxiliary function(s).
 \end{enumerate}
@@ -731,7 +813,7 @@ given as an ordinary Idris program:
 \end{lstlisting}
 (1) To infer a guarded recursive version of \texttt{$_g$prepend}, we first split the
 definition in two, such that pattern matching happens in an auxiliary function,
-\texttt{$_g$prepend$'$}, which is then called inside the fixed-point of \texttt{$_g$prepend}:
+\texttt{$_g$prepend$'$}, which is then called inside the fixed point of \texttt{$_g$prepend}:
 
 \newcommand{\prepend}[5]{\ensuremath{{\boxed{#1;\causal;\phi,(#2,#3);\open;\Gamma\,\vdash\,\text{#4}\,:\,\text{#5}\,\infer
         \text{?}\,:\,_{g}\text{#5})}}}}
@@ -753,15 +835,15 @@ definition in two, such that pattern matching happens in an auxiliary function,
   causal $_g$prepend : $\forall\kappa.$ (a$\,$:$\,$Type) $\to$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a
   $_g$prepend = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\lambda$a.$\lambda$xs.$\lambda$s.$\,$$_g$prepend$'\;$rec a xs s)
 \end{lstlisting}
-As \texttt{prepend} is now defined with a fixed-point, the recursive reference
+As \texttt{prepend} is now defined with a fixed point, the recursive reference
 \texttt{rec} is inserted in place of the original recursive reference. The
 notation \prepend{\text{prepend}}{\text{prepend}}{\,_{g}\text{prepend}}{s}{Stream a} is introduced in
 Section~\ref{sec:inference-system}, but the intution is that \texttt{s} of type
 \texttt{A} will be replaced by the as yet unknown inferred guarded recursive term \texttt{?} of
 type $_{g}Stream$, thus making the right-hand sides well-typed.
 
-(2) The type parameter \texttt{a} is lifted out of the fixed-point to make up
-for the lack of type substitution in the later composition rule, as explained in
+(2) The type parameter \texttt{a} is lifted out of the fixed point to make up
+for the lack of type substitution in the later application rule, as explained in
 Section~\ref{sec:handling-parameters}. Note that this also lifts \texttt{a} out
 of the type of the recursive reference, \texttt{rec}. Furthermore, \texttt{a} is
 no longer bound under the clock quantification in the type of \texttt{$_g$prepend}.
@@ -776,7 +858,7 @@ no longer bound under the clock quantification in the type of \texttt{$_g$prepen
   causal $_g$prepend : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a)
   $_g$prepend a = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\lambda$xs.$\lambda$s.$\,$prepend$'$ a rec xs s)
 \end{lstlisting}
-(3) The fixed-point is eliminated by replacing all references to
+(3) The fixed point is eliminated by replacing all references to
 \texttt{rec} with \texttt{Next~(($_g$prepend~a)~[$\kappa$])} in \texttt{$_g$prepend}, since this term has
 exactly the same type as \texttt{rec} in step 2.
 \begin{lstlisting}[mathescape]
@@ -816,7 +898,7 @@ guarded recursive right-hand sides as specified in the boxes.
 \subsubsection{Preprocessing Non-causal Functions}
 Non-causal definitions are preprocessed slightly differently, mainly because the
 recursive reference has a different form on account of the use of the indexed
-fixed-point introduced in Section~\ref{sec:guarded-recursion}. Consider the
+fixed point introduced in Section~\ref{sec:guarded-recursion}. Consider the
 following non-causal program, \texttt{evens}:
 \begin{lstlisting}[mathescape]
 evens : (a : Type) $\to$ Stream a $\to$ Stream a
@@ -824,7 +906,7 @@ evens a s = head s :: evens a (tail (tail s))
 \end{lstlisting}
 (1) Initially, two auxiliary functions are created, \texttt{$_{g}$evens$'$} and
 \texttt{$_{g}$evens$''$}. The \texttt{$_{g}$evens$'$} function is necessary because its type
-enables us to use the indexed fixed-point, \texttt{pfix$^\kappa$}, to provide a recursive reference
+enables us to use the indexed fixed point, \texttt{pfix$^\kappa$}, to provide a recursive reference
 without clock quantification in its result type.
 \begin{lstlisting}[mathescape]
 $_g$evens$''$ : ($\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\laterkappa$$_{g}$Stream a) $\to$ 
@@ -838,7 +920,7 @@ $_g$evens$'$ = pfix$^\kappa$($\lambda$rec.$\lambda$a.$\lambda$s. evens$''$ rec s
 $_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
 $_g$evens = $\Lambda\kappa.\,$evens$'$
 \end{lstlisting}
-(2) Exactly as for the causal case, the type parameter, \texttt{a}, is lifted out of the fixed-point.
+(2) Exactly as for the causal case, the type parameter, \texttt{a}, is lifted out of the fixed point.
 \begin{lstlisting}[mathescape]
 $_g$evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$$_{g}$Stream a $\to$ $\laterkappa$$_{g}$Stream a) $\to$ 
          $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
@@ -851,8 +933,8 @@ $_g$evens$'$ a = pfix$^\kappa$($\lambda$rec.$\lambda$s. evens$''$ a rec s)
 $_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
 $_g$evens a = $\Lambda\kappa.\,$evens$'$ a
 \end{lstlisting}
-(3.1) The indexed fixed-point is replaced by the equivalent ordinary guarded
-recursive fixed-point. This step requires that the recursive reference is
+(3.1) The indexed fixed point is replaced by the equivalent ordinary guarded
+recursive fixed point. This step requires that the recursive reference is
 placed inside a function which lifts its argument into a later ($\laterkappa$) context.
 \begin{lstlisting}[mathescape]
 $_g$evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$$_{g}$Stream a $\to$ $\laterkappa$$_{g}$Stream a) $\to$ 
@@ -866,7 +948,7 @@ $_g$evens$'$ a = fix$^\kappa$($\lambda$rec.$\lambda$s. evens$''$ a ($\lambda$x.$
 $_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
 $_g$evens a = $\Lambda\kappa.\,$evens$'$ a
 \end{lstlisting}
-(3.2) The fixed-point is eliminated according to the rules in Figure~\ref{fig:fix_elim_rules}.
+(3.2) The fixed point is eliminated according to the rules in Figure~\ref{fig:fix_elim_rules}.
 \begin{lstlisting}[mathescape]
 $_g$evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$$_{g}$Stream a $\to$ $\laterkappa$$_{g}$Stream a) $\to$ 
          $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
@@ -1046,7 +1128,7 @@ environment for the recursive case for $b$.
 \centering
 \ContinuedFloat
 \subcaptionbox{
-Due to the elimination of the indexed fixed-point, this rule ensures that no
+Due to the elimination of the indexed fixed point, this rule ensures that no
 arguments to the non-causal recursive reference has a type in a $\laterkappa$
 context. The $e\, \overset{\rightarrow}{x_n}$ notation denotes the recursive reference,
 $e$, applied to arguments $x_0,\,x_1\,\cdots\,x_n$.
@@ -1208,7 +1290,7 @@ The third application is taken apart in the same manner.
 \ContinuedFloat
 \subcaptionbox{
 Here, we need to show that the recursive reference can be applied to the $n$
-argument by using the rule for later composition (\tensor).
+argument by using the rule for later application (\tensor).
 }{
 \AxiomC{(4)}
 \AxiomC{}
@@ -1331,6 +1413,84 @@ a few realistic programs (see Chapter~\ref{cha:evaluation}), it currently has
 several shortcomings and limitations.
 %\subsection{Guarded Recursion and Dependent Types}
 
+\subsection{Dependent Function Types and Fixed Point Elimination}
+\label{sec:depend-funct-types}
+As described in Section~\ref{sec:fixkappa-rule}, our current implementation uses
+fixed point elimination in order to enable inference of guarded recursive
+programs with dependent types. However, this leads the system to make an
+unfortunate assumption. Recall the example of \texttt{prepend} from
+Section~\ref{sec:fixkappa-rule}:
+\begin{lstlisting}[mathescape]
+prepend$'$ : (n : Nat) $\to$ (a : Type) $\to$
+           $\laterkappa\,$(Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a) $\to$ 
+           Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a
+prepend$'$ n a rec []        s = s 
+prepend$'$ n a rec (x :: xs) s = 
+                    StreamCons x ((rec $\tensor$ (Next xs)) $\tensor$ (Next s))
+
+prepend : (n : Nat) $\to$ (a : Type) $\to$ 
+          $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
+prepend n a = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\lambda$xs.$\lambda$s. prepend$'$ n a rec xs s)
+\end{lstlisting}
+Here, the type of \texttt{rec} is {$\laterkappa\,$(Vect n a $\to$
+  Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a)}. Through fixed point
+elimination, we wish to substitute \texttt{rec} with \texttt{{(Next$^{\kappa}$
+    ((prepend[$\kappa$]) n a)}}, such that we arrive at the following definition
+of \texttt{prepend}:
+\begin{lstlisting}[mathescape]
+prepend$'$ : (n : Nat) $\to$ (a : Type) $\to$
+           Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a
+prepend$'$ n a []        s = s 
+prepend$'$ n a (x :: xs) s = 
+   StreamCons x (((Next$^{\kappa}$ ((prepend[$\kappa$]) n a)) $\tensor$ (Next xs)) $\tensor$ (Next s))
+
+prepend : (n : Nat) $\to$ (a : Type) $\to$ 
+          $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
+prepend n a = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$xs.$\lambda$s. prepend$'$ n a xs s)
+\end{lstlisting}
+Because \texttt{n} and \texttt{a} are universally quantified in the type of
+\texttt{prepend}, we are allowed to specialise the type of \texttt{prepend} on
+the right-hand side of \texttt{prepend$'$}, making the implementation
+well-typed. In the type of \texttt{rec}, however, \texttt{n} and \texttt{a} are
+fixed. Hence, we have by fixed point elimination assumed that a recursive
+reference with fixed parameters can be substituted with a term with universally
+quantified parameters. In general, we do not know whether such a substitution is sound, since we
+cannot recover the fixed point version of the program afterwards.
+
+Consequently, the analysis should not rely on fixed point elimination. Instead,
+the inference should simply proceed after step 2 of preprocessing for causal
+functions, and after step 3.1 for non-causal functions (see
+Section~\ref{sec:impl-guard-recurs}). For the inference system, fixed point
+elimination means that recursive references must be handled differently for
+causal and non-causal functions, namely by the $\infer_{Rec_\causal}$-rule in
+the causal case and by the $\infer_{Rec_\noncausal_{n}}$,
+$\infer_{Rec_\noncausal_{0}}$, and $\infer_{Rec_\noncausal}$ rules in the non-causal
+case. Without fixed point elimination, the recursive reference can be handled by
+the inference system with one uniform rule for both the causal and the noncausal case:
+ 
+\begin{prooftree}
+\AxiomC{$\IEc\vdash \phi(\iota)=e$}
+\AxiomC{$\IEc\vdash e:A'$}
+\RLabel{\infer_{Rec}}
+\BinaryInfC{$\IEc\vdash \iota : A \infer e : A$'$$}
+\end{prooftree}
+
+This would simplify the inference system considerably. From the perspective of
+the checking system, the absence of fixed point elimination would mean that all
+the checking rules for recursive references (both causal and noncausal) could be
+replaced by a single fixed point rule:
+
+\begin{prooftree}
+\def\fCenter{\vdash}
+\Axiom$\IEopen,x:\laterkappa A\fCenter t : A$
+\RLabel{fix_I}
+\UnaryInf$\IEopen\fCenter fix^{\kappa} x. t : A$
+\end{prooftree}
+
+Since fixed point elimination in general is has not yet been proven sound,
+although it seems to work in most cases up to polymorphic types, it should not be
+part of a future implementation.
+
 \subsection{Preservation of Semantics}
 In Section~\ref{sec:inference-system}, we presented the rules for inferring
 guarded recursive TT terms from elaborated TT terms. Even though we are
@@ -1359,7 +1519,7 @@ instance function, taking modality into account.
 
 \subsection{Mutual Recursion}
 Since our productivity analysis emerges from the use of the guarded recursive
-fixed-point defined in Section~\ref{sec:guarded-recursion}, mutually recursive
+fixed point defined in Section~\ref{sec:guarded-recursion}, mutually recursive
 definitions are not (yet) supported. The reason is that our analysis prevents
 infinite recursion by ensuring that all direct recursive references are not
 immediately available, seeing as they must have a type under a specific type

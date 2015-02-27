@@ -2,16 +2,14 @@
 \todo{Should we mention somewhere that we don't plan on running these? And can
   we even do that? What about evaluation in types?}
 \label{cha:infer-guard-recurs}
-As mentioned in Section~\ref{sec:less-restr-prod} we wish to extend Idris with
+As mentioned in Section~\ref{sec:less-restr-prod}, we wish to extend Idris with
 a less restrictive productivity checker using guarded recursion. However, as
-we saw in Section~\ref{sec:guarded-recursion} defining guarded recursive
-programs can be quite tedious and requires the programmer to understand guarded
-recursion in order to write productive programs. We therefore propose a system
-where we can check productivity of programs using guarded recursion without
-bothering the user.
-
-In this chapter we describe a such system with focus on how it is implemented,
-and how we have put theory into practice.
+we saw in Section~\ref{sec:guarded-recursion}, defining guarded recursive
+programs can be quite tedious and requires the user to thoroughly understand guarded
+recursion in order to write provably productive programs. In this chapter, we propose a system
+where we can check the productivity of programs using guarded recursion with
+only a minimal amount of user involvement. The main focus will be
+implementation, showing how we have put theory into practice.
 \section{Intuition}
 %##########
 % Type-directed (undersøg præcis hvad dette betyder) 
@@ -22,7 +20,7 @@ and how we have put theory into practice.
 %% Problemet bag: hvorfor er vi nødt til at skelne?
 % Eksempel på inferens
 %##########
-Our system divides into two parts: (1) An inference system that builds a
+Our system is divided into two parts: (1) An inference system that builds a
 guarded recursive term from a user written term, and (2) an algorithm that
 checks the structure of a term and its type according to the rules from 
 Figure~\ref{fig:guarded_recursion_rules_clocks}. While the general idea is that
@@ -32,7 +30,7 @@ as disjoint modules. This is important as we want our checking algorithm to be a
 general-purpose guarded recursion checker, not just an algorithm for checking
 the output of the inference system.
 
-Furthermore it is important to note that our system is an extension of
+Furthermore, it is important to note that our system is an extension of
 Idris. This means that we do not add or change any core elements of the language, and
 therefore do not jeopardise or tamper with the correctness of the Idris type system.
 
@@ -57,10 +55,10 @@ our analysis is performed on the core language, TT.
 
 \paragraph{Parameters}
 In Section~\ref{sec:guarded-recursion} we discussed and used a guarded fixpoint
-operator. Due to the type of this operator ($(\later A \rightarrow A)
-\rightarrow A$) the recursive reference will always have a $\later$-type. This
+operator. Due to the type of this operator, ($(\later A \rightarrow A)
+\rightarrow A$), the recursive reference will always have a $\later$-type. This
 means that any application of a recursive reference to an argument must be done
-using $\tensor ^{\kappa}$.
+using $\tensor ^{\kappa}$\todo{This operator must be given a human-readable name}.
 
 Idris, like many other languages, have named parameters which influence the type
 of a function. Looking at the rule for $\tensor ^{\kappa}$ in
@@ -72,7 +70,7 @@ parameter application. To better understand this, consider the following example
 \begin{figure}[h]
   \begin{lstlisting}[mathescape]
 repeat : $\forall \kappa$ ((a : Type) $\rightarrow$ a $\rightarrow$ Stream$^{\kappa}$ a)
-repeat = $\Lambda \kappa$ fix$^{\kappa}$($\lambda{}$rec$.\lambda{}$a$.\lambda{}$n$.$ 
+repeat = $\Lambda\kappa.$ fix$^{\kappa}$($\lambda{}$rec$.\lambda{}$a$.\lambda{}$n$.$ 
              StreamCons a n ((rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ a)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)))
 \end{lstlisting}
   \caption{An infinite stream of the same element.}
@@ -380,7 +378,8 @@ fashion to how Idris already handles lazy evaluation. The type constructor
 remains unchanged. An example of this inferences for a codata declaration can be
 seen in Figure~\ref{fig:guarded_stream_inf}. Note that the inferred declaration
 is a data declaration, not codata. This is because we do not need both Idris's
-built in laziness (\texttt{Inf}), and the guarded recursion laziness ($\later$).
+built in laziness (\texttt{Inf}), and the guarded recursion laziness ($\later$)
+\todo{Explain why these are not the same}.
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
@@ -447,6 +446,115 @@ their lateness. Because they are quantified over clocks, they are always availab
 \end{figure}
 
 \subsection{Inference}
+% Regler - forklar (også notation)
+% Rekursive referencer
+% Eksempel - zeros?
+% Preprocessing
+% Renaming
+% Forskel på causal og non causal
+
+%(1) Gennemgang af interessante regler
+%(2) Eksempel
+%(3) Implementation details, e.g. when Next and tensor rules clash
+%%(3.1) Preprocessing, herunder renaming
+%%(3.2) Forskel på causal og non causal
+
+Inference of guarded recursive TT terms from elaborated TT terms happens by a
+bottom-up, type-directed derivation according to the rules given in Figure~\ref{fig:epsilon_rules}\todo{Behøver vi tjekke :Type præmisserne her?}. Let
+$c$ be the singleton clock, $\Gamma$ be a typing environment, $\rho$ be a tuple matching an Idris name $n$ to a
+guarded name $_gn$ (and for projections, a name for its forall-projection, $_{\forall}n$) and $\phi$ be a (possibly empty) collection of such tuples:
+\begin{align*}
+   c,\,c^\prime &::=\,\sqcup\,|\,\sqcap \\
+   \rho &::= (n,\, _gn)\,|\,(n,\, _gn,\, _{\forall}n)  \\
+   \phi &::=\,\cdot\,|\,\rho\,\phi \\
+   IE,\,IE^\prime &::= \phi;\,c;\,\Gamma
+\end{align*}
+The singleton clock can appear either as open ($\sqcup$), closed ($\sqcap$), or
+irrelevant ($c$). Then guarded recursive terms are derived in an inference environment $IE$, such that
+${IE\vdash e : A \overset{B}{\Longrightarrow} IE^\prime \vdash e^\prime : B}$ describes the
+transformation ($\overset{B}{\Longrightarrow}$) of an elaborated TT term $e$ of type
+$A$ in $IE$ to a guarded recursive TT term $e^\prime$ of type $B$ in
+$IE^\prime$. The $B$ in $\overset{B}{\Longrightarrow}$ implies that the transformation
+is type-directed, since it denotes that the desired output type $B$ is input to
+the transformation function.
+
+In Figure~\ref{fig:epsilon_rules}, the $\Longrightarrow_{Next^\kappa}$ rule follows directly from the $Next$ rule in Figure~\ref{fig:guarded_recursion_rules_clocks}. The
+$\Longrightarrow_{\Lambda\kappa}$ and $\Longrightarrow_{apply^\kappa}$ rules have a
+similar structure, but here the clock changes state from premise to conclusion
+(e.g. from open to closed). For handling guarded names, the
+$\Longrightarrow_{\phi}$ rule says that if some Idris name has type $A$, and its
+guarded version has type $A^\prime$, then we can insert the guarded name in its
+place. Note that the type $A^\prime$ of the guarded name is not arbitrary, but follows the
+rules for causal and non-causal function types (see Section~\todo{insert ref
+  here}). Renaming is important for the $\Longrightarrow_{App}$ rule, since it
+is often used for the transformations required in the premises. This reasoning
+also applies to the $\Longrightarrow_{\tensor^{\kappa}_{n}}$ rule. Here,
+the $n$ is a natural number denoting the required ``lateness'' of both input and
+output, where $n \ge 1$. Specifically, ${\laterkappa_{\!\!1} B \cong \laterkappa B}, {\laterkappa_{\!\!2}
+\cong \laterkappa\laterkappa B}$ and so on. For trivial cases, the
+$\Longrightarrow_{Refl}$ rule is used. \todo{Say something about abstraction and
+let-rules here, when they have been formulated.}
+
+\begin{figure}
+\textbf{The transformation to guarded recursive terms}$\hfill \boxed{IE\vdash e : A \overset{B}{\Longrightarrow} IE^\prime \vdash e^\prime : B}$
+\input{figures/epsilon_next_rule.tex}
+\input{figures/epsilon_lambdakappa_rule.tex}
+\input{figures/epsilon_apply_rule.tex}
+\input{figures/epsilon_renaming_rule.tex}
+\input{figures/epsilon_app_rule.tex}
+\input{figures/epsilon_tensor_rule.tex}
+\input{figures/epsilon_refl_rule.tex}
+\input{figures/epsilon_lambda_rule.tex}
+  \caption{Rules for inferring guarded recursive terms.}
+  \label{fig:epsilon_rules}
+\end{figure}
+
+\paragraph{An Example}
+
+Figure~\ref{fig:epsilon_zeros} shows how a guarded recursive version of
+\texttt{zeros} can be inferred using the rules presented in Figure~\ref{fig:epsilon_rules}. The
+derivation proceeds by continually pushing type requirements down into the
+syntax tree, until these can be resolved either trivially (using the
+$\Longrightarrow_{Refl}$ rule), or by renaming (using the
+$\Longrightarrow_{\phi}$ rule). Note that all premises ensuring type consistency
+have been omitted for brevity. A full example, along with a more advanced one,
+can be found in Appendix~\ref{app:infer-guard-recurs}.\todo{Make this appendix}
+\begin{figure}
+\begin{lstlisting}[mathescape]
+causal zeros : Stream Nat
+zeros = Z :: zeros
+
+$_g$zeros : $\forall\kappa.$ $_g$Stream Nat
+$_g$zeros = $\Lambda\kappa.$ Z $_g$:: (Next (apply $_g$zeros))
+\end{lstlisting}
+  % \[
+  % \frac{x}{\eps{IE}{Z :: zeros}{Stream Nat}{IE}{Z :: gzeros}{gStream Nat}}
+  % \]
+\input{figures/epsilon_zeros}
+  \caption{Above: The user-provided program \texttt{zeros}, along with the
+    inferred program $_g$\texttt{zeros}. Below: Inferring $_g$\texttt{zeros} from \texttt{zeros} using the rules from
+  Figure~\ref{fig:epsilon_rules}.}
+  \label{fig:epsilon_zeros}
+\end{figure}
+
+\subsubsection{Implementing the Inference System}
+
+\paragraph{Preprocessing} Two aspects of the inference system, renaming and
+delaying the recursive reference, are mandatory, and these 
+are therefore handled in a separate preprocessing step. Both must take modality
+into account.
+
+Renaming, i.e. all applications of the $\Longrightarrow_{\phi}$ rule, is
+performed by substituting all Idris names in $\phi$ with their guarded
+versions. Special care must be taken when substituting names of projection
+functions, since the modality of the function in question, $f$, influences the choice
+of guarded name. If $f$ is causal, 
+
+Delaying the recursive reference
+%Preprocessing
+%Modality and Recursive reference
+%When rules clash
+
 \subsection{Checking}
 To check that what we infer actually conforms to the guarded recursion rules, we
 have implemented a checker. This algorithm simply checks a term to have a given

@@ -33,24 +33,24 @@ bisimsucconestwos = MkBisimStream' Refl bisimsucconestwos
 bisim_eq : BisimStream' a s s' -> s = s'
 bisim_eq = believe_me
 
-repeat : Vect (S n) a -> Stream' a
-repeat xs = repeat' xs xs
-  where
-  repeat' : Vect (S n) a -> Vect (S m) a -> Stream' a
-  repeat' xs (x :: []) = x :: (repeat' xs xs)
-  repeat' xs (x :: (y :: ys)) = x :: (repeat' xs (y :: ys))
+-- repeat : Vect (S n) a -> Stream' a
+-- repeat xs = repeat' xs xs
+--   where
+--   repeat' : Vect (S n) a -> Vect (S m) a -> Stream' a
+--   repeat' xs (x :: []) = x :: (repeat' xs xs)
+--   repeat' xs (x :: (y :: ys)) = x :: (repeat' xs (y :: ys))
   
-zeroone : Vect 2 Nat
-zeroone = [0, 1]  
+-- zeroone : Vect 2 Nat
+-- zeroone = [0, 1]  
 
-onetwo : Vect 2 Nat
-onetwo = [1, 2]
+-- onetwo : Vect 2 Nat
+-- onetwo = [1, 2]
 
-bisim_succ_repeat_zeroone__repeat_onetwo : BisimStream' Nat (ssucc (repeat zeroone)) (repeat onetwo)
-bisim_succ_repeat_zeroone__repeat_onetwo = MkBisimStream' Refl help
-  where
-  help : BisimStream' Nat (tl (ssucc (repeat (zeroone)))) (tl (repeat onetwo))
-  help = MkBisimStream' Refl bisim_succ_repeat_zeroone__repeat_onetwo
+-- bisim_succ_repeat_zeroone__repeat_onetwo : BisimStream' Nat (ssucc (repeat zeroone)) (repeat onetwo)
+-- bisim_succ_repeat_zeroone__repeat_onetwo = MkBisimStream' Refl help
+--   where
+--   help : BisimStream' Nat (tl (ssucc (repeat (zeroone)))) (tl (repeat onetwo))
+--   help = MkBisimStream' Refl bisim_succ_repeat_zeroone__repeat_onetwo
 
-bisim_succ_repeat_zeroone__repeat_onetwo' : BisimStream (ssucc (repeat zeroone)) (repeat onetwo)
-bisim_succ_repeat_zeroone__repeat_onetwo' = MkBisimStream Refl (MkBisimStream Refl bisim_succ_repeat_zeroone__repeat_onetwo') 
+-- bisim_succ_repeat_zeroone__repeat_onetwo' : BisimStream (ssucc (repeat zeroone)) (repeat onetwo)
+-- bisim_succ_repeat_zeroone__repeat_onetwo' = MkBisimStream Refl (MkBisimStream Refl bisim_succ_repeat_zeroone__repeat_onetwo') 

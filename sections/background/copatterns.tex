@@ -28,9 +28,10 @@ their \emph{elimination rules}.
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
-codata Stream : Type -> Type where
+corecord Stream : Type -> Type where
   head : Stream a -> a
   tail : Stream a -> Stream a 
+  constructor MkStream
 \end{lstlisting}
 \caption{An infinite list defined by observations.}
 \label{fig:stream}
