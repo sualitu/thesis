@@ -1,170 +1,202 @@
 \chapter{Evaluation}
 \label{cha:evaluation}
-\todo{Link back to motivation}
 \section{Guarded Recursion}
-In Chapter~\ref{cha:infer-guard-recurs} we discussed an inference and checking
-system for guarded recursion. In the following we will present the results of
-implementing such a system in Idris, including what can now be proven total, but
-also what consequences the scoping we have done has had.
+In Section~\ref{sec:less-restr-prod} we discussed the motivation behind
+implementing a less restrictive productivity checker. In
+Chapter~\ref{cha:infer-guard-recurs} we introduced a system for
+productivity checking functions utilizing guarded recursion. In the following we
+present the result of implementing this system in Idris. We look into
+what can now be automatically proven total, but also what can not. The
+implementation of all functions discussed in this section can be found in
+Appendix~\ref{app:example-programs}. 
 
-Our goal was to add a less restrictive productivity checker to Idris with
-guarded recursion. Let us therefore start by looking at what we can now prove
-total in Idris, which we could not before. In
-Figure~\ref{fig:productivity_table} a list of function (names) along side their
-found productivity with different checking methods can be found. See
-Appendix~\ref{sec:guarded-recursion-1} for the implementation of the functions.
+We divide productive functions into three classes: 
+\begin{itemize}
+\item Functions we can prove total.
+\item Functions we should be able to prove total, but can not.
+\item Functions we should not and can not prove total.
+\end{itemize}
+
+The first class is self-explanatory. The second stems from our implementation. While
+we do indent to fully implement the system described in
+Chapter~\ref{cha:infer-guard-recurs}, our current implementation has not quite
+reached full coverage yet. The last covers functions that are productive, but that we
+can not infer a guarded recursive definition for.
+% Intro with link back to motivation.
+% Three classes of functions:
+% What we can check
+% What we should be able to check
+% What we should not be able to check.
+% Why can we check what we can?
+% Why can't we check what we should be able to?
+% Why should we not be able to check what we shouldn't?
+% Modality
+
+Figure~\ref{fig:productivity_table_1} shows examples of functions falling into the
+first category. While some functions are already proven productive under the current Idris
+syntactic guardedness principle, we can see that we have added to the set of
+Idris functions automatically proven productive. We can, for example, now prove
+productivity for functions where the recursive is given as an argument to
+another function.
 
 \begin{figure}[h]
 \begin{center}
   \begin{tabular}{| l | c | c |} \hline
     Function & Syntactic Guardedness & Guarded Recursion \\ \hline
-    zeros & Productive & Productive \\ \hline
-    repeat & Productive & Productive \\ \hline
-    map & Productive & Productive \\ \hline
-    zipWith & Productive & Productive \\ \hline
-    toggle & Productive & Productive \\ \hline
-    interleave & Productive & Productive \\ \hline
-    nats & Not Productive & Productive \\ \hline
-    fib & Not Productive & Productive \\ \hline
-    paperfold & Not Productive & Productive \\ \hline
-    paperfold' & Not Productive & Not Productive \\ \hline
-%    & & \\ \hline
+    \texttt{zeros} & Productive & Productive \\ \hline
+    \texttt{repeat} & Productive & Productive \\ \hline
+    \texttt{map} & Productive & Productive \\ \hline
+    \texttt{zipWith} & Productive & Productive \\ \hline
+    \texttt{toggle} & Productive & Productive \\ \hline
+    \texttt{interleave} & Productive & Productive \\ \hline
+    \texttt{unfold} & Productive & Productive \\ \hline
+    \texttt{prepend} & Productive & Productive \\ \hline
+    \texttt{cycle} & Productive & Productive \\ \hline
+    \texttt{nats} & Not Productive & Productive \\ \hline
+    \texttt{fib} & Not Productive & Productive \\ \hline
+    \texttt{fac} & Not Productive & Productive \\ \hline
+    \texttt{paperfold} & Not Productive & Productive \\ \hline
+    \texttt{calculateWilfully} & Productive & Productive \\ \hline
+    \texttt{tmap} & Productive & Productive \\ \hline
+    \texttt{tzip} & Productive & Productive \\ \hline
+    \texttt{trepeat} & Productive & Productive \\ \hline
+    \texttt{carry} & Not Productive & Productive \\ \hline
+    \texttt{pingserver'} & Not Productive & Productive \\ \hline
+    \texttt{imap} & Productive & Productive \\ \hline
+    \texttt{counter} & Not Productive & Productive \\ \hline
   \end{tabular}
 \end{center}
-  \caption{Functions and their productivity according to Idris current totality
-    checker and according to our guarded recursion checker. The actual programs
-    can be found in Appendix~\ref{app:example-programs}. Note that it is
-    according to our system implementing guarded recursion, not guarded
-    recursion in general.}
-  \label{fig:productivity_table}
+  \caption{Examples of functions we can prove productive using our guarded
+    recursive system. Note that the header ``Syntactic Guardedness'' referes to the current
+    Idris implementation of syntactic guardedness, and ``Guarded Recursion''
+    refers to our implementation of guarded recursion in Idris.}
+  \label{fig:productivity_table_1}
 \end{figure}
 
-\subsection{Examples of inference}
-As we saw we have successfully checked functions for productivity by inferring
-guarded recursion. Let us therefore inspect the terms we have inferred, such
-that we can convince ourself that we have actually inferred guarded
-recursion. Consider the simple example \texttt{zeros}:
-
-\begin{lstlisting}[mathescape]
-zeros : Stream Nat
-zeros = Z :: zeros
-\end{lstlisting}
-
-The first thing we do is to find the guarded
-recursive type for the function. Here, \texttt{Stream Nat} becomes $\forall
-\kappa$\texttt{.Stream}$^\kappa$ \texttt{Nat}. Once this is done we must find a
-transformation from \texttt{Z :: zeros} of type \texttt{Stream Nat} to a term of
-type $\forall \kappa$\texttt{.Stream}$^\kappa$ \texttt{Nat}:
-\[
-IE \vdash Z :: zeros : Stream\,Nat\Longrightarrow \,e : \forall \kappa.Stream^\kappa \,Nat
-\]
-\[
-IE = zeros;\, \causal ;\,\phi, (::,\ _g::), (zeros,\, _gzeros);\, \open;\,
-\Gamma,Z : Nat,\ zeros : Stream Nat,\,_gzeros : \forallk{Stream} Nat
-\]
-
-We now need to infer a term for $e$. Using the rules from \todo{make ref}, we
-end up with the following guarded recursive definition:
-
-\begin{lstlisting}[mathescape]
-$_g$zeros : $\forall \kappa$.Stream$^\kappa$ Nat
-$_g$zeros = Z $_g$:: (Next$^\kappa$ apply $_g$zeros)
-\end{lstlisting}
-
-Details on this inference is to be found in
-Appendix~\ref{cha:example-inferences}. A more interesting example is
-\texttt{nats}: 
-
-\begin{lstlisting}[mathescape]
-nats : Stream Nat
-nats = Z :: (map S nats)
-\end{lstlisting}
-
-We will not go into a lot of details about this inference here as it is a fairly
-complex and long procedure, but what is interesting is that we have to infer a
-later composition because of the availability of the recursive reference. We end
-up having to infer:
-
-\[
-IE \vdash map\,S\,nats : Stream\,Nat\Longrightarrow \,e : \later^\kappa_1 Stream^\kappa \,Nat
-\]
-\[
-IE = nats;\, \curvearrowleft ;\,\phi, (::, _g::), (nats, _gnats), (map, _gmap);\, \sqcup;\, \Gamma
-\]
-
-\begin{lstlisting}[mathescape]
-$_g$nats : $\forall \kappa$.Stream$^\kappa$ Nat
-$_g$nats = Z $_g$:: (Next$^\kappa$ ((apply $_g$map) S) $\tensor ^\kappa _1$ (Next$^\kappa$ apply $_g$nats))
-\end{lstlisting}
-
-\subsection{Singleton Clock}
-\label{sec:singleton-clock}
-\todo{rewrite}
-\subsection{Modality}
-Another simplification we introduced was modality where we said that a function was
-either causal or noncausal. These two are, however, not the only options. Consider
-for example the function \texttt{semiinterleave} in
-Figure~\ref{fig:semiinterleave}. This function is neither causal, as the
-quantification does not span the entire type, not noncausal, as there is not a
-quantification on each argument.
+Figure~\ref{fig:productivity_table_2} shows examples of functions falling into
+the second category. These are functions for which our implementation can not
+yet infer a guarded term. We are, however, convinced the problem lies within the
+implementation of our rules, and not the rules themselves. As such, a better
+implementation should judge these functions as productive. We will evaluate on
+our implementation in Section~\ref{sec:our-implementation}.
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
-semiinterleave : $\forall \kappa$.Stream$^\kappa$ a $\to$ $\forall \kappa$(Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
-semiinterleave s = $\Lambda \kappa.$ semiinterleave'(s)
-
-semiinterleave' : $\forall \kappa$.Stream$^\kappa$ a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
-semiinterleave' = pfix(f)
-
-f : ($\forall \kappa$.Stream$^\kappa$ a $\to$ $\later$$^{\kappa}$(Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)) $\to$ 
-       $\forall \kappa$.Stream$^\kappa$ a $\to$ Stream$^\kappa$ a $\to$ Stream$^{\kappa}$ a
-f g xs s = StreamCons (head xs)
-    (Next (StreamCons (head s) 
-                      ((g (tail (tail xs))) $\tensor^\kappa$(tail s))))
-\end{lstlisting}
-\caption{A function interleave a stream with the even indices of another
-  stream.}
-\label{fig:semiinterleave}
+\begin{center}
+  \begin{tabular}{| l | c | c |} \hline
+    Function & Syntactic Guardedness & Guarded Recursion \\ \hline
+    \texttt{never} & Not Productive & Not Productive \\ \hline
+    \texttt{bind} & Not Productive & Not Productive \\ \hline
+    \texttt{multmachine} & Not Productive & Not Productive \\ \hline
+    \texttt{pingserver} & Not Productive & Not Productive \\ \hline
+  \end{tabular}
+\end{center}
+  \caption{Examples of functions we can not yet prove productive. Productivity
+    of these
+    functions should be provable within our system.}
+  \label{fig:productivity_table_2}
 \end{figure}
 
-The programmer is not able to specify this type in our system, and we can
-therefore not correctly check its productivity. We do, however, see that there
-are many useful functions which fall into one of these two modality catagories,
-and that we have to resort to the more contrived examples, such as
-\texttt{semiinterleave}, to find functions we cannot define.
+The last class we described are functions that we do not think our system can
+prove productive. While only a few examples are listed in
+Figure~\ref{fig:productivity_table_3}, we expect for there to be more of such
+definitions. The problem with these functions is that they require a very specific
+type to be proven productive.
 
-\subsection{User written Guarded Recursion}
-While the main purpose of our system is to let users utilize guarded recursion,
-without actually writing it, to write productive functions, we aimed to design
-our system such that it would be possible to write and check guarded
-recursion without any inference. To achieve this we decoupled the inference and
-the checking algorithm in such a way that programs already defined as guarded
-recursion could be send directly to the checker. 
+\subsection{Function Types}
+To simplify inference we categorized functions into causal and
+non-causal functions. We used this to help us infer the guarded type of a function. There
+are, however, functions for which the guarded type falls outside this
+categorization. The examples in Figure~\ref{fig:productivity_table_3} both need
+more sophisticated types to be proven total.
 
-Sadly, there are other considerations to take, and, currently, a user can not
-yet write his own guarded recursive definitions. Taking a side the Idris
-technical issues, mainly directing the user written guarded recursion to the
-checker, a problem is that in Section \todo{check ref}we eliminated the fixed
-point operator.
+\begin{figure}[h]
+\begin{center}
+  \begin{tabular}{| l | c | c |} \hline
+    Function & Syntactic Guardedness & Guarded Recursion \\ \hline
+    \texttt{mergef} & Not Productive & Not Productive \\ \hline
+    \texttt{paperfold'} & Not Productive & Not Productive \\ \hline
+  \end{tabular}
+\end{center}
+  \caption{Examples of functions that we can not prove productive. Productivity
+    of these functions should not be provable within our system.}
+  \label{fig:productivity_table_3}
+\end{figure}
 
-The checking algorithm expects this kind of guarded recursion without a fixed
-point, meaning that this is what the user will have to write. This requires the
-user to not only have knowledge about guarded recursion, but also of how our
-implementation of it works.
+Atkey and McBride\,\citep{Atkey:2013} prove \texttt{mergef} productive by
+changing the type of the input function. They alter it to be:
 
-% Brugeren kan ikke, endnu skrive sin egen GR
-% Singleton clock og modalitet er hovedsageligt for at gøre inference
-% nemmere. Måske checkeren kunne være ligeglad? Det kunne gør at man kunne
-% skrive vildere GR programmer selv.
-%#############
-% GR evaluation 
-% Hvor godt virker vores løsning til guarded recursion?
-% Hvad virker? Hvad virker ikke?
-%% Instans funktioner
-%% Relaterede funktioner
-% Hvad burde virke?
-%#############
+\begin{lstlisting}[mathescape]
+mergef : (Nat $\to$ Nat $\to \laterkappan$Stream$^\kappa$ Nat $\to$ Stream$^\kappa$) $\to$
+         Stream$^\kappa$ Nat $\to$ Stream$^\kappa$ Nat $\to$ Stream$^\kappa$ Nat
+mergef f s t = f (head s) (head t) 
+                (mergef $\tensorkappan$ (Next$^\kappa$ f) $\tensorkappan$ (tail s) $\tensorkappan$ (tail t))
+\end{lstlisting}
 
+This follows the intuition that the \texttt{Stream} argument to \texttt{f} must be used in a
+later context. It allows us to give the recursive reference, which is always
+later, as an argument to \texttt{f}.
+
+In a similar fashion, Clouston et al.\,\citep{BirkedalL:guarded-lambda-conf}
+prove \texttt{paperfold'} productive by using a differently typed \texttt{interleave}:
+
+\begin{lstlisting}[mathescape]
+interleave : Stream$^\kappa$ Nat $\to$ $\laterkappan$ Stream$^\kappa$ Nat $\to$ Stream$^\kappa$ Nat
+\end{lstlisting}
+
+This type captures that while the first argument is needed straight away, the
+second argument is always only needed later. With this type for interleave they
+can define a guarded \texttt{paperfolds'}:
+
+\begin{lstlisting}[mathescape]
+paperfolds' : Stream$^\kappa$ Nat
+paperfolds' = interleave toggle paperfolds'
+\end{lstlisting}
+
+Inferring these types would be no easy task, and has been deemed out of scope of
+this project. With better support for user interaction with the
+inference system, one could imagine a system where the user could specify these
+types instead of attempting to infer them. The inference system would still be
+inferring the term, but instead of attempting to infer a type, it will use the
+type defined by the user.
+
+% \begin{figure}[h]
+% \begin{lstlisting}[mathescape]
+% semiinterleave : $\forall \kappa$.Stream$^\kappa$ a $\to$ $\forall \kappa$(Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
+% semiinterleave s = $\Lambda \kappa.$ semiinterleave'(s)
+
+% semiinterleave' : $\forall \kappa$.Stream$^\kappa$ a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a
+% semiinterleave' = pfix(f)
+
+% f : ($\forall \kappa$.Stream$^\kappa$ a $\to$ $\later$$^{\kappa}$(Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)) $\to$ 
+%        $\forall \kappa$.Stream$^\kappa$ a $\to$ Stream$^\kappa$ a $\to$ Stream$^{\kappa}$ a
+% f g xs s = StreamCons (head xs)
+%     (Next (StreamCons (head s) 
+%                       ((g (tail (tail xs))) $\tensor^\kappa$(tail s))))
+% \end{lstlisting}
+% \caption{A function interleave a stream with the even indices of another
+%   stream.}
+% \label{fig:semiinterleave}
+% \end{figure}
+
+\subsection{Our Implementation}
+\label{sec:our-implementation}
+As discussed, the implementation of our system is not yet complete. There are
+definitions that we should be able to check that we can not. The cause of this is
+simply a buggy implementation. In the later parts of the project we have
+prioritized fine-tuning our system on a theoretical level, rather than ironing
+out bugs in our implementation. This has resulted in a stronger system, but a
+weaker implementation.
+
+Our implementation, while flawed, demonstrates that implementing
+the system described in Chapter~\ref{cha:infer-guard-recurs} is feasible. It
+shows that, through a set of inference rules, it is possible to infer a guarded
+term. This term is then checked against the guarded recursion rules, to ensure
+productivity.
+
+We are therefore convinced that it is possible to improve our implementation, to closer
+resemble our system. There are definitely improvements to be made, but what we
+have done thus far has already improved the productivity checker in Idris,
+allowing for more total definitions to be written.
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "../copatterns-thesis"

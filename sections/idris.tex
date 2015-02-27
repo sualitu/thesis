@@ -220,7 +220,7 @@ our inference system for guarded recursion.
 \AxiomC{$\begin{matrix}
 \Gamma; \underline{let} \x \mapsto e_1 : S \vdash e_2 : T
 \\
-\Gamma; \underline{let} \x \mapsto e_1 : T : Type_n
+\Gamma; \underline{let} \x \mapsto e_1 : S \vdash T : Type_n
 \end{matrix}$}
 \LeftLabel{Let}
 \BinaryInfC{$\Gamma \vdash \underline{let}\ x \mapsto e_1 : S.\ e_2 : T[{e_1}/{x}]$}

@@ -1,13 +1,11 @@
 %!TEX root = ../copatterns-thesis.tex
 \chapter{Future Work}
 \label{cha:future-work}
-<<<<<<< Updated upstream
-=======
 \section{Copatterns}
 \subsection{With-rule}
 \subsection{Pattern matching on Codata}
 \subsection{Improved Syntax}
->>>>>>> Stashed changes
+
 %### Copatterns ###
 % Copatterns in with-rule
 % Pattern matching på codata i Idris?
@@ -16,62 +14,50 @@
 %##################
 \section{Guarded Recursion}
 \label{sec:guarded-recursion-1}
-In this section we will go over how we will improve on our guarded recursion
-system and develop it to be a better productivity checker.
-\subsection{Low Hanging Fruit}
-There are a number of improvements which do not require great loads of work to
-implement, but that we have not done due to a lack of time. These \emph{low
-  hanging fruits} are mostly Idris technicalities that require a better
-understanding of how certain things are handled in Idris.
-\paragraph{Instance Functions}
-% Instans Funktioner
+Section~\ref{sec:discussion} we discussed the shortcomings and limitations of
+our system. To reiterate, we mentioned the following:
 
-\paragraph{Dependent Productivity}
-% Funktioner hvis produktivitet afhænger af hinanden
-If a function calls another function, then its productivity depends on the
-totality of the called function. We do not take this into account when
-judging the productivity of functions.
+\begin{itemize}
+\item Preservation of semantics
+\item Type class instances
+\item Mutual recursion
+\item Totality dependencies
+\item User-written guarded recursion
+\item Multiple clocks
+\item Error reporting
+\end{itemize}
 
-This should be a fairly trivial task. Simply keep track of what functions depend
-on others and when everything has been checked, check the dependencies. Mutual
-recursion is a separate case which we will discuss in
-Section~\ref{sec:mutual-recursion}.
+Improving on these are great opportunities for further research and
+development. While we already went over possible solutions to some of these problems in
+Section~\ref{sec:discussion}, some were left without further discussion.
+
+\todo{ref to fixed point elimination elimination section!}
+We also discussed an implementation without the fixed point
+elimination. While not yet implemented, we intent to adjust our implementation
+and reintroduce the fixed point operator, and not rely on the fixed point elimination
+rules. We expect to have implemented these changes within a reasonable
+time. Therefore, we will base our suggestions for future work on a new
+improved implementation.
+
 \subsection{Mutual Recursion}
-\label{sec:mutual-recursion}
-We have not been able to find any theoretical solution for mutually recursive
-functions, so we have not given them any special treatment, not have we deeply
-explored the area. We did see in Figure~\ref{fig:productivity_table} that our
-system was able to identify mutually recursive functions as productive, but this
-is probably more due to coincidence.
+We discussed how we can not ensure productivity for mutually recursive
+functions, as our analysis prevents infinite recursion by securing that the
+recursive reference is only available later. Because mutual recursion can lead
+to infinite recursion through other constructs, we can not guarantee productivity.
 
-An initial, conservative approach could be to treat all mutually recursive
-references in the same way we treat recursive references now. This can be
-thought of as making the fixed point on a product of functions rather than a
-single function.
-\subsection{Clocks}
-While we have not been able to identify the use for more than one clock,
-extending our system to have multiple clocks would be bring our implementation
-closer to the theory, thus its desirable. As discussed in
-Chapter~\ref{cha:infer-guard-recurs} inferring multiple clocks is not
-trivial. There seems to be no better way of doing it than simple trial and
-error, and even then we are not sure if we found the right inference. 
+Clouston et al.\,\citep{BirkedalL:guarded-lambda-conf} discuss solving mutual
+recursion by defining the fixed point of a product of functions. A similar
+approach could be adapted in our system to include mutual recursion. This would
+require changes to inference system, because the we would have to infer this
+product of functions. No changes would be needed in the checker, as a fixed
+point rule works for any type, and thereby also products of functions. 
 
-The checker, however, could be changed to handle multiple clocks in a way that
-makes sense. While this obviously would not have much affect with no changes to
-the inference system, adding multiple clocks to the checking algorithm could
-be interesting for user written guarded recursion.
-\subsection{User written Guarded Recursion}
-To increase the usefulness of guarded recursion in Idris, it is important to
-continually improve and support writing guarded recursion without the inference
-system.
-\paragraph{Partial Inference}
-Another interesting aspect could be to allow the programmer to only write parts
-of the guarded recursion, and then infer the missing parts. This could be seen
-as sort of a \emph{hinting} system, where the programmer guides the inference system.
-\subsection{Preservation of Semantics}
-
-\subsection{Error Messages}
-
+\subsection{User-written Guarded Recursion}
+Another interesting continuation of our project is how to implement user-written
+guarded recursion. In Section~\ref{sec:user-written-guarded} we discussed the
+a challenge of allowing the user to write guarded recursion, namely that
+allowing the user to pattern match on values of type \texttt{Later}.
+% bug fixes
 %### GUARDED recursion ####
 % Flere ure: Hvor stort et problem er det kun at have eet ur?
 % Mutual recursion
