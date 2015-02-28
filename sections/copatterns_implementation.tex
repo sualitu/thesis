@@ -14,131 +14,147 @@ time elaboration is reached.
 % Top-level produktstruktur (een introduktionsregel)
 % Pattern matching?
 %#########
+Following the duality between inductive and coinductive data types described in
+Section~\ref{sec:coinductive-types}, we motivate our implementation of
+copatterns by quoting Jacobs and Rutten\,\citep{Jacobs97atutorial}:
+
+\begin{quote}
+In an \emph{inductive definition} of a function $f$, one defines the value of $f$ on all constructors.
+\end{quote}
+
+\begin{quote}
+In a \emph{coinductive definition} of a function $f$, one defines the values of all
+destructors on each outcome $f(x)$. [$\,$\ldots] Such a coinductive definition
+determines the observable behaviour of each $f(x)$.
+\end{quote}
+
+By adding copatterns to Idris, we wish to 
+
 % Following the discussion in Section~\ref{sec:prod-vs.-copr}, support for
 % copatterns have only been added for record types, both inductive and
 % coinductive. This decision is based upon the fact that Idris record types have
 % an obvious top-level structure, making them ideal companions for
 % copatterns. All examples are therefore given for record types only.
-If we are to add copatterns to Idris without making any changes to TT, they must
-be reducible to introduction rules for inductive types, which can be analysed by
-standard pattern matching. To provide an intuition in this direction, we turn to
-the \emph{inversion principle}, originally formulated by
-Lorenzen\,\citep{Lorenzen1950,Lorenzen1955} (an accessible introduction is given by Moriconi
-and Tesconi\,\citep{Moriconi08}). As an example, we consider the simple
-case of adding a conjunction connective to a language by introducing the
-conjunction ($\land$) introduction rule:
-\begin{center}
-  \AXD{A} 
-  \AXD{B}
-  \RLabel{\land_I}
-  \BID{A\land B} 
-  \DisplayProof
-\end{center}
-This introduction rule states that if $A$ holds and $B$ holds, then $A \land B$
-holds. To proceed, we must know that the rule is both unique and
-admissible (i.e.  it cannot not change what is provable within the
-system). Since conjunction is a new connective, its introduction rule must be
-unique. Furthermore, it must be admissible, seeing as it merely introduces a
-connective between two existing constructs $A$ and $B$. From here, we can apply
-the inversion principle to arrive at the following rule (where $\supset$ denotes
-logical implication):
-\begin{center}
-  \AXD{\ \ A,B\,\supset C} 
-  \RLabel{\land_{inv}}
-  \UID{A\land B\supset C}
-  \DisplayProof
-\end{center}
-By the inversion principle, we can equally well derive a given $C$ from assuming either $A$ and $B$
-separately, or from assuming $A\land B$ (given that the introduction rule $\land_I$ is
-admissible). Additionally, Lorenzen argues that if we derive $C$ from $A\land B$
-immediately after using the conjunction introduction rule ($\land_I$) on $A$ and
-$B$, then we can bypass the introduction of the conjunction altogether, and
-conclude $C$ directly from the separate assumptions $A$ and $B$.
+% If we are to add copatterns to Idris without making any changes to TT, they must
+% be reducible to introduction rules for inductive types, which can be analysed by
+% standard pattern matching. To provide an intuition in this direction, we turn to
+% the \emph{inversion principle}, originally formulated by
+% Lorenzen\,\citep{Lorenzen1950,Lorenzen1955} (an accessible introduction is given by Moriconi
+% and Tesconi\,\citep{Moriconi08}). As an example, we consider the simple
+% case of adding a conjunction connective to a language by introducing the
+% conjunction ($\land$) introduction rule:
+% \begin{center}
+%   \AXD{A} 
+%   \AXD{B}
+%   \RLabel{\land_I}
+%   \BID{A\land B} 
+%   \DisplayProof
+% \end{center}
+% This introduction rule states that if $A$ holds and $B$ holds, then $A \land B$
+% holds. To proceed, we must know that the rule is both unique and
+% admissible (i.e.  it cannot not change what is provable within the
+% system). Since conjunction is a new connective, its introduction rule must be
+% unique. Furthermore, it must be admissible, seeing as it merely introduces a
+% connective between two existing constructs $A$ and $B$. From here, we can apply
+% the inversion principle to arrive at the following rule (where $\supset$ denotes
+% logical implication):
+% \begin{center}
+%   \AXD{\ \ A,B\,\supset C} 
+%   \RLabel{\land_{inv}}
+%   \UID{A\land B\supset C}
+%   \DisplayProof
+% \end{center}
+% By the inversion principle, we can equally well derive a given $C$ from assuming either $A$ and $B$
+% separately, or from assuming $A\land B$ (given that the introduction rule $\land_I$ is
+% admissible). Additionally, Lorenzen argues that if we derive $C$ from $A\land B$
+% immediately after using the conjunction introduction rule ($\land_I$) on $A$ and
+% $B$, then we can bypass the introduction of the conjunction altogether, and
+% conclude $C$ directly from the separate assumptions $A$ and $B$.
 
-In order to bring this intuition to the world of copatterns, consider the Idris
-implementation of an infinitely branching tree given in
-Figure~\ref{fig:tree_with_intro_rule}. We assume that the introduction rule for
-\texttt{Tree}, \texttt{Tree}$_I$, is unique, such that a \texttt{Tree} can only be
-introduced using this rule. Also, we assume that the introduction rule is
-admissible. 
-\begin{figure}[h]
-\begin{lstlisting}[mathescape]
-corecord Tree a where
-  left  : Tree a
-  value : a
-  right : Tree a
-  constructor MkTree
-\end{lstlisting}
-  \centering
-  \AXD{\Gamma\vdash \texttt{left : Tree a}}
-  \AXD{\Gamma\vdash \texttt{value : a}}
-  \AXD{\Gamma\vdash \texttt{right : Tree a}}
-  \RLabel{\texttt{Tree}_I}
-  \TID{\Gamma\vdash \texttt{MkTree left value right : Tree a}}
-  \DisplayProof
-  \caption{An Idris implementation of an infinitely branching tree, along with
-    its introduction rule.}
-  \label{fig:tree_with_intro_rule}
-\end{figure}
-From the above intuition for conjunction, we can therefore use the inversion principle to
-arrive at the following rule for the \texttt{Tree} type:
-\begin{center}
-  \AXD{\Gamma\vdash \texttt{left : Tree a, value : a, right : Tree a}\supset C}
-  \RLabel{\texttt{Tree}_{inv}}
-  \UID{\Gamma\vdash \texttt{MkTree left value right : Tree a}\quad\quad\,\supset C}
-  \DisplayProof
-\end{center}
-Ergo, if we derive $C$ immediately after an application of \texttt{MkTree}, then
-we may bypass the use of \texttt{MkTree}. To make this concrete, consider the
-difference between the two programs given in
-Figure~\ref{fig:map_tree_implementations_equiv}. The top
-implementation of \texttt{map} in
-Figure~\ref{fig:map_tree_implementations_equiv} is a direct application of the
-introduction rule for \texttt{Tree}:
-\begin{center}
-  \AXD{\Gamma\vdash \texttt{map f (left t) : Tree b}}
-  \AXD{\Gamma\vdash \texttt{f (value t) : b}}
-  \AXD{\Gamma\vdash \texttt{map f (right t) : Tree b}}
-  \RLabel{\texttt{Tree}_I}
-  \TID{\Gamma\vdash \texttt{MkTree (map f (left t)) (f (value t)) (map f (right
-      t)) : Tree b}}
-  \DisplayProof
-\end{center}
-By virtue of the inversion principle, we can equivalently give this
-implementation with copatterns, by providing a value for each of the premises of
-the introduction rule, as shown in the bottom implementation of Figure~\ref{fig:map_tree_implementations_equiv}.
+% In order to bring this intuition to the world of copatterns, consider the Idris
+% implementation of an infinitely branching tree given in
+% Figure~\ref{fig:tree_with_intro_rule}. We assume that the introduction rule for
+% \texttt{Tree}, \texttt{Tree}$_I$, is unique, such that a \texttt{Tree} can only be
+% introduced using this rule. Also, we assume that the introduction rule is
+% admissible. 
+% \begin{figure}[h]
+% \begin{lstlisting}[mathescape]
+% corecord Tree a where
+%   left  : Tree a
+%   value : a
+%   right : Tree a
+%   constructor MkTree
+% \end{lstlisting}
+%   \centering
+%   \AXD{\Gamma\vdash \texttt{left : Tree a}}
+%   \AXD{\Gamma\vdash \texttt{value : a}}
+%   \AXD{\Gamma\vdash \texttt{right : Tree a}}
+%   \RLabel{\texttt{Tree}_I}
+%   \TID{\Gamma\vdash \texttt{MkTree left value right : Tree a}}
+%   \DisplayProof
+%   \caption{An Idris implementation of an infinitely branching tree, along with
+%     its introduction rule.}
+%   \label{fig:tree_with_intro_rule}
+% \end{figure}
+% From the above intuition for conjunction, we can therefore use the inversion principle to
+% arrive at the following rule for the \texttt{Tree} type:
+% \begin{center}
+%   \AXD{\Gamma\vdash \texttt{left : Tree a, value : a, right : Tree a}\supset C}
+%   \RLabel{\texttt{Tree}_{inv}}
+%   \UID{\Gamma\vdash \texttt{MkTree left value right : Tree a}\quad\quad\,\supset C}
+%   \DisplayProof
+% \end{center}
+% Ergo, if we derive $C$ immediately after an application of \texttt{MkTree}, then
+% we may bypass the use of \texttt{MkTree}. To make this concrete, consider the
+% difference between the two programs given in
+% Figure~\ref{fig:map_tree_implementations_equiv}. The top
+% implementation of \texttt{map} in
+% Figure~\ref{fig:map_tree_implementations_equiv} is a direct application of the
+% introduction rule for \texttt{Tree}:
+% \begin{center}
+%   \AXD{\Gamma\vdash \texttt{map f (left t) : Tree b}}
+%   \AXD{\Gamma\vdash \texttt{f (value t) : b}}
+%   \AXD{\Gamma\vdash \texttt{map f (right t) : Tree b}}
+%   \RLabel{\texttt{Tree}_I}
+%   \TID{\Gamma\vdash \texttt{MkTree (map f (left t)) (f (value t)) (map f (right
+%       t)) : Tree b}}
+%   \DisplayProof
+% \end{center}
+% By virtue of the inversion principle, we can equivalently give this
+% implementation with copatterns, by providing a value for each of the premises of
+% the introduction rule, as shown in the bottom implementation of Figure~\ref{fig:map_tree_implementations_equiv}.
 
-\begin{figure}[h]
-\begin{lstlisting}[mathescape]
-map : (a $\to$ b) $\to$ Tree a $\to$ Tree b
-map f t = MkTree (map f (left t)) (f (value t)) (map f (right t))
-\end{lstlisting}
-\begin{lstlisting}[mathescape]
-map : (a $\to$ b) $\to$ Tree a $\to$ Tree b
-&left  map f t = map f (left t)
-&value map f t = f (value t)
-&right map f t = map f (right t)  
-\end{lstlisting}
+% \begin{figure}[h]
+% \begin{lstlisting}[mathescape]
+% map : (a $\to$ b) $\to$ Tree a $\to$ Tree b
+% map f t = MkTree (map f (left t)) (f (value t)) (map f (right t))
+% \end{lstlisting}
+% \begin{lstlisting}[mathescape]
+% map : (a $\to$ b) $\to$ Tree a $\to$ Tree b
+% &left  map f t = map f (left t)
+% &value map f t = f (value t)
+% &right map f t = map f (right t)  
+% \end{lstlisting}
   
-  \caption{Two equivalent implementations of a function \texttt{map} on the type
-    \texttt{Tree} from Figure~\ref{fig:tree_with_intro_rule}. Above: An
-    implementation using the introduction rule. Below: An implementation using copatterns.}
-  \label{fig:map_tree_implementations_equiv}
-\end{figure}
+%   \caption{Two equivalent implementations of a function \texttt{map} on the type
+%     \texttt{Tree} from Figure~\ref{fig:tree_with_intro_rule}. Above: An
+%     implementation using the introduction rule. Below: An implementation using copatterns.}
+%   \label{fig:map_tree_implementations_equiv}
+% \end{figure}
 
-In terms of an Idris implementation, the inversion principle provides us with
-the intuition that a definition using copatterns, i.e. a definition by
-observation, is equivalent to a definition using the unique introduction rule,
-i.e. a defininition by construction. Therefore, definitions with copatterns can
-be implemented by desugaring them to constructor applications internally.
+% In terms of an Idris implementation, the inversion principle provides us with
+% the intuition that a definition using copatterns, i.e. a definition by
+% observation, is equivalent to a definition using the unique introduction rule,
+% i.e. a defininition by construction. Therefore, definitions with copatterns can
+% be implemented by desugaring them to constructor applications internally.
 
-Following the discussion in Section~\ref{sec:motivation_copatterns},
-this intuition regarding the inversion principle only holds for types which
-have a top-level product-of-sums structure. Logically, this corresponds to all
-connectives that can be constructed by exactly one introduction rule. Since both of
-these are defining characteristics of Idris record types, copatterns have only
-been implemented for such types. Consequently, all examples involving copatterns
-has a record type as their result type.
+% Following the discussion in Section~\ref{sec:motivation_copatterns},
+% this intuition regarding the inversion principle only holds for types which
+% have a top-level product-of-sums structure. Logically, this corresponds to all
+% connectives that can be constructed by exactly one introduction rule. Since both of
+% these are defining characteristics of Idris record types, copatterns have only
+% been implemented for such types. Consequently, all examples involving copatterns
+% has a record type as their result type.
 
 % \subsection{The Duality Between Construction and Observation}
 % \label{sec:dual-betw-constr}
@@ -828,7 +844,11 @@ Figure~\ref{fig:compatibility_table} with ``Yes, if subst.'', which means that
 the column pattern must be substituted with the row pattern in the right-hand
 side of the merged clause. The substitution function \texttt{subst} performs a
 simple traversal of the syntax tree for the right-hand side, replacing terms
-where necessary.
+where necessary. The computation of compatibility is essentially a unification
+procedure, where the unifier is a set of pattern substitutions. However, we do
+not perform any substitutions on left-hand sides, although the compatibility relation
+compares left-hand side argument patterns. Instead, the substitutions are
+performed in the merged right-hand side as described.
 
 \subsubsection{Handling \texttt{where}-blocks}
 When two pattern clauses are merged, their \texttt{where}-blocks must also be
@@ -896,12 +916,12 @@ $\mathit{merge}$$^\prime$ ($\rho_1$) ($\rho_2$) = $\rho_1$
 \begin{center}
   \begin{tabular}{ p{3cm} | c || c | c | c | c | }
     \cline{2-6}
-    & $C$ & \quine{$y$} & \quine{\_} & \quine{$c^\prime$} & \quine{MkA($y_1\cdots y_n$)} \\ \cline{2-6}\cline{2-6}
-    Pattern variable & \quine{$x$} & \begin{tabular}[c]{@{}c@{}}Yes,\\ if subst.\end{tabular} & Yes & No & No\\ \cline{2-6}
-    Placeholder & \quine{\_} & Yes & Yes & No & No\\ \cline{2-6}
-    Constant& \quine{$c$} & \begin{tabular}[c]{@{}c@{}}Yes,\\ if subst.\end{tabular} & Yes & if $c$ = $c^\prime$ & No \\ \cline{2-6}
-    Constructor pattern & \quine{MkA($x_1\cdots x_n$)}
-          & \begin{tabular}[c]{@{}c@{}}Yes,\\ if subst.\end{tabular} & Yes & No & if $C$($x_1$,$y_1$)$\cdots$$C$($x_n$,$y_n$)\\
+    & $C$ & \texttt{y} & \texttt{\_} & \texttt{c$^\prime$} & \texttt{MkA(y$_1$$\cdots$ y$_n$)} \\ \cline{2-6}\cline{2-6}
+    Pattern variable & \texttt{x} & \begin{tabular}[c]{@{}c@{}}Yes,\\ if subst.\end{tabular} & Yes & No & No\\ \cline{2-6}
+    Placeholder & \texttt{\_} & Yes & Yes & No & No\\ \cline{2-6}
+    Constant& \texttt{c} & \begin{tabular}[c]{@{}c@{}}Yes,\\ if subst.\end{tabular} & Yes & if c = c$^\prime$ & No \\ \cline{2-6}
+    Constructor pattern & \texttt{MkA(x$_1$$\cdots$ x$_n$)}
+          & \begin{tabular}[c]{@{}c@{}}Yes,\\ if subst.\end{tabular} & Yes & No & if $C$(x$_1$,y$_1$)$\cdots$$C$(x$_n$,y$_n$)\\
     \cline{2-6}
   \end{tabular}
 \end{center}

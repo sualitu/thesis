@@ -26,40 +26,94 @@ internal tree structure. As such, a leaf must be reached at some
 point. Concretely, an inductively defined standard list structure must be ended
 with the empty list in order to be well-defined.
 
-Coinductive types are dual to inductive types, but are not as widely
-used. Intuitively, they can be defined in terms of a finite and disjoint set of
-\emph{destructors}, which as a whole determine the observable behaviour of
-elements of such type. Infinite objects can be constructed from coinductive
-types, because they can have an internal graph structure. This allows for the
-definition of circular structures, and are therefore often used for reasoning
-about processes\,\citep{Sangiorgi2011}. Before making matters more concrete, we
-proceed with a formal definition.
+Coinductive types are dual to inductive types. Intuitively, they can be defined
+in terms of a finite and disjoint set of \emph{destructors}, which as a whole
+determine the observable behaviour of elements of such type. Infinite objects
+can be constructed from coinductive types, because they can have an internal
+graph structure. This allows for the definition of circular structures, which
+makes them suitable for reasoning about values that may unfold indefinitely,
+e.g. processes\,\citep{Sangiorgi2011}. Coinductive types are often defined in
+terms of abstract mathematics and category theory, and a formal definition of
+coinductive types has been given by Jacobs and
+Rutten\,\citep{Jacobs97atutorial}. We will not proceed with the formal
+definition here, but instead provide a more intuitive explanation.
 
-\begin{definition}[\textit{Coinductive data type}]
-\label{def:coinductive_data_type}
-  Given an endofunctor $F$, a coinductive data type is an element of a final
-  coalgebra ($X$, $c$), where $X$ is the carrier and $c$ is a \emph{structure
-    map} $X\,\to\,F(X)$\,\citep{Jacobs97atutorial,Kozen2012}.
-\end{definition}
-
-While we will not claim to fully understand the category theory underlying
-Definition~\ref{def:coinductive_data_type}, we do have a working intuition of
-its implications. For instance, the endofunctor ${F(X)=A\times X}$ together with
-the final coalgebra ($X$, $(head, tail) : X\to A\times X$) characterizes the set
-of infinite streams, and can be implemented as a coinductive data type in Idris
-as follows:
+To define a coinductive type, which we may call $B$, means to define its observable behaviour: At any
+given time, what can we observe about an element of $B$? If for any given $B$,
+we wish to observe $n$ different things, we can define $B$ by $n$ destructors,
+as shown in Figure~\ref{fig:coinductive_type_n_destructors}. 
+\begin{figure}[H]
+  \centering
+  \includegraphics{figures/general_coind_intuition_prod_coinductive}
+  \caption{An illustration of a coinductive type with $n$ destructors defining
+    its observable behaviour.}
+\label{fig:coinductive_type_n_destructors}
+\end{figure}
+In Idris, a
+definition of $B$ may be given as follows, where T$_1$,T$_2$,$\cdots$,T$_n$ are
+Idris types, either inductive or coinductive:
 \begin{lstlisting}[mathescape]
-codata Stream : Type $\to$ Type where
-  (::) : (head : a) $\to$ (tail : Stream a) $\to$ Stream a
+corecord B where
+  X$_1$ : T$_1$
+  X$_2$ : T$_2$
+    $\vdots$
+  X$_n$ : T$_n$
 \end{lstlisting}
-In this example, we define the observable behaviour of \texttt{Stream} as a
-whole to be the conjunction of the behaviour defined by the destructors \texttt{head} and \texttt{tail}. As a consequence, we can informally state
-that the constructor \texttt{(::)} models the structure map. This intuition extends to infinitely branching trees over an endofunctor
-${F(X)=A\times X\times X}$ and a coalgebra ($X$, ${(value,lefttree,righttree) : X\to
-A\times X\times X)}$, possibly infinite lists over an endofunctor ${F(X)=1 + A\times X}$ and a coalgebra ($X$, ${(unfold) : X\to
-1 + A\times X)}$, and so on. Note that when the endofunctor has a top-level sum structure,
-as for possibly infinite lists, the structure map is not split into separate
-destructors, since further analysis of the observed behaviour is needed.
+However, this definition implies that all of these observations can be made for
+any element of $B$. If we wish to define observations that can only be made on
+\emph{some} elements of a coinductive type, the observable behaviour must
+reflect 
+
+% An inductive type is defined in terms of the ways it can be constructed. In the
+% simple case where an inductive type $B$ has only one constructor, this may be
+% illustrated as in Figure~\ref{fig:inductive_type_one_constructor}. In
+% particular, we can construct $B$ by giving ${X_1,\,X_2,\,\cdots,\,X_n}$ as
+% arguments to its sole constructor. To define the same $B$ coinductively, we must
+% define it in terms of its observable behaviour (i.e. its destructors). What may
+% we expect to observe about $B$? 
+
+
+
+\begin{figure}[h]
+  \centering
+  \includegraphics{figures/general_coind_intuition_prod_inductive}
+  
+  \caption{An illustration of an inductive type with one constructor which has
+    $n$ input parameters.}
+\label{fig:inductive_type_one_constructor}
+\end{figure}
+
+
+% Before making matters more concrete, we
+% proceed with a formal definition.
+
+% \begin{definition}[\textit{Coinductive data type}]
+% \label{def:coinductive_data_type}
+%   Given an endofunctor $F$, a coinductive data type is an element of a final
+%   coalgebra ($X$, $c$), where $X$ is the carrier and $c$ is a \emph{structure
+%     map} $X\,\to\,F(X)$\,\citep{Jacobs97atutorial,Kozen2012}.
+% \end{definition}
+
+% While we will not claim to fully understand the category theory underlying
+% Definition~\ref{def:coinductive_data_type}, we do have a working intuition of
+% its implications. For instance, the endofunctor ${F(X)=A\times X}$ together with
+% the final coalgebra ($X$, $(head, tail) : X\to A\times X$) characterizes the set
+% of infinite streams, and can be implemented as a coinductive data type in Idris
+% as follows:
+
+% \begin{lstlisting}[mathescape]
+% codata Stream : Type $\to$ Type where
+%   (::) : (head : a) $\to$ (tail : Stream a) $\to$ Stream a
+% \end{lstlisting}
+
+% In this example, we define the observable behaviour of \texttt{Stream} as a
+% whole to be the conjunction of the behaviour defined by the destructors \texttt{head} and \texttt{tail}. As a consequence, we can informally state
+% that the constructor \texttt{(::)} models the structure map. This intuition extends to infinitely branching trees over an endofunctor
+% ${F(X)=A\times X\times X}$ and a coalgebra ($X$, ${(value,lefttree,righttree) : X\to
+% A\times X\times X)}$, possibly infinite lists over an endofunctor ${F(X)=1 + A\times X}$ and a coalgebra ($X$, ${(unfold) : X\to
+% 1 + A\times X)}$, and so on. Note that when the endofunctor has a top-level sum structure,
+% as for possibly infinite lists, the structure map is not split into separate
+% destructors, since further analysis of the observed behaviour is needed.
 
 
 \subsection{Coinduction}
@@ -113,7 +167,7 @@ The proof, given by the definition of \texttt{eq} in
 Figure~\ref{fig:proof_by_coinduction}, proceeds as follows: 
 \begin{framed}
 \textbf{Theorem}: \texttt{ones} \bisim{} \texttt{map S zeros}. \\\\
-\emph{Proof.} The proof proceeds by coinduction. The definitions used are the
+\emph{Proof.} The proof proceeds by coinduction on the observed behaviour of \texttt{map~S~zeros}. The definitions used are the
 ones given in Figure~\ref{fig:proof_by_coinduction}. First, we prove the case
 for \texttt{head}, \texttt{head ones = head~(map~S~zeros)}:
 \begin{align*}
@@ -128,7 +182,7 @@ Next, we show the case for \texttt{tail}, \texttt{tail ones} \bisim{} \texttt{ta
    \texttt{ones}\,&\bisim\, \texttt{map\, S\, (tail\, zeros)} \\
    \texttt{ones} \,&\bisim\, \texttt{map S zeros} \qed
 \end{align*}
-The last step follows immediately from the coinduction hypothesis.
+The last step follows immediately from the coinduction hypothesis, i.e. {\texttt{ones}~\bisim{}~\texttt{map~S~zeros}}
 \end{framed}
 % ones ~ mapStream S zeros
 
@@ -153,9 +207,11 @@ way of continually generating proofs.
 Coinductive types can be encoded as lazily evaluated inductive types. This is
 the approach followed in Idris (see Section~\ref{sec:coind-data-types}),
 ensuring that infinite recursion never arises from an attempt to build an
-infinite object by strict evaluation. Theoretically, such an encoding is
-unproblematic, since any final coalgebra can be as an
-algebra\,\citep{JacobsCoalgebra}.
+infinite object by strict evaluation. 
+
+% Theoretically, such an encoding is
+% unproblematic, since any final coalgebra can be as an
+% algebra\,\citep{JacobsCoalgebra}.
 
 In languages where all data constructors are lazily evaluated, such as the
 non-strict part of Haskell, coinductive types are almost provided ``for
@@ -167,9 +223,10 @@ system, since we cannot selectively disallow pattern matching on coinductive
 types (we elaborate upon this issue in
 Section~\ref{sec:recov-subj-reduct}). Secondly, we become unable to prove that
 our language has the Church-Rosser property\,\citep{CR:36}, seeing as lazily
-evaluating an infinitely recursive program may lead to a normal form when strictly
-evaluating the same program may not. For Idris, the second problem is the most
-dire, inasmuch as the total part of Idris is believed to respect the Church-Rosser property\,\citep{BradyIdrisImpl13}.
+evaluating an infinitely recursive program may lead to a normal form when
+strictly evaluating the same program may not. For Idris, the second problem is
+the most dire, inasmuch as the total part of Idris is believed to have the
+Church-Rosser property\,\citep{BradyIdrisImpl13}.
 
 %Church-Rosser
 %We cannot disallow pattern matching on coinductive data

@@ -1,4 +1,4 @@
-\subsection{The Guarded Recursion Checker}
+\section{The Guarded Recursion Checker}
 \label{sec:guard-recurs-check}
 The term inferred by the inference system could potentially not conform to the
 guarded recursion type rules. If the inferred term is not well-typed within
@@ -25,7 +25,7 @@ rules\,\citep{BradyIdrisImpl13} do also apply, however the guarded recursive
 rules take precedence and will be applied if possible.
 
 \input{figures/guarded_typing_rules}
-\subsubsection{An Example}
+\subsection{An Example}
 In Figure~\ref{fig:repeat_inference_proof} we showed an inference of the
 function \texttt{repeat}. As a continuation of this, in Figure~\ref{fig:repeat_typing_example}, we show that the inferred
 $_g$\texttt{repeat} follows the guarded recursion typing rules we have set up, and is therefore

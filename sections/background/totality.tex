@@ -43,16 +43,21 @@ counterpart, \emph{partiality}. Like totality, partiality is also a property of
 functions. 
 
 \begin{definition}[\textit{Partial function}]
-  A function $g$ with domain $A$ and codomain $B$ is partial if for some
-  inhabitant $x\in A$, $g$ does not assign a value $g x\in B$. More precisely, there exists
-  an element $x\in A$ for which $g$ is undefined, i.e. either $g$
-  requires infinite time to compute $g x$, or the definition of $g$ has no
-  reduction rule for $x$.
+  A function $f$ with domain $A$ and codomain $B$ is partial if $f$ is undefined
+  for some $x\in A$. Specifically, if $f$ is a partial function, then there
+  exists a total function $g$ with domain $A'$ and codomain $B$, such that
+  $A\subset A'$.
+  % inhabitant $x\in A$, $g$ does not assign a value $g x\in B$. More precisely, there exists
+  % an element $x\in A$ for which $g$ is undefined, i.e. either $g$
+  % requires infinite time to compute $g x$, or the definition of $g$ has no
+  % reduction rule for $x$.
+  \centering
+  \includegraphics[scale=0.8]{figures/partialfunc}
 \end{definition}
 
 For input  where a partial function is undefined, we say that
 the function evaluates to $\bot$, here denoting either an exceptional state (a
-run-time error) or an infinite recursion\,\citep{Turner04totalfunctional}. The
+run-time error) or infinite recursion\,\citep{Turner04totalfunctional}. The
 implications of programming with partial functions (``partial functional
 programming'') is greater than it may seem: Whenever we have no guarantee that a
 function is total, $\bot$ is a possible result, which should be handled
@@ -71,21 +76,17 @@ that $\bot$ is never a possible result of program evaluation.
 
 \subsection{A Total Program is a Proof}
 Another advantage of programming with total functions is that our programs can
-act as proofs. The Curry-Howard correspondence identifies a
-deep connection between logic and computer programs. Curry first discovered a
-connection between functions and the theory of implication\,\citep{Curry1934}, a
-notion which later led Howard to describe a correspondence between natural
-deduction and the simply typed lambda calculus\,\citep{Howard80} (an in-depth
-and accessible overview of this development has been covered by
-Wadler\,\citep{Wadler2014}). Within this connection, types are identified as
-propositions, (total) programs as proofs, and evaluation of programs as
-simplification of proofs. Consequently, a program can be viewed as a proof
-script in a logic (which, in this case, is our programming language), showing
-that a given proposition, specified by the program's type, holds. This is not
-merely an academic curiosity, but leads to a situation where a program can be
-\emph{correct by construction}\,\citep{Pierce:2002:TPL:509043} if its type
-sufficiently describes the program's behaviour. The correctness of the program
-can then be established statically by the type checker.
+act as proofs. The Curry-Howard isomorphism identifies a deep connection
+between logic and computer
+programs\,\citep{Curry1934,Howard80,Wadler2014}. Within this connection, types
+are identified as propositions, (total) programs as proofs, and evaluation of
+programs as simplification of proofs. Consequently, a program can be viewed as a
+proof script in a logic (which, in this case, is our programming language),
+showing that a given proposition, specified by the program's type, holds. This
+is not merely an academic curiosity, but leads to a situation where a program
+can be \emph{correct by construction}\,\citep{Pierce:2002:TPL:509043} if its
+type sufficiently describes the program's behaviour. The correctness of the
+program can then be established statically by the type checker.
 
 A partial function can never be correct by construction, since evaluating it
 might lead to infinite recursion. Infinite recursion is logically equivalent to
@@ -109,11 +110,11 @@ consequence, a partial function can never act as a valid proof.
 % undefined. 
 
 \subsection{Ensuring Totality}
-Previously, we mentioned that if there is no guarantee that a function is total,
-then it must be partial. To obtain such a guarantee for an arbitrary function
-$f$, we must be able to construct a proof showing that $f$ is total. A totality
-proof is twofold, consisting of a proof of coverage and a proof that all
-invocations result in an output value in finite time.
+If have no guarantee that a function is total, then it must be assumed to be partial. To
+obtain such a guarantee for an arbitrary function $f$, we must be able to
+construct a proof showing that $f$ is total. A totality proof is twofold,
+consisting of a proof of coverage and a proof that all invocations result in an
+output value in finite time.
 
 \begin{definition}[\textit{Covering function}]
   \label{def:covering_function}
@@ -143,20 +144,19 @@ productive functions, this is may not the case.
 \begin{definition}[\textit{Productive function}]
 \label{def:productive_function}
   A function $f$ with domain $A$ and codomain $B$, where $B$ is a coinductive
-  type, is productive if for every inhabitant $x\in A$, a \emph{finite prefix}
-  of the output value $f x\in B$ is constructed in finite time.
+  type, is productive if for every inhabitant $x\in A$, a finite number of
+  unfoldings of the output value $f x\in B$ can be constructed in finite time.
 \end{definition}
 
 Because coinductive data is possibly infinite, a productive function continually
-produces a finite prefix of its output in finite time. Notably, it might never
-terminate, since constructing an infinite term (e.g. a list of all prime
-numbers) never comes to a natural end. Instead, productive functions only
-compute exactly the finite prefix of its output that is needed, deferring the
-computation of the remaining term. Productive functions are therefore often
-evaluated using a call-by-name strategy. A proof of productivity can be
-constructed by showing that the function definition in question exhibits some
-continuity property, e.g. causality: that any output only depends on previously
-computed values.
+unfolds its output, providing each unfolding in finite time. Notably, it might
+never terminate, since constructing an infinite term (e.g. a list of all prime
+numbers) never comes to a natural end. Productive functions are therefore often
+evaluated using a call-by-name strategy, computing exactly the number of
+unfoldings needed, deferring the computation of the remaining term.  A proof
+of productivity can be constructed by showing that the function definition in
+question exhibits some continuity property, e.g. causality: that any output only
+depends on previously computed values.
 
 \subsection{Automated Totality Proofs}
 Manually writing proofs of totality is clearly not feasible in practice, as it
