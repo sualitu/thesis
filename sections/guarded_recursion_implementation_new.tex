@@ -836,8 +836,17 @@ e.g. \prepend{\text{prepend}}{\text{prepend}}{\,_{g}\text{prepend}}{s}{Stream
   a}. In particular, this example means that in a given \emph{inference
   environment}, $IE$, where \texttt{s} has type \texttt{Stream a}, we must infer
 an as yet unknown term of type \texttt{$_g$Stream a}. Inference environments will
-be defined along with the rest of the system in Section~\ref{sec:inference-system}. 
+be defined along with the rest of the system in
+Section~\ref{sec:inference-system}. 
 
+% For neither the causal or the non-causal case, all the steps presented in the following are
+% actually performed. Instead, we provide the setup for the inference system by
+% proceeding directly to the last step. We show all the steps here in order to
+% demonstrate how we have arrived
+In the following, we demonstrate the theoretical steps taken in order to provide
+a setup for the inference system. In practice, we proceed directly to the last
+step for both the causal and the non-causal case. The intermediate steps are
+merely shown here to justify our approach.
 
 \subsection{Preprocessing Causal Functions}
 \label{sec:prepr-caus-funct}
@@ -907,7 +916,7 @@ exactly the same type as \texttt{rec} in step 2.
 be recovered by the inference system when the rule for causal recursive
 references is used (see Figure~\ref{fig:epsilon_rec_causal}n):
 \begin{lstlisting}[mathescape]
-  $_g$prepend$'$ : (a$\,$:$\,$Type) $\to$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a
+  $_g$prepend$'$ : $\fcolorbox{gray}{light-gray}{(a : Type) \ensuremath{\to} List a \ensuremath{\to\,_{g}}Stream a \ensuremath{\to\,_{g}}Stream a}$
   $_g$prepend$'$ a []        s =
     $\prepend{\text{(prepend a)}}{\text{(prepend a)}}{\,(_{g}\text{prepend a})}{s}{Stream a}$
   $_g$prepend$'$ a (x :: xs) s =
@@ -980,52 +989,51 @@ $_g$evens $\fcolorbox{gray}{light-gray}{a}$ = $\Lambda\kappa.\,$evens$'$ $\fcolo
 \end{lstlisting}
 (3.1) The indexed fixed point is replaced by the equivalent ordinary guarded
 recursive fixed point. This step requires that the recursive reference is
-placed inside a function which lifts its argument into a later ($\laterkappa$) context.
+placed inside a function where the \texttt{Next} rule is used on its
+argument, \texttt{x}. Also, using \texttt{fix$^\kappa$} instead of
+\texttt{pfix$^\kappa$} means that the type of the recursive reference,
+\texttt{rec}, has now changed.
 \begin{lstlisting}[mathescape]
-$_g$evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$$_{g}$Stream a $\to$ $\laterkappa$$_{g}$Stream a) $\to$ 
-         $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$''$ : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ (($\forall\kappa.\,$$_{g}$Stream a) $\to$ ($\laterkappa$$_{g}$Stream a)) $\to$ 
+          ($\forall\kappa.\,$$_{g}$Stream a) $\to$ $_{g}$Stream a
 $_g$evens$''$ a rec s =
-         $\evensm{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
+         $\evens{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
 
-$_g$evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
-$_g$evens$'$ a = fix$^\kappa$($\lambda$rec.$\lambda$s. evens$''$ a ($\lambda$x.$\,$rec $\tensor^\kappa$ (Next x)) s)
+$_g$evens$'$ : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ ($\forall\kappa.\,$$_{g}$Stream a) $\to$ $_{g}$Stream a
+$_g$evens$'$ a = $\fcolorbox{gray}{light-gray}{fix\ensuremath{^\kappa}}$($\lambda$rec.$\lambda$s. evens$''$$\;$a $\fcolorbox{gray}{light-gray}{(\ensuremath{\lambda}x. rec \ensuremath{\tensor^\kappa} (Next x))}$ s)
 
-$_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
+$_g$evens : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ ($\forall\kappa.\,$$_{g}$Stream a) $\to$ ($\forall\kappa.\,$$_{g}$Stream a)
 $_g$evens a = $\Lambda\kappa.\,$evens$'$ a
 \end{lstlisting}
 (3.2) The fixed point is eliminated according to the rules in Figure~\ref{fig:fix_elim_rules}.
 \begin{lstlisting}[mathescape]
-$_g$evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$$_{g}$Stream a $\to$ $\laterkappa$$_{g}$Stream a) $\to$ 
-         $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$''$ : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ (($\forall\kappa.\,$$_{g}$Stream a) $\to$ ($\laterkappa$$_{g}$Stream a)) $\to$ 
+           ($\forall\kappa.\,$$_{g}$Stream a) $\to$ $_{g}$Stream a
 $_g$evens$''$ a rec s =
-         $\evensm{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
+         $\evens{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
 
-$_g$evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
-$_g$evens$'$ a = $\lambda$s. evens$''$ a ($\lambda$x.$\,$Next (evens$'$ a) $\tensor^\kappa$ (Next x)) s
+$_g$evens$'$ : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ ($\forall\kappa.\,$$_{g}$Stream a) $\to$ $_{g}$Stream a
+$_g$evens$'$ a = $\lambda$s. evens$''$ a ($\lambda$x.$\,$$\fcolorbox{gray}{light-gray}{Next (evens\ensuremath{'} a)}$ $\tensor^\kappa$ (Next x)) s
 
-$_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
+$_g$evens : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ ($\forall\kappa.\,$$_{g}$Stream a) $\to$ ($\forall\kappa.\,$$_{g}$Stream a)
 $_g$evens a = $\Lambda\kappa.\,$evens$'$ a
 \end{lstlisting}
 (4) The \texttt{rec} argument to \texttt{$_{g}$evens$''$} is eliminated, but will
 be recovered by the inference system when the rules for non-causal recursive
 references is used (see Figure~\ref{fig:epsilon_rec_causal}).
 \begin{lstlisting}[mathescape]
-$_g$evens$''$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$''$ : $\fcolorbox{gray}{light-gray}{(\ensuremath{\forall\kappa.\,}(a : Type)) \ensuremath{\to} (\ensuremath{\forall\kappa.\,_{g}}Stream a) \ensuremath{\to\,_{g}}Stream a}$
 $_g$evens$''$ a s =
-         $\evensm{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
+         $\evens{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
 
-$_g$evens$'$ : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $_{g}$Stream a
+$_g$evens$'$ : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ ($\forall\kappa.\,$$_{g}$Stream a) $\to$ $_{g}$Stream a
 $_g$evens$'$ a = $\lambda$s. $_g$evens$''$ a s
 
-$_g$evens : $\forall\kappa.\,$(a$\,$:$\,$Type) $\to$ $\forall\kappa.\,$$_{g}$Stream a $\to$ $\forall\kappa.\,$$_{g}$Stream a
+$_g$evens : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ ($\forall\kappa.\,$$_{g}$Stream a) $\to$ ($\forall\kappa.\,$$_{g}$Stream a)
 $_g$evens a = $\Lambda\kappa.\,$$_g$evens$'$ a
 \end{lstlisting}
 The inference system can now attempt to infer a guarded recursive version as
 specified in the box.
-
-For neither the causal or the non-causal case, all the steps presented above are
-actually performed. Instead, we provide the setup for the inference system by
-proceeding directly to the last step.
 
 \section{The Inference System}
 \label{sec:inference-system}
@@ -1051,16 +1059,73 @@ environment ($IE$) in which guarded recursive TT terms are built is defined as f
 \begin{align*}
    \clockEnv,\,\clockEnv^\prime &::=\,\open\,|\,\closed & \text{(singleton clock)} \\
    \Psi &::=\,\causal\,|\,\noncausal & \text{(modality)} \\
-   \rho &::= (n,\, _gn)\,|\,(n,\, _gn,\, _{\forall}n) & \text{(renaming)} \\
+   \rho &::= n \mapsto \,_gn\,|\,n \mapsto (_gn,\, _{\forall}n) & \text{(renaming)} \\
    \phi &::=\,\cdot\,|\,\rho\,\phi & \text{(collection of renamings)} \\
    IE &::= \iota;\Psi;\phi;\,c;\,\Gamma & \text{(inference environment)}
 \end{align*}
-The singleton clock is either open (\open) or closed (\closed). Tuples given as $\rho$ match an Idris name $n$ to a
-guarded name $_gn$. For record projections, a name for its quantified projection,
-$_{\forall}n$, is also specified in $\rho$. Modality is specified by $\Psi$, and
-is either causal (\causal) or non-causal (\noncausal). Inference (\infer) of a guarded recursive TT
-term $e'$ of type $B$ from an elaborated TT term $e$ of type $A$ is then defined as
-${IE\vdash e : A \Longrightarrow e^\prime : B}$.
+The singleton clock is either open (\open) or closed (\closed). A renaming, given as $\rho$, matches an Idris name $n$ to a
+guarded name $_gn$, or both a guarded name and a quantified name
+$_{\forall}n$. The latter will only be case case when $n$ is the name of a
+record projection. Modality is specified by $\Psi$, and
+is either causal (\causal) or non-causal (\noncausal). The intuition is that
+a causal function may only refer to past values (thus \causal{} is pointing
+backwards), while a non-causal function may refer to values at any point in time (thus
+\noncausal{} points in both directions).
+
+\subsection{Reading Guide}
+Before presenting the inference system, we provide a reading guide for each type
+of judgment. 
+
+\subsubsection{The Inference Judgment}
+The first of these, and the arguably most interesting, is the inference judgment.
+
+\begin{center}
+  ${IE\vdash e : A \infer e' : B}$
+\end{center}
+
+The inference judgment reads as follows: ``If $e$ has type $A$ in a given
+inference environment $IE$, and our goal is to infer a term of type $B$, then
+$e'$ of type $B$ \emph{can be} the guarded recursive version $e$''. Since a
+given term may have more than one valid guarded recursive version, we stress
+that $e'$ \emph{can} be a solution.
+% Inference (\infer) of a guarded recursive TT term $e'$ of type $B$ from an elaborated TT term $e$ of type $A$ is then defined as
+% ${IE\vdash e : A \infer e' : B}$.
+\subsubsection{The Renaming Judgment}
+Using the renaming judgment, we can replace a user-supplied name with a guarded
+name or a quantified name, respectively. Therefore, there are two types of
+renaming judgments.
+\begin{center}
+  ${IE\vdash \phi(e) \mapsto \,_ge}$
+\end{center}
+The first type of renaming judgment reads as follows: ``If a term $e$ is a
+reference to a name $n$, and $\phi$ in the inference environment $IE$ maps $n$
+to a guarded name $_gn$, then $e$ must be replaced with a term $_ge$ referring to
+$_gn$''.
+
+The second type of renaming judgment introduces ambiguity.
+\begin{center}
+  ${IE\vdash \phi(e) \mapsto \,(_ge,\,_{\forall}e)}$
+\end{center}
+This judgment reads: ``If a term $e$ is a
+reference to a name $n$, and $\phi$ in the inference environment $IE$ maps $n$
+to both a guarded name $_gn$ and a quantified name $_{\forall}n$, then $e$ must be replaced with a term $e'$ referring to
+either $_gn$ or $_{\forall}n$, but not both''. The specific situation determines
+which of the names is the right choice.
+
+\subsubsection{The Typing Judgment}
+The inference system operates with two different typing judgments.
+\begin{center}
+  ${IE\vdash e : A}$
+\end{center}
+The first is standard, and reads: ``$e$ has type $A$ in the inference
+environment $IE$''. Here $e$ can be any term except for a type.
+
+Additionally, we have the following judgments for types.
+\begin{center}
+  ${IE\vdash A\, type}$
+\end{center}
+It reads: ``A is a type, i.e. its type is the type of types, in the inference
+environment $IE$''.
 
 % In Figure~\ref{fig:epsilon_rules}, the $\Longrightarrow_{Next^\kappa}$ rule follows directly from the $Next$ rule in Figure~\ref{fig:guarded_recursion_rules_clocks}. The
 % $\Longrightarrow_{\Lambda\kappa}$ and $\Longrightarrow_{apply^\kappa}$ rules have a
