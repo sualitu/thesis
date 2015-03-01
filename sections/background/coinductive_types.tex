@@ -43,7 +43,7 @@ by considering how elements of such types are defined. An inductive type is
 well-founded, and therefore has at least one constructor without a recursive
 argument. As a consequence, an element of an inductive type can be defined by
 defining its internal structure, since this structure is inherently finite. In
-other words, they are defined \emph{by construction}. A coinductive type is not
+other words, such an element is defined \emph{by construction}. A coinductive type is not
 necessarily well-founded. In particular, if we try to define an element of a
 coinductive type by defining its internal structure, we may never finish due to
 infinite recursion. Instead, elements of coinductive types can be defined in
@@ -69,32 +69,38 @@ bottom definition (\texttt{List$'$}) is also inductively defined, but it is not 
 having \texttt{List$'$} as result type will result in infinite
 recursion:
 \begin{lstlisting}[mathescape,title=\idrisBlock]
-repeat$'$ : a -> List$'$ a
+-- Leads to infinite reduction of 'repeat$'$ a'
+repeat$'$ : a $\to$ List$'$ a
 repeat$'$ a = a :: repeat$'$ a
 \end{lstlisting}
-Here, tail of the constructor invocation is a recursive call to
+Here, the second constructor argument is a recursive call to
 \texttt{repeat$'$} itself, so this definition will reduce indefinitely.
 However, we can define elements of type \texttt{List$'$} by defining the type
 \emph{co}inductively. In order to do so, we must determine its observational
-behaviour. Intuitively, any list always contains an element (the head of the
-list) and the rest of the list (the tail of the list). Thus, for any list, we
-may observe a \texttt{head} and a \texttt{tail}:
+behaviour. Intuitively, for any (non-empty) list we may observe an element (the head of the
+list) and the rest of the list (the tail of the list):
 \begin{lstlisting}[mathescape,title=\idrisBlock]
 corecord List$'$ a where
   head : a
   tail : List$'$ a
 \end{lstlisting}
+Now, we can have definitions resulting in elements of \texttt{List$'$} which do
+not immediately diverge:
 \begin{lstlisting}[mathescape,title=\idrisBlock]
-repeat$'$ : a -> List$'$ a
+repeat$'$ : a $\to$ List$'$ a
 &head repeat$'$ a = a 
 &tail repeat$'$ a = repeat$'$ a
 \end{lstlisting}
-
+Since no reduction behaviour is defined directly for \texttt{repeat$'$ a}, this
+definition does not result in infinite recursion. Note that instead of defining
+the coinductively defined version of \texttt{List$'$} in terms of
+observation (i.e. as a coinductive record), we could also have used the lazily
+evaluated \texttt{codata} construct currently available in Idris to obtain the
+same behaviour:
 \begin{lstlisting}[mathescape,title=\idrisBlock]
 codata List$'$ : Type $\to$ Type where
   (::) : a $\to$ List$'$ a $\to$ List$'$ a
 \end{lstlisting}
-
 
 % To define a coinductive type, which we may call $B$, means to define its observable behaviour: At any
 % given time, what can we observe about an element of $B$? If for any given $B$,
