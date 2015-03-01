@@ -14,30 +14,35 @@
 In functional programming, inductive data is commonly defined by \emph{constructors} in an
 elegant and simple fashion. The data can be analyzed and manipulated using
 pattern matching, which follows nicely from the finite nature of inductive
-data. The growing consensus\todo{Among who?} is that coinductive data should be defined by
-\emph{observations} due to its possible infinity. This\todo{Perhaps say this at
-  the beginning?} means that one should distingush
-between finite and infinite data. Hagino\todo{Hagino introduced a construct for
-  synthesizing coinductive data. The distinction between finite and infinite
-  data was already known.} first introduced this idea in his SymML
-language \,\citep{Hagino89}, where the programmer could define coinductive types
-by their \emph{destructors} or \emph{observations}. In other words\todo{We have
-  to be precise here. }, inductive
-types should be defined by their \emph{introduction rules}, and coinductive types by
-their \emph{elimination rules}.
+data. Due to its possible infinity, it is appealing to define coinductive data by
+\emph{observations}, rather than constructors. This means that one should distingush
+between finite and infinite data. The idea of describing infinite data by their
+observations was pioneered by Hagino  in his SymML language \,\citep{Hagino89}, where the programmer could define coinductive types
+by their \emph{destructors} or \emph{observations}. 
+
+This duality between inductive and coinductive types is discussed in
+detail in Section~\ref{sec:coinductive-types}. As a part of this project we have
+introduced a new syntax for defining coinductive types by their
+observations. This new coinductive record, or just \emph{corecord}, syntax is described in
+Appendix~\ref{app:record-types-observ}. An example of this syntax can be seen in Figure~\ref{fig:stream}.
+
+% In other words\todo{We have
+%   to be precise here. }, inductive
+% types should be defined by their \emph{introduction rules}, and coinductive types by
+% their \emph{elimination rules}.
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
-corecord Stream : Type -> Type where
-  head : Stream a -> a
-  tail : Stream a -> Stream a 
+corecord Stream a where
+  head : a
+  tail : Stream a 
   constructor MkStream
 \end{lstlisting}
-\caption{An infinite list defined by observations.}
+\caption{An infinite stream defined by observations.}
 \label{fig:stream}
 \end{figure}
 
-The syntax for \texttt{codata} definitions presented in
+The syntax for \texttt{corecord} definitions presented in
 Figure~\ref{fig:stream} defines a coinductive type by observations, as oppose to
 by constructors. On a \texttt{Stream}, two observations can be made:
 \texttt{head} and \texttt{tail}. The former provides us with the first element
@@ -48,11 +53,11 @@ upon which another element can be observed with \texttt{head}.
 \emph{copatterns}\,\citep{Abel13Copatterns}, provide a way of defining functions
 on coinductive data in terms of observations. Like pattern matching allows us to
 define functions on inductive data by analyzing the structure of the input,
-copatterns enable us to make experiments on functions with a result of
+copatterns enable us to perform experiments on functions with a result of
 coinductive type.
 
 The \texttt{Stream} defined by observations can be used to define a function
-\texttt{nats}, an list of all natural numbers, using copatterns, as shown in
+\texttt{nats}, a list of all natural numbers, using copatterns, as shown in
 Figure~\ref{fig:nats_copatterns}.
 
 
@@ -78,7 +83,6 @@ subsequent \texttt{head} observation is \texttt{S Z}. As we can increment a
 natural number infinitely many times, we can also make infinitely many
 \texttt{tail} observations, where the result of a \texttt{head} observation will
 be incremented for each \texttt{tail} observation. 
-
 
 Syntactically, projection happens on the outside of definitions when we use
 copatterns, as opposed to pattern matching, where projection on parameters
@@ -106,10 +110,31 @@ matching is a way of processing input, copatterns provide the means for
 describing output. 
 
 \subsection{The Anatomy of Copatterns}
-\todo{Establish names for different parts of a definition with copatterns here:
-  In particular, we need to define the following: clause, pattern clause, pattern,
-  argument pattern, copattern clause, copattern, left-hand side projection,
-  observation, and probably more}
+Definitions using copatterns are made of multiple different parts. To be better
+communicate about copatterns we establish the following names, also denoted in
+Figure~\ref{fig:copatterns_anatomy}:
+
+\newcommand{\itemEmph}[1]{\item \emph{#1}:}
+
+\begin{itemize}
+\itemEmph{Observation pattern} An observation, or projection, on the
+  left-hand side of a definition.
+\itemEmph{Pattern} A function name and a possible list of argument patterns.
+\itemEmph{Argument pattern} A pattern for an argument to a function. Can be a
+variable pattern, a constructor pattern or a wild card pattern.
+\itemEmph{Copattern} An observation pattern performed on a pattern.
+\itemEmph{Nested copattern} A copattern under an observation pattern.
+\itemEmph{Pattern clause} An entire clause, both left- and right-hand side,
+without copatterns.
+\itemEmph{Copattern clause} As a pattern clause, but with an observation pattern.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+  \includegraphics[scale=1]{figures/copattern_anatomy}
+  \caption{The anatomy of copatterns.}
+  \label{fig:copatterns_anatomy}
+\end{figure}
 
 \subsection{Existing Implementations of Copatterns}
 Copatterns already exist in programming languages, for example in
@@ -147,10 +172,9 @@ tail (repeat a) = repeat a
 
 In Section\,\ref{sec:motivation_copatterns} we discuss the motivation behind the
 use of copatterns. Later, in Chapter\,\ref{sec:adding_copatterns}, we describe
-how we have added a syntax for copatterns and for defining coinductive types by
-their observations (\texttt{corecord}s) to the programming language Idris. The
+how we have added a syntax for copatterns to the programming language Idris. The
 syntax we have added to Idris includes a prefix character, \texttt{\&}, on the
-observation patterns, an example of which you can see in
+observation patterns, as pictured
 Figure~\ref{fig:map_copat_syntax}. In the remaining report we will use this
 syntax for copattern definitions.
 

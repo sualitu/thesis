@@ -198,14 +198,10 @@ formal definition is given by Sangiorgi\,\citep[Section~1.4]{Sangiorgi2011}.
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
 %default total
-
-corecord Stream : Type $\to$ Type where
-   head : Stream a $\to$  a
-   tail : Stream a $\to$ Stream a
      
-corecord BisimStream : (a : Type) $\to$ Stream a $\to$ Stream a $\to$ Type where
-   phead : BisimStream a s t $\to$ head s = head t
-   ptail : BisimStream a s t $\to$ BisimStream a (tail s) (tail t)
+corecord BisimStream a (s : Stream a) (t : Stream a) where
+   phead : head s = head t
+   ptail : BisimStream a (tail s) (tail t)
 
 map : (a $\to$ b) $\to$ Stream a $\to$ Stream b
 &head map f s = f (head s)
@@ -224,7 +220,8 @@ eq : BisimStream Nat ones (map S zeros)
 &ptail eq = eq
 \end{lstlisting}
   \caption{An example of a proof by coinduction in Idris. The clauses beginning
-    with ``\&'' use our copatterns.}
+    with ``\&'' use our copatterns. Note the use of the \texttt{Stream}
+    definition from Figure~\ref{fig:stream}.}
 \label{fig:proof_by_coinduction}
 \end{figure}
 The proof, given by the definition of \texttt{eq} in

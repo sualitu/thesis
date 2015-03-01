@@ -6,6 +6,25 @@
 \setextrasupervisor{David Christiansen}
 \setdate{March 2015}
 
+
+\lstset{
+  morekeywords={
+    total, 
+    causal,
+    module,
+    corecord,
+    where,
+    data,
+    record,
+    codata,
+    open,
+    coinductive,
+    field,
+    default
+  },
+  keywordstyle=\bfseries\rmfamily
+}
+
 \usepackage{float}
 \usepackage[utf8]{inputenc}
 \usepackage{url}
@@ -122,8 +141,6 @@ This is an abstract
 
 \include{sections/idris}
 
-\include{sections/coinductive_records}
-
 \include{sections/copatterns_implementation}
 
 \include{sections/guarded_recursion_implementation_new}
@@ -142,7 +159,7 @@ This is an abstract
 
 \include{sections/appendix/examples_programs}
 
-\include{sections/appendix/example_records}
+\include{sections/appendix/records}
 
 \include{sections/appendix/example_inferences}
 

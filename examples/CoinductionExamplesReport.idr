@@ -1,50 +1,9 @@
-module CoinductionExamples
+module Coinduction
 
-%default total
-
-data Nat = Z | S Nat
-
-%case data Bool = False | True
-
-||| The underlying implementation of the if ... then ... else ... syntax
-||| @ b the condition on the if
-||| @ t the value if b is true
-||| @ e the falue if b is false
-boolElim : (b : Bool) -> (t : Lazy a) -> (e : Lazy a) -> a
-boolElim True  t e = t
-boolElim False t e = e
-
--- Syntactic sugar for boolean elimination.
-syntax if [test] then [t] else [e] = boolElim test (Delay t) (Delay e)
-
-infixr 10 +
-infixr 10 -
-infixr 10 ::
-infixr 10 ==
-
-(==) : Nat -> Nat -> Bool
-Z == Z = True
-(S n) == (S m) = n == m
-_ == _ = False
-
-(+) : Nat -> Nat -> Nat
-(+) n Z = n
-(+) n (S m) = S (n + m)
-
-(-) : Nat -> Nat -> Nat
-(-) n Z = n
-(-) (S n) (S m) = n - m
-(-) Z _ = Z
-
-mult : Nat -> Nat -> Nat
-mult Z right        = Z
-mult (S left) right = right + (mult left right)
-
-corecord Stream : Type -> Type where
-  head : Stream a -> a
-  tail : Stream a -> Stream a
-  constructor (::)
-    
+corecord Stream a where
+  head : a
+  tail : Stream a
+  
 total causal 
 zeros : Stream Nat
 &head zeros = Z
@@ -72,15 +31,9 @@ zipWith : (a -> b -> c) -> Stream a -> Stream b -> Stream c
 
 total causal 
 fib : Stream Nat
-&head fib = Z
+&head       fib = Z
 &head &tail fib = S Z
 &tail &tail fib = zipWith (+) fib (tail fib)
-
-fst : (a, b) -> a
-fst (x, _) = x
-
-snd : (a, b) -> b
-snd (_, y) = y
 
 total causal 
 unfold : (s -> (a, s)) -> s -> Stream a
@@ -94,7 +47,7 @@ interleave : Stream a -> Stream a -> Stream a
 
 total causal 
 toggle : Stream Nat
-&head toggle = Z
+&head       toggle = Z
 &head &tail toggle = S Z
 &tail &tail toggle = toggle
 
@@ -107,10 +60,12 @@ total causal
 paperfold' : Stream Nat
 paperfold' = interleave toggle paperfold'
 
-total causal cycle : Nat -> Stream Nat
+total causal 
+cycle : Nat -> Stream Nat
 cycle n = cycle' n n
   where
-    total causal cycle' : Nat -> Nat -> Stream Nat
+    total causal 
+    cycle' : Nat -> Nat -> Stream Nat
     &head cycle' Z     m = Z
     &head cycle' (S n) m = (S n)
     &tail cycle' Z     m = cycle' m m
@@ -119,28 +74,17 @@ cycle n = cycle' n n
 total causal 
 fac : Stream Nat
 &head fac = (S Z)
-&tail fac = (zipWith mult (map S nats) fac)
+&tail fac = (zipWith (*) (map S nats) fac)
 
 total causal 
-mergef : (Nat -> Nat -> Stream Nat -> Stream Nat) -> Stream Nat -> Stream Nat -> Stream Nat
+mergef : (Nat -> Nat -> Stream Nat -> Stream Nat) -> 
+              Stream Nat -> Stream Nat -> Stream Nat
 mergef f s t = f (head s) (head t) (mergef f (tail s) (tail t))
-
-data List : Type -> Type where
-  nil : List a
-  (::) : a -> List a -> List a
 
 total causal
 prepend : List a -> Stream a -> Stream 
-prepend [] s = s
+prepend []       s = s
 prepend (x ::xs) s = x :: (prepend xs s)
-  
-infixr 10 <=
-
-(<=) : Nat -> Nat -> Bool
-(<=) Z _ = True
-(<=) (S n) Z = False
-(<=) (S n) (S m) = n <= m
-
 
 corecord Tree : Type -> Type where
   value : Tree a -> a
@@ -171,27 +115,21 @@ carry : Tree Nat
 &left  carry = trepeat Z
 &right carry = tmap S carry
 
-fst' : (a, b, c) -> a
-fst' (x, _, _) = x
-
-snd' : (a, b, c) -> b
-snd' (_, y, _) = y
-
-trd' : (a, b, c) -> c
-trd' (_, _, z) = z
-
 total causal unfoldTree : (s -> (a, s, s)) -> s -> Tree a
 &value unfoldTree step x = fst' (step x)
 &left  unfoldTree step x = unfoldTree step (snd' (step x))
 &right unfoldTree step x = unfoldTree step (trd' (step x))
 
-total causal calculateWilfully : Tree (Nat, Nat)
+
+
+
+total causal 
+calculateWilfully : Tree (Nat, Nat)
 calculateWilfully = grow((S Z), (S Z))
   where
-    total causal grow : (Nat, Nat) -> Tree(Nat, Nat)
+    total causal 
+    grow : (Nat, Nat) -> Tree(Nat, Nat)
     grow (n, d) = MkTree (n, d) (grow(n, n + d)) (grow(n + d, d))
-  
-data Either a b = Left a | Right b  
 
 corecord Partiality : Type -> Type where
   p : Partiality a -> Either a (Partiality a)
@@ -209,16 +147,19 @@ bind (P (Right x)) f = P (Right (bind x f))
 corecord FunMachine : Type -> Type where
   skip : FunMachine a -> FunMachine a
   calc : FunMachine a -> (a, FunMachine a)
-  fun : FunMachine a -> (a -> a)
+  fun  : FunMachine a -> (a -> a)
   
 total causal 
 multmachine : Stream Nat -> FunMachine Nat
 &skip multmachine s = multmachine (tail s)
-&calc multmachine s = ((fun (multmachine $ tail s) (head s)), (multmachine $ tail s))
-&fun multmachine s = mult (head s)
+&calc multmachine s = 
+     (fun (multmachine $ tail s) (head s) , 
+      multmachine $ tail s)
+&fun  multmachine s = (*) (head s)
 
 data Response = OK | BadRequest
 
+total
 reject : a -> Response
 reject _ = BadRequest
 
@@ -228,8 +169,6 @@ pingserver : FunMachine Response
 &calc pingserver = (OK, pingserver)
 &fun  pingserver = reject
 
-ping : Response
-ping = fst (calc pingserver)
 
 corecord Idler : Type -> Type where
   idle : Idler a -> Idler a

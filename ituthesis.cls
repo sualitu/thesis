@@ -187,8 +187,8 @@
   \end{tikzpicture}
   \begin{tikzpicture}[remember picture,overlay,line width=0mm,shift=(current page.south west), align=left, font=\sffamily\large]
     \node[anchor=south west] (meta) at (2.5cm, 2.5cm) {
-      \sups : \itusupervisor , David Christiansen, \\
-      \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ and Rasmus M\o gelberg \\ 
+      \sups : Rasmus E. M\o gelberg, Peter Sestoft, \\
+      \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ and David Christiansen \\ 
       \iflanguage{danish}{Afleveret}{Submitted}: \itudate
     };
   \end{tikzpicture}

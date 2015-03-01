@@ -83,7 +83,7 @@ expressiveness and avoided this particular loss of subject reduction.
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
-corecord A : Type where
+corecord A where
   out : A $\to$ A
 
 b : A
@@ -329,7 +329,7 @@ immediately available.
 \begin{lstlisting}[mathescape]
 corecord $_g$CoList a where
   isNil : Bool
-  elem  : if isNil then () else (a, $\laterkappa$(CoList a))
+  elem  : if isNil then () else (a, $\laterkappa$($_g$CoList a))
   constructor CoCons
 
 cons : $\forall\kappa.$ a $\to$ $_g$CoList a $\to$ $_g$CoList a

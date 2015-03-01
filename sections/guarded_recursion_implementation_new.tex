@@ -1379,10 +1379,10 @@ is extended as shown.
 }{
 $\begin{matrix*}[l]IE = & \text{repeat\ a};
   \\ & \causal ;\\ &
-\phi, (::,\ _g::), (\text{repeat\ a},\, _g\text{repeat\ a});\\ &
+\phi, ((::),\ (_g::)), (\text{repeat},\, _g\text{repeat});\\ &
  \open;\\ &
 \Gamma,\text{a} : \text{Type},\ \text{n} : \text{a},\,_g\text{repeat} : (\text{a}\ :\ \text{Type}) \to \forall \kappa.(\text{a} \to \onk{\text{Stream}}\ \text{a}),\ 
-\\ & \ \ \ _{g}::\ : (\text{a}\ :\ \text{Type})
+\\ & \ \ \ (_{g}::)\ : (\text{a}\ :\ \text{Type})
 \to \text{a} \to \later^\kappa_1 \onk{\text{Stream}}\ \text{a} \to \onk{\text{Stream}}\ \text{a}
 \end{matrix*}$
 }
@@ -1459,7 +1459,7 @@ The $\infer_\phi$-rule is used to show that the data constructor
 version of the \texttt{(::)} constructor for \texttt{Stream}.
 }{
   \AxiomC{}
-  \UnaryInfC{$IE \vdash \phi(::) =\ (_g::) $}
+  \UnaryInfC{$IE \vdash (::) \phieq (_g::)$}
 \AxiomC{}
   \UnaryInfC{$\begin{matrix}IE \vdash (_g::) : (a : Type) \to a \to \\
     \later^\kappa_1\onk{Stream}\,a \to \onk{Stream}\,a\end{matrix}$}
@@ -1503,7 +1503,7 @@ Follows directly from the inference environment.
 }{
 \AxiomC{}
 \LeftLabel{(5)}
-\UnaryInfC{$IE \vdash \phi(repeat\ a) = \,_grepeat\ a$}
+\UnaryInfC{$IE \vdash repeat\ a \phieq\ _grepeat\ a$}
 \DisplayProof
 }
 
@@ -1618,7 +1618,7 @@ case. Without fixed point elimination, the recursive reference can be handled by
 the inference system with one uniform rule for both the causal and the noncausal case:
  
 \begin{prooftree}
-\AxiomC{$\IEc\vdash \phi(\iota)=e$}
+\AxiomC{$\IEc\vdash \iota \phieq e$}
 \AxiomC{$\IEc\vdash e:A'$}
 \RLabel{\infer_{Rec}}
 \BinaryInfC{$\IEc\vdash \iota : A \infer e : A$'$$}
@@ -1710,10 +1710,12 @@ However, allowing users to write guarded recursive programs is not merely a
 question of adapting the checking system. Consider the following well-typed
 Idris program, potentially written by a user:
 \begin{lstlisting}[mathescape, title=\idrisBlock]
-total force : Later (Tomorrow Now) a $\to$ a
+total 
+force : Later (Tomorrow Now) a $\to$ a
 force (Next a) = a
 
-total f : Stream Nat
+total 
+f : Stream Nat
 f = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$rec.$\,$force$\,$rec)
 \end{lstlisting}
 Here, \texttt{fix$^\kappa$} is used correctly in \texttt{f}, but the use of
