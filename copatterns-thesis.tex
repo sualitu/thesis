@@ -23,8 +23,6 @@
 \usepackage{caption}
 \usepackage{framed}
 \usepackage{subcaption}
-\usepackage[usenames,dvipsnames]{xcolor}
-\definecolor{light-gray}{gray}{0.85}
 \usepackage{bussproofs}
  % Macros to get display-style math in proof trees.
   \newcommand{\AXD}[1]{\AxiomC{\ensuremath{\displaystyle #1}}}
@@ -77,6 +75,13 @@
 \newcommand{\CEopennoncausal}{\ensuremath{\iota; \noncausal; \open; \Gamma}}
 
 %\lstset{basicstyle=\ttfamily}
+\DeclareCaptionFormat{listing}{ #1#2#3}
+\captionsetup[lstlisting]{format=listing,singlelinecheck=false, margin=0pt,  font={sf}}
+%\DeclareCaptionFormat{listing}{\vspace{-0.5em}\hrulefill \par #1#2#3}
+%\captionsetup[lstlisting]{format=listing,singlelinecheck=false, margin=0pt, font={sf},labelsep=space,labelfont=bf}
+
+\newcommand{\idrisBlock}{\scriptsize{\texttt{Idris}}}
+\newcommand{\ttBlock}{\scriptsize{\texttt{TT}}}
 
 % Theorem Styles
 \newtheorem{theorem}{Theorem}[section]

@@ -272,6 +272,41 @@ Notice that some of the rules for the cumulativity relation requires terms to be
 convertible ($\simeq$), e.g. $S\simeq T$. Convertibility will be explained as
 part of the type checking phase in Section~\ref{sec:type-checking}.
 
+The rest of this report will contain both \texttt{TT} and Idris code
+examples. Each block of code will be marked indicating what language it
+contains. As some details of \texttt{TT} are not necessary to understand our
+implementation, we use a different notation for \texttt{TT} than the one used by
+Brady\,\citep{BradyIdrisImpl13}. Figure~\ref{fig:tt_notation} shows a \texttt{TT}-function
+\texttt{vAdd} as written with first Brady's notation, followed by ours. Firstly,
+we treat type class parameters as they are treated in high-level Idris (similar
+to Haskell). Secondly we do not annotate the type of pattern variables. Not
+shown in the example, we also do not annotate the type of lambda and
+let-bindings. Furthermore, we use certain high-level Idris syntactic shorthands, such as
+\texttt{[]} instead of \texttt{Nil}. Lastly, note that we use \texttt{=} rather than $\mapsto$.
+
+\newcommand{\lstul}[1]{\ensuremath{\underline{\mbox{ #1}}}}
+
+\begin{figure}[H]
+\begin{lstlisting}[mathescape]
+vAdd : ($a$ : Type) $\to$ ($n$ : Nat) $\to$ Num $a$ $\to$ 
+         Vect $n$ $a$ $\to$ Vect $n$ $a$ $\to$ Vect $n$ $a$
+$\lstul{var}$ $a$ : Type, $c$ : Type.
+   vAdd $a$ Z $c$ (Nil $a$) (Nil $a$) $\mapsto$ Nil $a$
+$\lstul{var}$ $a$ : Type, $k$ : Nat, $c$ : Type,
+   $x$ : $a$, $xs$ : Vect $k$ $a$, $y$ : a, $ys$ : Vect $k$ $a$.
+   vAdd $a$ (S $k$) $c$ ((::) $a$ $k$ $x$ $xs$)((::) $a$ $k$ $y$ $ys$)
+         $\mapsto$ ((::) $a$ $k$ ((+) $c$ $x$ $y$) $xs$) (vAdd $a$ $k$ $c$ $xs$ $ys$)
+
+vAdd : Num a $\Rightarrow$ (a : Type) $\to$ (n : Nat) $\to$ 
+         Vect n a $\to$ Vect n a $\to$ Vect n a
+vAdd a Z [] [] = []
+vAdd a (S k) (x :: xs) (y :: ys)
+      = (::) a k (x + y) (vAdd a k xs ys)
+\end{lstlisting}  
+  \caption{Edwin Brady's\,\citep{BradyIdrisImpl13} notation for \texttt{TT} compared to ours.}
+  \label{fig:tt_notation}
+\end{figure}
+
 \section{Coinductive Data Types in Idris}
 \label{sec:coind-data-types}
 Idris supports inductive as well as coinductive type families. The latter is

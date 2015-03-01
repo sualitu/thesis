@@ -42,7 +42,7 @@ argument to $\tensor^\kappa$, $f$, can never be applied to an argument $e$ which
 refines the type of $f$, e.g. a type argument. The following function,
 \texttt{repeat}, requires an application of a type argument:
 
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\ttBlock]
 repeat : $\forall \kappa.$ ((a : Type) $\rightarrow$ a $\rightarrow$ Stream$^{\kappa}$ a)
 repeat = $\Lambda\kappa.$ fix$^{\kappa}$($\lambda{}$rec$.\lambda{}$a$.\lambda{}$n$.$ 
              StreamCons a n ((rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ a)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)))
@@ -111,7 +111,7 @@ Figure~\ref{fig:repeat_typing_new}, because the type parameter is now fixed
 outside of the fixed point operator.
 
 \begin{figure}[h]
-  \begin{lstlisting}[mathescape]
+  \begin{lstlisting}[mathescape,title=\ttBlock]
 repeat : (a : Type) $\to$ $\forall \kappa.$ (a $\to$ Stream$^{\kappa}$ a)
 repeat a = $\Lambda\kappa.$ fix$^{\kappa}$($\lambda{}$rec$.\lambda{}$n$.$ 
              StreamCons a n (rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)))
@@ -164,10 +164,10 @@ operator. While this would work fine for single-clause definitions, it becomes
 problematic when we consider definitions with multiple clauses, such as the
 following: 
 
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\ttBlock]
 cycle : Nat $\to$ Nat $\to$ Stream Nat
-cycle Z     m = Z :: (cycle m m)
-cycle (S n) m = (S n) :: (cycle n m)
+cycle Z     m = (::) Nat Z (cycle m m)
+cycle (S n) m = (::) Nat (S n) (cycle n m)
 \end{lstlisting}
 
 When transforming \texttt{cycle} to guarded recursive form, both clauses must be
@@ -185,7 +185,7 @@ function where pattern matching is performed. With this solution, all the clause
 \texttt{cycle} are part of the same fixed point, where the guarded recursive reference,
 \texttt{rec}, is given to \texttt{cycle} as an argument:
 
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
 cycle$'$ : $\laterkappa\,$(Nat $\to$ Nat $\to$ Stream$^{\kappa}\,$Nat) $\to$ Nat $\to$ Nat $\to$ Stream$^{\kappa}$ Nat
 cycle$'$ rec  Z    m = StreamCons Z  ((rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ m)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ m))
 cycle$'$ rec (S n) m = StreamCons (S n) ((rec $\tensor ^{\kappa}$ (Next$^{\kappa}$ n)) $\tensor ^{\kappa}$ (Next$^{\kappa}$ m))
@@ -218,13 +218,13 @@ in the the second clause, respectively, so \texttt{rec} can never be applied to
 \texttt{xs} in a well-typed manner, since the type of xs is \texttt{Vect n a}.
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\ttBlock]
 prepend$'$ : (n : Nat) $\to$ (a : Type) $\to$
            $\laterkappa\,$(Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a) $\to$ 
            Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a
 prepend$'$ n a rec []        s = s 
 prepend$'$ n a rec (x :: xs) s = 
-                    StreamCons x ((rec $\tensor$ (Next xs)) $\tensor$ (Next s))
+                    StreamCons a x ((rec $\tensor$ (Next xs)) $\tensor$ (Next s))
 
 prepend : (n : Nat) $\to$ (a : Type) $\to$ 
           $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
@@ -293,16 +293,16 @@ Section~\ref{sec:depend-funct-types}, it does not.
 \todo{Is there a better way express the fix elimination rules?}
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
 prepend$'$ : (n : Nat) $\to$ (a : Type) $\to$
            Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a
-prepend$'$ n a []        s = s 
-prepend$'$ n a (x :: xs) s = 
-   StreamCons x (((Next$^{\kappa}$ ((prepend[$\kappa$]) n a)) $\tensor$ (Next xs)) $\tensor$ (Next s))
+prepend$'$ Z    $\ $ a []        $\,$s = s 
+prepend$'$ (S k) a (x :: xs) s = 
+   StreamCons a x (((Next$^{\kappa}$ ((prepend[$\kappa$]) n a)) $\tensor$ (Next xs)) $\tensor$ (Next s))
 
 prepend : (n : Nat) $\to$ (a : Type) $\to$ 
           $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
-prepend n a = $\Lambda\kappa.\,$fix$^\kappa$($\lambda$xs.$\lambda$s. prepend$'$ n a xs s)
+prepend n a = $\Lambda\kappa.\,$($\lambda$xs.$\lambda$s. prepend$'$ n a xs s)
 \end{lstlisting}
   \caption{The implementation of \texttt{prepend} after fixed point elimination.}
   \label{fig:guarded_prepend_bad}
@@ -429,8 +429,9 @@ that it must be added to any causal definition. Function definitions which are
 not marked as causal are assumed to be non-causal. This means that the
 \texttt{cycle} function from Section~\ref{sec:fixkappa-rule} must be given as
 follows:
-\begin{lstlisting}[mathescape]
-causal cycle : Nat $\rightarrow$ Nat $\rightarrow$ Stream Nat
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+causal 
+cycle : Nat $\rightarrow$ Nat $\rightarrow$ Stream Nat
 cycle Z     m = Z :: (cycle m m)
 cycle (S n) m = (S n) :: (cycle n m)
 \end{lstlisting}
@@ -450,7 +451,7 @@ cycle (S n) m = (S n) :: (cycle n m)
 \section{Preparing Idris}
 % Preprocessing, how are guarded data types created?
 \begin{figure}[h]
-  \begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 namespace GuardedRecursion
   ||| A computation that is available later (''tomorrow'').
   data Later$'$ : Type $\to$ Type where
@@ -477,7 +478,7 @@ namespace GuardedRecursion
   Later (Tomorrow n) a = Later$'$ (Later n a)
   
   ||| Composition of two values that are available later.                             
-  compose : {a : Type} $$\to$ {b : Type} $\to$ 
+  compose : {a : Type} $\to$ {b : Type} $\to$ 
             {n : Availability} $\to$ 
             Later (Tomorrow n) (a $\to$ b) $\to$ 
             Later (Tomorrow n) a $\to$ 
@@ -615,13 +616,13 @@ inductive, since \texttt{$_g$Stream} is a positively finite encoding of the
 possibly infinite type \texttt{Stream}.
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 codata Stream : Type -> Type where
-  MkStream : a -> Stream a -> Stream a
+  (::) : a -> Stream a -> Stream a
 \end{lstlisting}
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 data $_g$Stream : Type -> Type where
-  $_g$MkStream : a -> $\later_g$Stream a -> $_g$Stream a
+  ($_g$::) : a -> $\laterkappa$$ _g$Stream a -> $_g$Stream a
 \end{lstlisting}
   \caption{Above: A coinductive type definition. Below: Its guarded equivalent.}
   \label{fig:guarded_stream_inf}
@@ -645,13 +646,13 @@ later constructor could be encoded with \texttt{Inf}, if all of its primitives
 were ported to \texttt{Inf} as well.
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 corecord Tree a where
   left  : Tree a $\to$ Tree a
   value : Tree a $\to$ a
   right : Tree a $\to$ Tree a
 \end{lstlisting}
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 record $_g$Tree a where
   $_g$left  $\;$: $_g$Tree a $\to$ $\later_g$Tree a
   $_g$value : $_g$Tree a $\to$ a
@@ -675,13 +676,13 @@ added to the typing context as Idris postulates. Hence, they do not reduce
 during type checking. 
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 $_{\forall}$left$\ \;$ : $\forall\kappa.\,$$_g$Stream a $\,\to\,$ $\forall\kappa.\,$$_g$Stream a
-$_{\forall}$left   s = $\Lambda\kappa.$ iso$\,$($_{g}$left$\,$(s[$\kappa$]))
+$_{\forall}$left   s = iso $\Lambda\kappa.$ $\,$($_{g}$left$\,$(s[$\kappa$]))
 $_{\forall}$value : $\forall\kappa.\,$$_g$Stream a $\,\to\,$ a
 $_{\forall}$value s = $_{g}$value$\,$(s[$\kappa$])
 $_{\forall}$right : $\forall\kappa.\,$$_g$Stream a $\,\to\,$ $\forall\kappa.\,$$_g$Stream a
-$_{\forall}$right s = $\Lambda\kappa.$ iso$\,$($_{g}$right$\,$(s[$\kappa$]))
+$_{\forall}$right s = iso $\Lambda\kappa.$$\,$($_{g}$right$\,$(s[$\kappa$]))
 \end{lstlisting}
   \caption{The quantified projections generated for $_{g}Tree$.}
 \label{fig:tree_quantified_projections}
@@ -691,7 +692,7 @@ $_{\forall}$right s = $\Lambda\kappa.$ iso$\,$($_{g}$right$\,$(s[$\kappa$]))
 \[
 iso = \forall \kappa .A\cong \forall\kappa.\laterkappa A
 \]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 postulate iso : $\forall\kappa.\,\laterkappa$a $\to$ $\forall\kappa.$a
 \end{lstlisting}
   \caption{A type isomorphism for removing later types in a quantified context, and
@@ -852,7 +853,7 @@ merely shown here to justify our approach.
 \label{sec:prepr-caus-funct}
  We imagine that a user has written the following causal function
  \texttt{prepend} as a (concrete) Idris program:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\idrisBlock]
   total causal
   prepend : (a : Type) $\to$ List a $\to$ Stream a $\to$ Stream a
   prepend a []        s = s
@@ -866,7 +867,7 @@ merely shown here to justify our approach.
 
 % \newcommand{\prepend}[4]{\ensuremath{{\boxed{\text{#1};\causal;\phi,\text{#2};\open;\Gamma\,\vdash\,\text{#3}\,:\,\text{#4}\,\infer
 %         \\\text{?}\,:\,_{g}\text{#4})}}}}}
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
   $_g$prepend$'$ : $\laterkappa$((a$\,$:$\,$Type) $\to$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a) $\to$ 
                 (a$\,$:$\,$Type) $\to$ List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a
   $_g$prepend$'$ rec a []        $\;$s = 
@@ -887,7 +888,7 @@ of the type of the recursive reference, \texttt{rec}. Furthermore, \texttt{a} is
 no longer bound under the clock quantification in the type of
 \texttt{$_g$prepend}. After the lifting of \texttt{a}, we arrive at the following
 (changes are highlighted in grey boxes):
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
   $_g$prepend$'$ : $\fcolorbox{gray}{light-gray}{(a\,:\,Type)}$ $\to$ $\fcolorbox{gray}{light-gray}{\ensuremath{\laterkappa}(List a \ensuremath{\to} \ensuremath{_{g}}Stream a \ensuremath{\to} \ensuremath{_{g}}Stream a)}$ $\to$ 
                List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a
   $_g$prepend$'$ $\fcolorbox{gray}{light-gray}{a rec}$ []        s =
@@ -901,7 +902,7 @@ no longer bound under the clock quantification in the type of
 (3) The fixed point is eliminated by replacing all references to
 \texttt{rec} with \texttt{Next~(($_g$prepend~a)~[$\kappa$])} in \texttt{$_g$prepend}, since this term has
 exactly the same type as \texttt{rec} in step 2.
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
   $_g$prepend$'$ : (a$\,$:$\,$Type) $\to$ $\laterkappa$(List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a) $\to$ 
                List a $\to$ $_{g}$Stream a $\to$ $_{g}$Stream a
   $_g$prepend$'$ a rec []        s =
@@ -915,7 +916,7 @@ exactly the same type as \texttt{rec} in step 2.
 (4) The \texttt{rec} argument to \texttt{$_g$prepend$'$} is eliminated, but will
 be recovered by the inference system when the rule for causal recursive
 references is used (see Figure~\ref{fig:epsilon_rec_causal}n):
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
   $_g$prepend$'$ : $\fcolorbox{gray}{light-gray}{(a : Type) \ensuremath{\to} List a \ensuremath{\to\,_{g}}Stream a \ensuremath{\to\,_{g}}Stream a}$
   $_g$prepend$'$ a []        s =
     $\prepend{\text{(prepend a)}}{\text{(prepend a)}}{\,(_{g}\text{prepend a})}{s}{Stream a}$
@@ -952,7 +953,7 @@ Non-causal definitions are preprocessed slightly differently, mainly because the
 recursive reference has a different form on account of the use of the indexed
 fixed point. Consider the following non-causal Idris definition \texttt{evens},
 provided by a user:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\idrisBlock]
 evens : (a : Type) $\to$ Stream a $\to$ Stream a
 evens a s = head s :: evens a (tail (tail s))
 \end{lstlisting}
@@ -960,7 +961,7 @@ evens a s = head s :: evens a (tail (tail s))
 \texttt{$_{g}$evens$''$}. The \texttt{$_{g}$evens$'$} function is necessary because its type
 enables us to use the indexed fixed point, \texttt{pfix$^\kappa$}, to provide a recursive reference
 without clock quantification in its result type.
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
 $_g$evens$''$ : (($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ ($\forall\kappa.\,$$_{g}$Stream a) $\to$ ($\laterkappa$$_{g}$Stream a)) $\to$ 
            ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ ($\forall\kappa.\,$$_{g}$Stream a) $\to$ $_{g}$Stream a
 $_g$evens$''$ rec a s = 
@@ -973,7 +974,7 @@ $_g$evens : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ ($\forall\kappa.\,$$_{g}$
 $_g$evens = $\Lambda\kappa.\,$evens$'$
 \end{lstlisting}
 (2) Exactly as for the causal case, the type parameter, \texttt{a}, is lifted out of the fixed point.
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
 $_g$evens$''$ : $\fcolorbox{gray}{light-gray}{(\ensuremath{\forall\kappa.\,}(a :
 Type))}$ $\to$ $\fcolorbox{gray}{light-gray}{((\ensuremath{\forall\kappa.\,_{g}}Stream a)
 \ensuremath{\,\to} (\ensuremath{\laterkappa\, _{g}}Stream a))}$ $\to$ 
@@ -993,7 +994,7 @@ placed inside a function where the \texttt{Next} rule is used on its
 argument, \texttt{x}. Also, using \texttt{fix$^\kappa$} instead of
 \texttt{pfix$^\kappa$} means that the type of the recursive reference,
 \texttt{rec}, has now changed.
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
 $_g$evens$''$ : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ (($\forall\kappa.\,$$_{g}$Stream a) $\to$ ($\laterkappa$$_{g}$Stream a)) $\to$ 
           ($\forall\kappa.\,$$_{g}$Stream a) $\to$ $_{g}$Stream a
 $_g$evens$''$ a rec s =
@@ -1006,9 +1007,10 @@ $_g$evens : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ ($\forall\kappa.\,$$_{g}$
 $_g$evens a = $\Lambda\kappa.\,$evens$'$ a
 \end{lstlisting}
 (3.2) The fixed point is eliminated according to the rules in Figure~\ref{fig:fix_elim_rules}.
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
 $_g$evens$''$ : ($\forall\kappa.\,$(a$\,$:$\,$Type)) $\to$ (($\forall\kappa.\,$$_{g}$Stream a) $\to$ ($\laterkappa$$_{g}$Stream a)) $\to$ 
            ($\forall\kappa.\,$$_{g}$Stream a) $\to$ $_{g}$Stream a
+
 $_g$evens$''$ a rec s =
          $\evens{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
 
@@ -1021,7 +1023,7 @@ $_g$evens a = $\Lambda\kappa.\,$evens$'$ a
 (4) The \texttt{rec} argument to \texttt{$_{g}$evens$''$} is eliminated, but will
 be recovered by the inference system when the rules for non-causal recursive
 references is used (see Figure~\ref{fig:epsilon_rec_causal}).
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
 $_g$evens$''$ : $\fcolorbox{gray}{light-gray}{(\ensuremath{\forall\kappa.\,}(a : Type)) \ensuremath{\to} (\ensuremath{\forall\kappa.\,_{g}}Stream a) \ensuremath{\to\,_{g}}Stream a}$
 $_g$evens$''$ a s =
          $\evens{\text{(evens a)}}{\text{(evens a)}}{\,(_{g}\text{evens a})}{head s :: evens a (tail (tail s))}{Stream a}$
@@ -1300,17 +1302,18 @@ inference of guarded terms can be found in Appendix~\ref{app:infer-guard-recurs}
 %The derivation proceeds by continually pushing type requirements down into the syntax tree
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
 repeat : (a : Type) -> a -> Stream a
 repeat a n = (::) a n (repeat a n)
 \end{lstlisting}
-\begin{lstlisting}[mathescape]
-  $_g$repeat$'$ : (a$\,$:$\,$Type) $\to$ a $\to$ $_{g}$Stream a
-  $_g$repeat$'$ a n = $(_g::)$ a n $(\onk{\text{Next}}\,((_g$repeat$\ $a$)[\kappa]) \tensor^\kappa_1 (\onk{\text{Next}}\,
+\begin{lstlisting}[mathescape, title=\ttBlock]
+$_g$repeat$'$ : (a$\,$:$\,$Type) $\to$ a $\to$ $_{g}$Stream a
+$_g$repeat$'$ a n = $(_g::)$ a n $(\onk{\text{Next}}\,((_g$repeat$\ $a$)[\kappa]) \tensor^\kappa_1 (\onk{\text{Next}}\,
 $n$))$
 
-  causal $_g$repeat : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ a $\to$ $_{g}$Stream a)
-  $_g$repeat a = $\Lambda\kappa.\,$$\lambda$n.$\,$$_g\text{repeat}'$ a n
+causal 
+$_g$repeat : (a$\,$:$\,$Type) $\to$ ($\forall\kappa.\,$ a $\to$ $_{g}$Stream a)
+$_g$repeat a = $\Lambda\kappa.\,$$\lambda$n.$\,$$_g\text{repeat}'$ a n
 \end{lstlisting}
   \caption{Above: A simple causal function \texttt{repeat}. The data constructor for
     Stream, \texttt{(::)} is used in a prefix manner. Below: The guarded
@@ -1533,13 +1536,13 @@ fixed point elimination in order to enable inference of guarded recursive
 programs with dependent types. However, this leads the system to make an
 unfortunate assumption. Recall the example of \texttt{prepend} from
 Section~\ref{sec:fixkappa-rule}:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
 prepend$'$ : (n : Nat) $\to$ (a : Type) $\to$
            $\laterkappa\,$(Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a) $\to$ 
            Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a
 prepend$'$ n a rec []        s = s 
-prepend$'$ n a rec (x :: xs) s = 
-                    StreamCons x ((rec $\tensor$ (Next xs)) $\tensor$ (Next s))
+prepend$'$ n a rec (x $_g$:: xs) s = 
+                    ($_g$::) a x ((rec $\tensor$ (Next xs)) $\tensor$ (Next s))
 
 prepend : (n : Nat) $\to$ (a : Type) $\to$ 
           $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
@@ -1550,12 +1553,12 @@ Here, the type of \texttt{rec} is {$\laterkappa\,$(Vect n a $\to$
 elimination, we wish to substitute \texttt{rec} with \texttt{{(Next$^{\kappa}$
     ((prepend[$\kappa$]) n a)}}, such that we arrive at the following definition
 of \texttt{prepend}:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\ttBlock]
 prepend$'$ : (n : Nat) $\to$ (a : Type) $\to$
            Vect n a $\to$ Stream$^{\kappa}\,$a $\to$ Stream$^{\kappa}\,$a
 prepend$'$ n a []        s = s 
-prepend$'$ n a (x :: xs) s = 
-   StreamCons x (((Next$^{\kappa}$ ((prepend[$\kappa$]) n a)) $\tensor$ (Next xs)) $\tensor$ (Next s))
+prepend$'$ n a (x $_g$:: xs) s = 
+   ($_g$::) a x (((Next$^{\kappa}$ ((prepend[$\kappa$]) n a)) $\tensor$ (Next xs)) $\tensor$ (Next s))
 
 prepend : (n : Nat) $\to$ (a : Type) $\to$ 
           $\forall\kappa.$(Vect n a $\to$ Stream$^\kappa$ a $\to$ Stream$^\kappa$ a)
@@ -1605,6 +1608,7 @@ although it seems to work in most cases up to polymorphic types, it should not b
 part of a future implementation.
 
 \subsection{Preservation of Semantics}
+\label{sec:pres-semant}
 In Section~\ref{sec:inference-system}, we presented the rules for inferring
 guarded recursive TT terms from elaborated TT terms. Even though we are
 confident in our approach, we have no proof that the semantics of the inferred
@@ -1632,6 +1636,7 @@ instance function, taking modality into account.
 % type classes entirely in the inference system, such that 
 
 \subsection{Mutual Recursion}
+\label{sec:mutual-recursion}
 Since our productivity analysis emerges from the use of the guarded recursive
 fixed point defined in Section~\ref{sec:guarded-recursion}, mutually recursive
 definitions are not (yet) supported. The reason is that our analysis prevents
@@ -1642,9 +1647,10 @@ recursion, these must be identified separately. This is deferred as future work
 (see Chapter~\ref{cha:future-work}).
 
 \subsection{Totality Dependencies}
+\label{sec:total-depend}
 Currently, the system does not keep track of totality dependencies between
 functions. Consider the following program:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\idrisBlock]
 nats : Stream Nat
 nats = Z :: map S nats
 \end{lstlisting}
@@ -1670,7 +1676,7 @@ according to the procedure described in Section~\ref{sec:inference-system}.
 However, allowing users to write guarded recursive programs is not merely a
 question of adapting the checking system. Consider the following well-typed
 Idris program, potentially written by a user:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\idrisBlock]
 total force : Later (Tomorrow Now) a $\to$ a
 force (Next a) = a
 
@@ -1693,6 +1699,7 @@ definitions would therefore be necessary. Further exploration into this area is
 needed in order to determine whether additional restrictions are required.
 
 \subsection{Multiple Clocks}
+\label{sec:multiple-clocks}
 In Section~\ref{sec:singleton-clock}, we explained that the inference system has
 been restricted to only inferring guarded recursive terms that require at most
 one clock variable. The $\infer_{\Lambda\kappa}$ and $\infer_{[\kappa]}$ rules
@@ -1709,6 +1716,7 @@ definitions with multiple clocks could most likely be supported by extending the
 checking system.
 
 \subsection{Error Reporting}
+\label{sec:error-reporting}
 Giving helpful error messages concerning guarded recursion can be difficult,
 mainly because it may require that the user is familiar or at least partially
 familiar with the underlying theory. Aside from that, it should be possible to

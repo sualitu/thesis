@@ -5,7 +5,8 @@
 \LoadClass[a4paper, showtrims, 12pt, twoside, openright, onecolumn, final]{memoir}
 
 \RequirePackage[danish,english]{babel}
-
+\RequirePackage[usenames,dvipsnames]{xcolor}
+\definecolor{light-gray}{gray}{0.85}
 %% Graphics
 \RequirePackage{tikz}
 \usetikzlibrary{positioning}
@@ -21,7 +22,7 @@
   keywordstyle=\bfseries,
   commentstyle=\itshape,
   numberbychapter=true,
-  captionpos=b
+  captionpos=t
 }
 
 \lstnewenvironment{code}[1][]%
@@ -29,7 +30,7 @@
    \lstset{#1}
 }{
 }
-\definecolor{shadecolor}{gray}{0.9}
+
 \newenvironment{aside}{
   \noindent\begin{shaded}
   \begin{minipage}[t]{0.05\textwidth}{\sffamily \bfseries Aside:}\end{minipage}
@@ -186,7 +187,8 @@
   \end{tikzpicture}
   \begin{tikzpicture}[remember picture,overlay,line width=0mm,shift=(current page.south west), align=left, font=\sffamily\large]
     \node[anchor=south west] (meta) at (2.5cm, 2.5cm) {
-      \sups : \itusupervisor \extrasup\\
+      \sups : \itusupervisor , David Christiansen, \\
+      \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ and Rasmus M\o gelberg \\ 
       \iflanguage{danish}{Afleveret}{Submitted}: \itudate
     };
   \end{tikzpicture}

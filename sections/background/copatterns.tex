@@ -85,7 +85,6 @@ copatterns, as opposed to pattern matching, where projection on parameters
 happens inside of definitions. As an example, consider the definition of
 \texttt{map} in Figure~\ref{fig:map_copatterns}.
 
-
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
 map : (a -> b) -> Stream a -> Stream b
@@ -109,7 +108,8 @@ describing output.
 \subsection{The Anatomy of Copatterns}
 \todo{Establish names for different parts of a definition with copatterns here:
   In particular, we need to define the following: clause, pattern clause, pattern,
-  argument pattern, copattern clause, copattern, left-hand side projection, observation, and probably more}
+  argument pattern, copattern clause, copattern, left-hand side projection,
+  observation, and probably more}
 
 \subsection{Existing Implementations of Copatterns}
 Copatterns already exist in programming languages, for example in
@@ -146,9 +146,25 @@ tail (repeat a) = repeat a
 \end{figure}
 
 In Section\,\ref{sec:motivation_copatterns} we discuss the motivation behind the
-use of copatterns. Later, in Section\,\ref{sec:adding_copatterns}, we describe
+use of copatterns. Later, in Chapter\,\ref{sec:adding_copatterns}, we describe
 how we have added a syntax for copatterns and for defining coinductive types by
-their observations (\texttt{corecord}s) to the programming language Idris.
+their observations (\texttt{corecord}s) to the programming language Idris. The
+syntax we have added to Idris includes a prefix character, \texttt{\&}, on the
+observation patterns, an example of which you can see in
+Figure~\ref{fig:map_copat_syntax}. In the remaining report we will use this
+syntax for copattern definitions.
+
+\begin{figure}[h]
+\begin{lstlisting}[mathescape]
+map : (a -> b) -> Stream a -> Stream b
+&head (map f s) = f (head s)
+&tail (map f s) = map f (tail s)
+\end{lstlisting}
+\caption{The \texttt{map} function defined with copatterns using the syntax
+  described in Chapter~\ref{sec:adding_copatterns}.}
+\label{fig:map_copat_syntax}
+\end{figure}
+
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "../../copatterns-thesis"

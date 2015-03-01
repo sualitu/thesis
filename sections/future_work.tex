@@ -1,10 +1,38 @@
+
 %!TEX root = ../copatterns-thesis.tex
 \chapter{Future Work}
 \label{cha:future-work}
+In this chapter we will discuss how we see our project evolve in the
+future. While we have implemented both copatterns and a new productivity checker
+in Idris, the following sections are characterized by what we have learned
+during the development of these. Late in the forming of our solutions, we have discovered better
+solutions than the ones we have implemented. Sadly, our discoveries of better
+approaches have surfaced too late to be implemented for this report. What we see
+as future work is therefore pervaded and inspired by our plans to improve our implementation.
 \section{Copatterns}
-\subsection{With-rule}
-\subsection{Pattern matching on Codata}
+While our implementation of copatterns does work, there are improvements to be
+made. In Section~\ref{sec:copatterns-implementation-discussion} we discussed
+several topics, and in the following we will go over those which inspire future work.
+\subsection{An Alternative Solution}
+While we have implemented copatterns as a desugaring in Idris$^-$,
+we proposed an alternative implementation in
+Section~\ref{sec:an-altern-solut}. This solution moves our implementation from
+from a desugaring of Idris$^-$ to an elaboration from Idris$^-$ to
+\texttt{TT}. This seems like a more robust solution which simplifies disambiguating
+names, a problem discussed in Section~\ref{sec:pars-disamb-names}.
 \subsection{Improved Syntax}
+As a solution based on elaboration of copatterns rather than desugaring
+simplifies disambiguation of names, it also opens up new syntactical options. We
+discussed in Section~\ref{sec:parsing-copatterns} that we are not happy with
+prefixing all copatterns with a special character, and therefore suggested a
+block-based approach in Section~\ref{sec:pars-disamb-names}.
+\subsection{\texttt{with}-rule}
+In the presence of inductive families, the \texttt{with}-rule is a very powerful
+tool, allowing to match on intermediate calculations. In
+Section~\ref{sec:textttwith-rule} we explained how our copattern implementation
+does not work with the \texttt{with}-rule. As such, an interesting future
+improvement is to make copatterns and the \texttt{with}-rule work along side
+each other in Idris.
 
 %### Copatterns ###
 % Copatterns in with-rule
@@ -14,30 +42,54 @@
 %##################
 \section{Guarded Recursion}
 \label{sec:guarded-recursion-1}
-Section~\ref{sec:discussion} we discussed the shortcomings and limitations of
-our system. To reiterate, we mentioned the following:
+The most important continuation of our project is to reintroduce the fixed point
+operator into our implementation. In Section~\ref{sec:depend-funct-types} we
+discussed how doing this would affect our inference and checking rules. In
+reality, readjusting our implementation to work with the fixed point operator
+would be a simple task. The system with the fixed point operator has both fewer
+inference and checking rules, as we do not need recursive rules for each
+causality. This also simplifies an improvement of non-causal functions in our implementation.
 
-\begin{itemize}
-\item Preservation of semantics
-\item Type class instances
-\item Mutual recursion
-\item Totality dependencies
-\item User-written guarded recursion
-\item Multiple clocks
-\item Error reporting
-\end{itemize}
+We intent on implementing a system with fixed point within a reasonable
+time frame. Therefore, we will base our suggestions for future work on a new, improved
+implementation.
 
-Improving on these are great opportunities for further research and
-development. While we already went over possible solutions to some of these problems in
-Section~\ref{sec:discussion}, some were left without further discussion.
+\subsection{General Improvements}
+Previously we have discussed totality dependencies, in
+Section~\ref{sec:total-depend}, and general bugs in our implementation, in
+Section~\ref{sec:our-implementation}. We intend to implement and fix these
+problems along side a implementation of the fixed point operator.
 
-\todo{ref to fixed point elimination elimination section!}
-We also discussed an implementation without the fixed point
-elimination. While not yet implemented, we intent to adjust our implementation
-and reintroduce the fixed point operator, and not rely on the fixed point elimination
-rules. We expect to have implemented these changes within a reasonable
-time. Therefore, we will base our suggestions for future work on a new
-improved implementation.
+\subsection{Type Class Instances}
+Our implementation does not currently work for type class instances in
+Idris. This is not an
+inherent flaw of our system, but rather because our implementation does not
+treat type classes in any special way.
+
+In Section~\ref{sec:type-class-instances} we briefly touched upon a possible
+solution to this problem. For any coinductive type, we not only infer a
+guarded type, but we also infer its guarded instances. As an example let us
+consider \texttt{Stream} as an instance of \texttt{Functors}:
+
+\begin{lstlisting}[mathescape, title=\idrisBlock]
+instance Functor Stream where
+  map f (x :: xs) = (f x) :: (map f xs)
+\end{lstlisting}
+
+To use the guarded stream, \texttt{Stream}$^\kappa$, as a \texttt{Functor} as well we
+must infer \texttt{Stream}$^\kappa$ as an instance of \texttt{Functors}. We do
+this by creating a new instance \texttt{Functor Stream}$^\kappa$, and use our
+inference system to infer a guarded term for the implementation:
+
+\begin{lstlisting}[mathescape, title=\idrisBlock]
+instance Functor Stream$^\kappa$ where
+  map f (x $_g$:: xs) = (f x) $_g$:: (Next$^\kappa$ (map f) $\tensorkappan$ xs)
+\end{lstlisting}
+
+Implementing this, while seemingly simple, could be complicated as it requires a
+thorough understanding of type classes in Idris. Both how they are elaborated to
+\texttt{TT}, and how they behave in \texttt{TT}. The main task of adding type
+classes to our implementation is therefore understanding type classes in Idris.
 
 \subsection{Mutual Recursion}
 We discussed how we can not ensure productivity for mutually recursive
@@ -56,16 +108,58 @@ point rule works for any type, and thereby also products of functions.
 Another interesting continuation of our project is how to implement user-written
 guarded recursion. In Section~\ref{sec:user-written-guarded} we discussed the
 a challenge of allowing the user to write guarded recursion, namely that
-allowing the user to pattern match on values of type \texttt{Later}.
-% bug fixes
-%### GUARDED recursion ####
-% Flere ure: Hvor stort et problem er det kun at have eet ur?
-% Mutual recursion
-% (Instans-funktioner)
-% Kan man skrive guarded recursion selv?
-%% Delvis inferens?
-% Bevis for preservation of semantics
-%##########################
+allowing the user to pattern match on values of type \texttt{Later}. Before
+opening up for the user to write guarded recursion, research needs to go into
+how to keep it safe. Are there other such pitfalls to avoid, or can we simply
+just disallow pattern matching on \texttt{Later} types?
+
+A first step towards user-written guarded recursion in Idris, could be to
+allow the user to specify the guarded type, but still let the system infer the
+guarded term. We already let the user specify part of the type, either causal or
+non-causal. By allowing the user to fully specify the guarded type we could get
+closer to checking productivity of such functions as those described in Section~\ref{sec:function-types}.
+
+\subsection{Multiple Clocks}
+We restricted our system to a singleton clock environment to simplify
+inference. However, in Section~\ref{sec:multiple-clocks} we argued that
+extending the type checker to multiple clocks could work well along side
+user-written guarded recursion. This would not affect the inference system, as
+it would still not infer definitions with multiple clocks. 
+
+\subsection{Dependent Types}
+In Section~\ref{sec:handling-parameters} we discussed the problems of type
+substitution when using later application, and how it has affected our
+system. Should future research show that type substitution is indeed sound for
+later application, adjusting our system would be straight forward, yet
+important. Should the rule from Figure~\ref{fig:tensor_with_subst} prove to be
+sound it would change the $\infer_{\tensorkappan}$-rule and the
+$I_{\tensorkappan}$-rule as shown in
+Figure~\ref{fig:tensor-rules_with_type_subst}. As such, it is possible to adjust
+our system to possible further research in the area of guarded recursion and
+dependent types.
+
+\begin{figure}[h]
+\centering
+
+\AXD{\begin{matrix} \IEopen \, \vdash \, f\, :\, (a' : A)\, \to \, B\, \infer \,
+    g\,:\, \laterkappan ((a : A')\, \to \, B') \\ 
+                    \IEopen \, \vdash \, x\, :\, A\, \infer \, y\,:\,\laterkappan A'
+     \end{matrix}} 
+\RLabel{n \geq 1, f \not = \iota \quad (\infer_{\tensor^{\kappa}_{n}})} 
+\UID{\IEopen \, \vdash \, f\, x\, :\, B[{x}/{a}]\, \infer \, g\, \tensor^{\kappa}_{n} \, y\, :\, \laterkappan B'[{y}/{a'}]}
+\DisplayProof
+  
+\vspace{1em}
+
+    \AxiomC{$\CEopen \vdash t : \laterkappan ((a : A) \to B) $}
+    \AxiomC{$\CEopen \vdash u : \laterkappan A$}
+    \RightLabel{$I_{\tensorkappan}$}    
+    \BinaryInfC{$\CEopen \vdash t \tensorkappan u : \laterkappan B[{u}/{a}]$}
+\DisplayProof  
+  \caption{$\infer_{\tensorkappan}$ and $I_{\tensorkappan}$ rules with type
+    substitution.}
+  \label{fig:tensor-rules_with_type_subst}
+\end{figure}
 
 %%% Local Variables:
 %%% mode: latex

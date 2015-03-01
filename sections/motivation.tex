@@ -244,11 +244,11 @@ answer.
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
-  corecord CoList a where
-    unfold : Either (a, CoList a) ()
+corecord CoList a where
+  unfold : Either (a, CoList a) ()
 
-  map : (a $\to$ b) $\to$ CoList a $\to$ CoList b 
-  &unfold map f xs = case (unfold xs) of
+map : (a $\to$ b) $\to$ CoList a $\to$ CoList b 
+&unfold map f xs = case (unfold xs) of
                       Left (x, xs) => Left (f x, map f xs)
                       Right () => Right ()
 \end{lstlisting}

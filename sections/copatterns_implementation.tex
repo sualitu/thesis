@@ -268,7 +268,7 @@ By adding copatterns to Idris, we wish to
 \subsection{Desugaring Copatterns}
 From the above intuition, it may seem that desugaring copatterns is
 straightforward. Consider the simple example of the infinite stream of zeros:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 zeros : Stream Nat
 &head zeros = Z
 &tail zeros = zeros
@@ -276,14 +276,14 @@ zeros : Stream Nat
 This definition can quite easily be desugared into a definition by construction,
 simply by providing each right-hand side as argument to the corresponding
 constructor for \texttt{Stream}, \texttt{MkStream}:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 zeros : Stream Nat
 zeros = MkStream Z zeros
 \end{lstlisting}
 However, as the complexity of our copatterns increase, so does the complexity of
 the desugaring process. For example, copatterns can be arbitrarily nested,
 given that the nesting is well-typed:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 toggle : a $\to$ a $\to$ Stream a
 &head       toggle n m = n
 &head &tail toggle n m = m
@@ -292,7 +292,7 @@ toggle : a $\to$ a $\to$ Stream a
 In this situation, \texttt{toggle} must de desugared such that the structure
 indicated by the copatterns is preserved after desugaring. Additionally,
 ordinary left-hand side pattern matching must be preserved.
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 cycle : Nat $\to$ Nat $\to$ Stream Nat
 &head cycle n     $\;$m = n
 &tail cycle Z     $\;$m = cycle m m
@@ -343,7 +343,7 @@ definition of \texttt{zeros} given earlier, which produces a value of type
 of desugaring \texttt{zeros}, expansion, the right-hand side of each copattern
 clause is expanded into an explicit projection on a partially defined
 Stream:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 zeros : Stream Nat
 &head zeros = head (Z :: ?zerostail)
 &tail zeros = tail (?zeroshead :: zeros)
@@ -392,7 +392,7 @@ e.g. \texttt{?zeroshead}.
 
 In the second step, reduction, each clause is reduced by eliminating equivalent
 projections on both sides of the clause:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 zeros : Stream Nat
 -- Before: &head zeros = head (Z :: ?zerostail)
 -- Eliminate 'head' on each side
@@ -437,7 +437,7 @@ equally general to the pattern in another clause. Some of the right-hand sides
 may remain incomplete after the merging step if the definition we are desugaring
 is not covering. First, the clauses of \texttt{zeros} which are compatible with
 each other are identified:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
     zeros : Stream Nat
     -- The two clauses are compatible with each other
 (1) zeros = Z :: ?zerostail
@@ -447,7 +447,7 @@ Here, we have numbered the clauses for reference. Since \texttt{zeros} is a simp
 example, the two clauses are trivially compatible because their left-hand sides
 are identical (see Definition~\ref{def:compatibility}). Secondly, the clauses are merged into one clause, thereby completing the
 desugaring of \texttt{zeros}:
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
       zeros : Stream Nat
 (1,2) zeros = Z :: zeros 
 \end{lstlisting}
@@ -504,7 +504,7 @@ a running example of the desugaring of a non-trivial definition with copattern
 clauses.
 
 \begin{figure}[H]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
     ||| Duplicate every nth element of s, 
     ||| starting with the mth element.
     ||| @s the stream
@@ -547,7 +547,7 @@ described for an alternative solution in
 Section~\ref{sec:copatterns-implementation-discussion}.
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
     dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
 (1) head       (dupNth s n m)       =
       head (head s :: ?dupNthtail)
@@ -569,7 +569,7 @@ Section~\ref{sec:copatterns-implementation-discussion}.
 \end{figure}
 
 \begin{figure}[H]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
     dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
 (1) dupNth s n m       =
       head s :: ?dupNthtail
@@ -589,7 +589,7 @@ Section~\ref{sec:copatterns-implementation-discussion}.
 \end{figure}
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
     dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
     -- The 'dupNth s n m' clause is compatible with 
     -- all of the other clauses.
@@ -615,7 +615,7 @@ Section~\ref{sec:copatterns-implementation-discussion}.
 \end{figure}
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
 (1,2,4) dupNth s n Z = 
           head s :: (head s :: tail (dupNth s n n))
@@ -696,14 +696,14 @@ none is given. A non-covering version of the \texttt{dupNth} function is shown
 in Figure~\ref{fig:dupNth_partial}, along with its desugared version.
 
 \begin{figure}
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
 head (tail (dupNth s n Z))      = head s
 head (tail (dupNth s n (S m'))) = head (tail s)
 tail (tail (dupNth s n Z))      = tail (dupNth s n n)
 tail (tail (dupNth s n (S m'))) = tail (dupNth (tail s) n m')
 \end{lstlisting}
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
 dupNth s n Z = 
  ?dupNthhead :: (head s :: tail (dupNth s n n))
@@ -748,7 +748,7 @@ the leftmost ``naked'' name (without any decorations) in a clause to be the name
 of a declared function, a rule which can lead to ambiguities when copatterns
 come into play.
 \begin{figure}[H]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 zeros : Stream Nat
 head : Nat $\to$ Nat
 head zeros = Z     -- clause for function 'head'
@@ -768,7 +768,7 @@ function \texttt{head}, and is essentially the constant function for \texttt{Z},
 while the second occurrence is a copattern clause for \texttt{zeros}, defining
 that the \texttt{head} of \texttt{zeros} is \texttt{Z}.
 \begin{figure}[H]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 zeros : Stream Nat
 head : Nat $\to$ Nat
 head zeros = Z     -- clause for function 'head'
@@ -1043,6 +1043,7 @@ relating \texttt{x} to \texttt{y} and \texttt{t[x/a]} to \texttt{t$'$[y/a]},
 where \texttt{a} is bound in \texttt{t} (\texttt{t'}, respectively).
 
 \subsection{The \texttt{with}-rule}
+\label{sec:textttwith-rule}
 The current implementation does not allow users to use the \texttt{with}-rule on
 copattern clauses. Due to the merging step, allowing the \texttt{with}-rule on
 copattern clauses would require a procedure for merging two
@@ -1053,6 +1054,7 @@ exploration into this area is needed to determine whether merging with-rules
 have any unforeseen practical implications.
 
 \subsection{An Alternative Solution}
+\label{sec:an-altern-solut}
 As a direct translation to pattern clauses exists for any definition with
 copattern clauses, elaborating copattern clauses by reusing the existing
 elaboration logic for pattern clauses seems like a logical solution at
@@ -1065,7 +1067,7 @@ elaborating copattern clauses separately, i.e. as a direct transformation from
 above.
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 namespace A
   corecord Stream a where
     head : a
@@ -1091,6 +1093,7 @@ switcher : (c : Bool) $\to$ a $\to$ b $\to$ if c
 \end{figure}
 
 \subsubsection{Parsing and Disambiguating Names}
+\label{sec:pars-disamb-names}
 One benefit of elaborating copattern clauses separately is that it
 allows for name disambiguation from type information. The situation shown in
 Figure~\ref{fig:copatterns_type_disambiguation} cannot be solved prior to
@@ -1117,7 +1120,7 @@ defined.
 
 
 \begin{figure}
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 zeros : Stream Nat
 head : Nat $\to$ Nat
 head zeros = Z     -- clause for function 'head'
@@ -1131,19 +1134,19 @@ copatterns
 \end{figure}
 
 \begin{figure}
-\begin{lstlisting}[mathescape]
-dupNth : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
-dupNth s n m = head s :: dupNth$^\prime$ s n m
+\begin{lstlisting}[mathescape,title=\ttBlock]
+dupNth : (a : Type) $\to$ Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+dupNth a s n m = head s :: dupNth$^\prime$ a s n m
 
-dupNth$^\prime$ : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
-dupNth$^\prime$ s n Z = dupNthZ s n
-dupNth$^\prime$ s n (S m$^\prime$) = dupNthS s n m$^\prime$
+dupNth$^\prime$ : (a : Type) $\to$ Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+dupNth$^\prime$ a s n Z = dupNthZ a s n
+dupNth$^\prime$ a s n (S m$^\prime$) = dupNthS a s n m$^\prime$
 
-dupNthZ : Stream a $\to$ Nat $\to$ Stream a
-dupNthZ s n = head s :: tail (dupNth s n n)
+dupNthZ : (a : Type) $\to$ Stream a $\to$ Nat $\to$ Stream a
+dupNthZ a s n = head s :: tail (dupNth a s n n)
 
-dupNthS : Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
-dupNthS s n m$^\prime$ = head (tail s) :: tail (dupNth (tail s) n m$^\prime$)
+dupNthS : (a : Type) $\to$ Stream a $\to$ Nat $\to$ Nat $\to$ Stream a
+dupNthS a s n m$^\prime$ = head (tail s) :: tail (dupNth a (tail s) n m$^\prime$)
 \end{lstlisting}
   
   \caption{Converting the unnested version of \texttt{dupNth} into pattern clauses.}
@@ -1168,19 +1171,19 @@ creating auxiliary functions is non-trivial, because computing the types of such
 functions may require evaluation.
 
 \begin{figure}[h]
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape,title=\idrisBlock]
 filter : (a $\to$ Bool) $\to$ Stream a $\to$ Stream a
 head (filter p s) with (filter p (tail s))
   | s$^\prime$ = if p (head s)) then head s else head s$^\prime$
 tail (filter p s) = filter p (tail s)
 \end{lstlisting}
 
-\begin{lstlisting}[mathescape]
-filter : (a $\to$ Bool) $\to$ Stream a $\to$ Stream a
-filter p s = headFilter p s :: filter p (tail s)
+\begin{lstlisting}[mathescape,title=\ttBlock]
+filter : (a : Type) $\to$ (a $\to$ Bool) $\to$ Stream a $\to$ Stream a
+filter a p s = headFilter a p s :: filter a p (tail s)
 
-headFilter : (a $\to$ Bool) $\to$ Stream a $\to$ a
-headFilter p s with (filter p (tail s))
+headFilter : (a : Type) $\to$ (a $\to$ Bool) $\to$ Stream a $\to$ a
+headFilter a p s with (filter a p (tail s))
   | s$^\prime$ = if p (head s)) then head s else head s$^\prime$
 \end{lstlisting}
   \caption{Above: A \texttt{filter} function on \texttt{Stream}s, showcasing the

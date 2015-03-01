@@ -103,6 +103,7 @@ definitions. The problem with these functions is that they require a very specif
 type to be proven productive.
 
 \subsection{Function Types}
+\label{sec:function-types}
 To simplify inference we categorized functions into causal and
 non-causal functions. We used this to help us infer the guarded type of a function. There
 are, however, functions for which the guarded type falls outside this
@@ -125,7 +126,7 @@ more sophisticated types to be proven total.
 Atkey and McBride\,\citep{Atkey:2013} prove \texttt{mergef} productive by
 changing the type of the input function. They alter it to be:
 
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\idrisBlock]
 mergef : (Nat $\to$ Nat $\to \laterkappan$Stream$^\kappa$ Nat $\to$ Stream$^\kappa$) $\to$
          Stream$^\kappa$ Nat $\to$ Stream$^\kappa$ Nat $\to$ Stream$^\kappa$ Nat
 mergef f s t = f (head s) (head t) 
@@ -139,7 +140,7 @@ later, as an argument to \texttt{f}.
 In a similar fashion, Clouston et al.\,\citep{BirkedalL:guarded-lambda-conf}
 prove \texttt{paperfold'} productive by using a differently typed \texttt{interleave}:
 
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\idrisBlock]
 interleave : Stream$^\kappa$ Nat $\to$ $\laterkappan$ Stream$^\kappa$ Nat $\to$ Stream$^\kappa$ Nat
 \end{lstlisting}
 
@@ -147,7 +148,7 @@ This type captures that while the first argument is needed straight away, the
 second argument is always only needed later. With this type for interleave they
 can define a guarded \texttt{paperfolds'}:
 
-\begin{lstlisting}[mathescape]
+\begin{lstlisting}[mathescape, title=\idrisBlock]
 paperfolds' : Stream$^\kappa$ Nat
 paperfolds' = interleave toggle paperfolds'
 \end{lstlisting}
