@@ -15,7 +15,29 @@
 Guarded recursion provides a typing discipline which ensures that all programs adhering to their type specification must be productive. In a system with a syntactic guardedness condition, the productivity of a given program follows from its syntactic structure. With guarded recursion, the productivity of a program follows from its type. Consequently, it is impossible to write a well-typed guarded recursive program which is not productive.
 
 \subsection{The Guardedness Type Constructor}
-The use of guarded recursion was pioneered by Nakano\,\citep{Nakano:2000}, who presented a type system (based on $\lambda \mu$) where no well-typed terms diverge by introducing a guardedness type constructor for a type $A$, $\later A$, into the type system. Although Nakano does not call it so explicitly, we recommend that the guardedness type constructor $\later$ is read as ``later''. The addition of the $\later$ operator leads to a type system where there is a distinction between an inhabitant of a type $A$, which must be available now (i.e. at any point in time), and an inhabitant of $\later A$, which is available later (i.e. not now). Using this intuition, a stream of elements of type $A$ can be defined as described in Figure\,\ref{fig:guarded_recursion_stream}. The idea is that we can access the head of the stream now, but we cannot access the recursive reference in the tail until later.
+The use of guarded recursion was pioneered by Nakano\,\citep{Nakano:2000}, who
+presented a type system $\lambda\!\bullet\!\mu$ (read ``lambda-later-mu'', based
+on $\lambda \mu$) where no well-typed terms diverge. He achieves this by
+introducing modality into the type system through the addition of a guardedness
+type constructor for a type $A$, $\later A$ (``later A''). This allows him to
+give type definitions where
+recursive occurrences are only allowed in the context of the $\later$
+modality. Combined with a modal Y-combinator (see
+Figure~\ref{fig:nakano_Y}), he arrives at a system in which only non-diverging
+programs can be written.
+
+\begin{figure}[H]
+\[
+\vdash \lambda f. (\lambda x. f (x x)) (\lambda x. f (x x)) : (\bullet X \to X) \to X
+\]
+\caption{The Y-combinator as derived in Nakano's $\lambda\!\bullet\!\mu$ system\,\citep{Nakano:2000}.}
+\label{fig:nakano_Y}
+\end{figure}
+% Although
+% Nakano does not call it so explicitly, we recommend that the guardedness type
+% constructor $\later$ is read as ``later''. 
+
+The addition of the $\later$ operator leads to a type system where there is a distinction between an inhabitant of a type $A$, which must be available now (i.e. at any point in time), and an inhabitant of $\later A$, which is available later (i.e. not now). Using this intuition, a stream of elements of type $A$ can be defined as described in Figure\,\ref{fig:guarded_recursion_stream}. The idea is that we can access the head of the stream now, but we cannot access the recursive reference in the tail until later.
 
 \begin{figure}
 \[

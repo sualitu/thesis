@@ -11,6 +11,67 @@
 % Ny viden: Hvordan syntactic guardedness virker, begrænsninger ved syntactic guardedness
 %#######
 
+A productive function produces a finite number of unfoldings of its output in
+finite time (see Definition~\ref{def:productive_function}). In a very intuitive
+way, this can be ensured by using the principle of syntactic guardedness for
+productivity checking. Where values become structurally smaller by pattern
+matching, they become structurally larger by constructor application. Therefore,
+the syntactic guardedness principle states that a corecursive definition is
+productive if all corecursive calls appear directly under a coinductive
+constructor. This has the implication that the productivity of corecursive
+functions can be detected by a purely syntactic check.
+
+The idea is as follows: Each time we unfold a corecursive definition, all
+corecursive calls must be part of a later unfolding. We enforce this by
+demanding that the following unfoldings are built by explicit constructor
+invocations. Consider the example of \texttt{zip}, implemented first by
+construction, and then by observation:
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+zip : Stream a $\to$ Stream a $\to$ Stream a
+zip s t = MkStream ((head s), (head t)) (zip (tail s) (tail t))
+\end{lstlisting}
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+zip : Stream a $\to$ Stream a $\to$ Stream a
+&head zip s t = (head s, head t)
+&tail zip s t = zip (tail s) (tail t)
+\end{lstlisting}
+Here, we enforce that all calls to \texttt{zip} appear directly under an
+invocation of \texttt{MkStream}. Thus, we can unfold \texttt{zip s
+  t} a finite number of times, and for each unfolding receive \texttt{((head s,
+  head t))} and a new \texttt{Stream} built by the corecursive call. The
+principle holds for all coinductive types, and easily generalizes to examples
+using more interesting types the a simple \texttt{Stream}.
+
+Although syntactic guardedness is a very simple principle, it is also quite
+restrictive. If the next unfolding is not provided directly by a
+constructor invocation, but indirectly through a call to another productive
+function, then the program will not be productive according to the syntactic
+guardedness principle. For example, we might define all the odd natural numbers
+as follows (where \texttt{(.)} is function composition):
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+oddNumbers : Stream a
+oddNumbers = S Z :: map (S . S) oddNumbers
+\end{lstlisting}
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+oddNumbers : Stream a
+&head oddNumbers = S Z
+&tail oddNumbers = map (S . S) oddNumbers
+\end{lstlisting}
+This definition will not be deemed productive by a syntactic guarededness
+analysis, since the corecursive call to \texttt{oddNumbers} is not directly
+under a call to \texttt{MkStream}, but is instead given as argument to the
+productive function \texttt{map}. However, \texttt{oddNumbers} is clearly
+productive, since \texttt{map} always provides an additional unfolding. 
+
+The syntactic guardedness principle is widely used, e.g. in Idris, Agda, and
+Coq, probably due to its simplicity, but its restrictions does constrain the range
+of corecursive definitions we can show to be productive. To widen this range,
+other techniques must be used, for instance guarded recursion, which will be
+presented in Section~\ref{sec:guarded-recursion}.
+
+% Due to the duality between inductive and coinductive types, it may be compelling to imagine a productivity analysis which, dual to the size-change principle, works by identifying structurally larger values. Such a dual notion of ``size-change productivity'' is exactly the idea behind the syntactic guardedness checkers found in Idris, Agda, and Coq\,\citep{Coq:manual}. Where values become structurally smaller by pattern matching, they become structurally larger by constructor application. Therefore, the \emph{guardedness principle} states that a coinductive definition is guarded if all corecursive calls appear directly under a coinductive constructor. This has the implication that the productivity of corecursive functions can be detected by a purely syntactic check.
+
+
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "../../copatterns-thesis"

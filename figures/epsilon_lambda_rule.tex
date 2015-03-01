@@ -1,6 +1,6 @@
-\AXD{ \begin{matrix} \IEc \, \vdash \, \phi(A) = A' \quad \IEc \, \vdash \, A' : Type \\
-                     \IEc \, \vdash \, _{g}a \, : \, A' \quad 
-                     \iota;\Psi;\phi,(a,\,_{g}a);\clockEnv;\Gamma, (a:A) \, \vdash \, e\, : \, B \, \infer\, e'\, :\, B'
+\AXD{ \begin{matrix} 
+                     \iota;\Psi;\phi,(a,\,_{g}a);\clockEnv;\Pi;\Gamma, (a:A),(_{g}a
+                     : A') \, \vdash \, e\, : \, B \, \infer\, e'\, :\, B'
     \end{matrix}} 
 \RLabel{(\infer_{\lambda})} 
 \UID{\IEc \, \vdash \, \lambda (a\,:\,A). \, e \, :\, (x\,:\,A) \, \to \, B  \,\infer\, \lambda (_{g}a\,:\,A'). \, e \, :\, (x \,:\,A') \, \to \, B'}

@@ -28,7 +28,41 @@ destructors on each outcome $f(x)$. [$\,$\ldots] Such a coinductive definition
 determines the observable behaviour of each $f(x)$.
 \end{quote}
 
-By adding copatterns to Idris, we wish to 
+By adding copatterns to Idris, we wish to make it easier for users to define
+corecursive functions in terms of observable behaviour, instead of internal
+structure. Perhaps counterintuitively, corecursive definitions in Idris must
+currently be given by construction:
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+zipWith : (a $\to$ b $\to$ c) $\to$ Stream a $\to$ Stream b $\to$ Stream c
+zipWith f s t = MkStream (f (head s) (head t)) 
+                         (zipWith f (tail s) (tail t))
+\end{lstlisting}
+As a coinductive definition, the value of all destructors on each outcome of
+\texttt{zipWith~f~s~t} is defined, and the definition exhibits a well-defined
+observable behaviour. However, the exact observable behaviour is not very clear, and
+it is not immediately obvious which outcome has been defined for which
+destructor. Using our implementation of copatterns in Idris, the equivalent definition can be given as follows:
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+zipWith : (a $\to$ b $\to$ c) $\to$ Stream a $\to$ Stream b $\to$ Stream c
+&head zipWith f s t = f (head s) (head t)
+&tail zipWith f s t = zipWith f (tail s) (tail t))
+\end{lstlisting}
+Here, the outcome of each destructor for \texttt{zipWith~f~s~t} is clearly
+defined: The outcome of the \texttt{head} destructor is
+\texttt{f~(head~s)~(head~t)} and the outcome of the \texttt{tail} destructor is
+\texttt{zipWith~f~(tail~s)~(tail~t))}. Furthermore, the observable behaviour is now
+exactly the contents of the two right-hand sides.
+
+Implementing copatterns without changing the core TT language requires that we
+can transform a definition with copatterns (i.e. definition by observation) to a
+definition with constructors (i.e. definition by construction). As described in
+Section~\ref{sec:motivation_copatterns}, copatterns provide most value when
+combined with (co)inductive record types. Any function definition
+resulting in a record type $A$, where $A$ is defined by an $n$-ary constructor,
+can be implemented in terms of $n$ copattern clauses per left-hand side pattern, such that each clause defines the
+outcome of one destructor for $A$. Since this is not necessarily the case for non-record
+types, the implementation of copatterns in Idris presented in this chapter
+supports only record types.
 
 % Following the discussion in Section~\ref{sec:prod-vs.-copr}, support for
 % copatterns have only been added for record types, both inductive and

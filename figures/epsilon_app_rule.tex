@@ -1,8 +1,11 @@
-\AXD{ \begin{matrix} \IEc \, \vdash \, f\, :\, (a \,:\, A)\, \to \, B \, \infer\, g\, :\, (a' \, : \, A')\, \to \, B' \\
-                      \IEc \, \vdash \, x\, :\, A \, \infer \, y\, :\, A'
+\AXD{ \begin{matrix} 
+      \IEc \, \vdash \, x : A \quad \IEc \, \vdash \, A \phieq A' \\
+      \IEc \, \vdash \, x\, :\, A \, \infer \, y\, :\, A' \\
+      \IEc \, \vdash \, f\, :\, (a \,:\, A)\, \to \, B \, \infer\, g\, :\, (a'
+      \, : \, A')\, \to \, B' \\
     \end{matrix}} 
 \RLabel{f \not = \iota \quad (\infer_{App})} 
-\UID{\IEc \, \vdash \, f\, x\, :\, B[x/a] \,\infer\, g\, y\, :\, B'[y/a']}
+\UID{\IEc \, \vdash \, f\, x\, :\, B[x/a] \,\infer\, g\  y\, :\, B'[y/a']}
 \DisplayProof
 
 %%% Local Variables:

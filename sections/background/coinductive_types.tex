@@ -38,31 +38,89 @@ coinductive types has been given by Jacobs and
 Rutten\,\citep{Jacobs97atutorial}. We will not proceed with the formal
 definition here, but instead provide a more intuitive explanation.
 
-To define a coinductive type, which we may call $B$, means to define its observable behaviour: At any
-given time, what can we observe about an element of $B$? If for any given $B$,
-we wish to observe $n$ different things, we can define $B$ by $n$ destructors,
-as shown in Figure~\ref{fig:coinductive_type_n_destructors}. 
-\begin{figure}[H]
-  \centering
-  \includegraphics{figures/general_coind_intuition_prod_coinductive}
-  \caption{An illustration of a coinductive type with $n$ destructors defining
-    its observable behaviour.}
-\label{fig:coinductive_type_n_destructors}
-\end{figure}
-In Idris, a
-definition of $B$ may be given as follows, where T$_1$,T$_2$,$\cdots$,T$_n$ are
-Idris types, either inductive or coinductive:
-\begin{lstlisting}[mathescape]
-corecord B where
-  X$_1$ : T$_1$
-  X$_2$ : T$_2$
-    $\vdots$
-  X$_n$ : T$_n$
+The duality between inductive and coinductive types are perhaps best understood
+by considering how elements of such types are defined. An inductive type is
+well-founded, and therefore has at least one constructor without a recursive
+argument. As a consequence, an element of an inductive type can be defined by
+defining its internal structure, since this structure is inherently finite. In
+other words, they are defined \emph{by construction}. A coinductive type is not
+necessarily well-founded. In particular, if we try to define an element of a
+coinductive type by defining its internal structure, we may never finish due to
+infinite recursion. Instead, elements of coinductive types can be defined in
+terms of their observational behaviour. The observational behaviour of an
+element is the collected external behaviour that an object exhibits at any given
+time, i.e. the collected outcomes of applying each destructor on said
+element. In other words, elements of coinductive types are defined \emph{by
+  observation}. To make matters more concrete, consider the following two (valid)
+definitions of a list structure in Idris:
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+-- Well-founded
+data List : Type $\to$ Type where
+  Nil  : List a
+  (::) : a $\to$ List a $\to$ List a
 \end{lstlisting}
-However, this definition implies that all of these observations can be made for
-any element of $B$. If we wish to define observations that can only be made on
-\emph{some} elements of a coinductive type, the observable behaviour must
-reflect 
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+-- Not well-founded
+data List$'$ : Type $\to$ Type where
+  (::) : a $\to$ List$'$ a $\to$ List$'$ a
+\end{lstlisting}
+The top definition is a standard inductive list type, given by construction. The
+bottom definition (\texttt{List$'$}) is also inductively defined, but it is not well-founded, so any definition
+having \texttt{List$'$} as result type will result in infinite
+recursion:
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+repeat$'$ : a -> List$'$ a
+repeat$'$ a = a :: repeat$'$ a
+\end{lstlisting}
+Here, tail of the constructor invocation is a recursive call to
+\texttt{repeat$'$} itself, so this definition will reduce indefinitely.
+However, we can define elements of type \texttt{List$'$} by defining the type
+\emph{co}inductively. In order to do so, we must determine its observational
+behaviour. Intuitively, any list always contains an element (the head of the
+list) and the rest of the list (the tail of the list). Thus, for any list, we
+may observe a \texttt{head} and a \texttt{tail}:
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+corecord List$'$ a where
+  head : a
+  tail : List$'$ a
+\end{lstlisting}
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+repeat$'$ : a -> List$'$ a
+&head repeat$'$ a = a 
+&tail repeat$'$ a = repeat$'$ a
+\end{lstlisting}
+
+\begin{lstlisting}[mathescape,title=\idrisBlock]
+codata List$'$ : Type $\to$ Type where
+  (::) : a $\to$ List$'$ a $\to$ List$'$ a
+\end{lstlisting}
+
+
+% To define a coinductive type, which we may call $B$, means to define its observable behaviour: At any
+% given time, what can we observe about an element of $B$? If for any given $B$,
+% we wish to observe $n$ different things, we can define $B$ by $n$ destructors,
+% as shown in Figure~\ref{fig:coinductive_type_n_destructors}. 
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics{figures/general_coind_intuition_prod_coinductive}
+%   \caption{An illustration of a coinductive type with $n$ destructors defining
+%     its observable behaviour.}
+% \label{fig:coinductive_type_n_destructors}
+% \end{figure}
+% In Idris, a
+% definition of $B$ may be given as follows, where T$_1$,T$_2$,$\cdots$,T$_n$ are
+% Idris types, either inductive or coinductive:
+% \begin{lstlisting}[mathescape]
+% corecord B where
+%   X$_1$ : T$_1$
+%   X$_2$ : T$_2$
+%     $\vdots$
+%   X$_n$ : T$_n$
+% \end{lstlisting}
+% However, this definition implies that all of these observations can be made for
+% any element of $B$. If we wish to define observations that can only be made on
+% \emph{some} elements of a coinductive type, the observable behaviour must
+% reflect 
 
 % An inductive type is defined in terms of the ways it can be constructed. In the
 % simple case where an inductive type $B$ has only one constructor, this may be
@@ -74,14 +132,14 @@ reflect
 
 
 
-\begin{figure}[h]
-  \centering
-  \includegraphics{figures/general_coind_intuition_prod_inductive}
+% \begin{figure}[h]
+%   \centering
+%   \includegraphics{figures/general_coind_intuition_prod_inductive}
   
-  \caption{An illustration of an inductive type with one constructor which has
-    $n$ input parameters.}
-\label{fig:inductive_type_one_constructor}
-\end{figure}
+%   \caption{An illustration of an inductive type with one constructor which has
+%     $n$ input parameters.}
+% \label{fig:inductive_type_one_constructor}
+% \end{figure}
 
 
 % Before making matters more concrete, we

@@ -915,8 +915,8 @@ exactly the same type as \texttt{rec} in step 2.
 \end{lstlisting}
 (4) The \texttt{rec} argument to \texttt{$_g$prepend$'$} is eliminated, but will
 be recovered by the inference system when the rule for causal recursive
-references is used (see Figure~\ref{fig:epsilon_rec_causal}n):
-\begin{lstlisting}[mathescape, title=\ttBlock]
+references is used (see Figure~\ref{fig:epsilon_rec_causal}o):
+\begin{lstlisting}[mathescape,title=\ttBlock]
   $_g$prepend$'$ : $\fcolorbox{gray}{light-gray}{(a : Type) \ensuremath{\to} List a \ensuremath{\to\,_{g}}Stream a \ensuremath{\to\,_{g}}Stream a}$
   $_g$prepend$'$ a []        s =
     $\prepend{\text{(prepend a)}}{\text{(prepend a)}}{\,(_{g}\text{prepend a})}{s}{Stream a}$
@@ -1061,18 +1061,22 @@ environment ($IE$) in which guarded recursive TT terms are built is defined as f
 \begin{align*}
    \clockEnv,\,\clockEnv^\prime &::=\,\open\,|\,\closed & \text{(singleton clock)} \\
    \Psi &::=\,\causal\,|\,\noncausal & \text{(modality)} \\
-   \rho &::= n \mapsto \,_gn\,|\,n \mapsto (_gn,\, _{\forall}n) & \text{(renaming)} \\
+   \rho &::= n \mapsto \,_gn & \text{(renaming)} \\
    \phi &::=\,\cdot\,|\,\rho\,\phi & \text{(collection of renamings)} \\
-   IE &::= \iota;\Psi;\phi;\,c;\,\Gamma & \text{(inference environment)}
+   \pi &::= \,n \mapsto (_gn,\, _{\forall}n) & \text{(projection renaming)} \\
+   \Pi &::= \cdot\,|\,\pi \,\Pi & \text{(collection of projection renamings)} \\
+   IE &::= \iota;\Psi;\phi;\,c;\Pi;\,\Gamma & \text{(inference environment)}
 \end{align*}
-The singleton clock is either open (\open) or closed (\closed). A renaming, given as $\rho$, matches an Idris name $n$ to a
-guarded name $_gn$, or both a guarded name and a quantified name
-$_{\forall}n$. The latter will only be case case when $n$ is the name of a
-record projection. Modality is specified by $\Psi$, and
-is either causal (\causal) or non-causal (\noncausal). The intuition is that
-a causal function may only refer to past values (thus \causal{} is pointing
-backwards), while a non-causal function may refer to values at any point in time (thus
-\noncausal{} points in both directions).
+The singleton clock is either open (\open) or closed (\closed). Modality is
+specified by $\Psi$, and is either causal (\causal) or non-causal
+(\noncausal). The intuition is that a causal function may only refer to past
+values (thus \causal{} is pointing backwards), while a non-causal function may
+refer to values at any point in time (thus \noncausal{} points in both
+directions). A renaming, given as $\rho$, matches an Idris name $n$ to a guarded
+name $_gn$. Disjoint from $\rho$, $\pi$ defines a renaming for an Idris name of
+a record projection, to either a guarded name or a quantified name
+($_{\forall}n$). In particular, in a given inference environment there is never
+both a $rho$ and a $\pi$ for a given name $n$.
 
 \subsection{Reading Guide}
 Before presenting the inference system, we provide a reading guide for each type
@@ -1086,48 +1090,59 @@ The first of these, and the arguably most interesting, is the inference judgment
 \end{center}
 
 The inference judgment reads as follows: ``If $e$ has type $A$ in a given
-inference environment $IE$, and our goal is to infer a term of type $B$, then
+inference environment $IE$, where $A$ is not
+the type of types, and our goal is to infer a term of type $B$, then
 $e'$ of type $B$ \emph{can be} the guarded recursive version $e$''. Since a
 given term may have more than one valid guarded recursive version, we stress
-that $e'$ \emph{can} be a solution.
+that $e'$ \emph{can} be a solution. We restrict the use of the inference
+judgment to terms which are not types, since we have not investigated inference
+of types beyond the level of simple renaming.
 % Inference (\infer) of a guarded recursive TT term $e'$ of type $B$ from an elaborated TT term $e$ of type $A$ is then defined as
 % ${IE\vdash e : A \infer e' : B}$.
-\subsubsection{The Renaming Judgment}
-Using the renaming judgment, we can replace a user-supplied name with a guarded
-name or a quantified name, respectively. Therefore, there are two types of
-renaming judgments.
+\subsubsection{The Projection Renaming Judgment}
+Using the projection renaming judgment, we can replace a user-supplied
+projection name with a guarded name or a quantified name, respectively.
 \begin{center}
-  ${IE\vdash \phi(e) \mapsto \,_ge}$
-\end{center}
-The first type of renaming judgment reads as follows: ``If a term $e$ is a
-reference to a name $n$, and $\phi$ in the inference environment $IE$ maps $n$
-to a guarded name $_gn$, then $e$ must be replaced with a term $_ge$ referring to
-$_gn$''.
-
-The second type of renaming judgment introduces ambiguity.
-\begin{center}
-  ${IE\vdash \phi(e) \mapsto \,(_ge,\,_{\forall}e)}$
+  ${IE\vdash \Pi(e) \mapsto (_ge,\,_{\forall}e)}$
 \end{center}
 This judgment reads: ``If a term $e$ is a
-reference to a name $n$, and $\phi$ in the inference environment $IE$ maps $n$
+reference to a name $n$, where $n$ is the name of a projection, and $\Pi$ in the inference environment $IE$ maps $n$
 to both a guarded name $_gn$ and a quantified name $_{\forall}n$, then $e$ must be replaced with a term $e'$ referring to
 either $_gn$ or $_{\forall}n$, but not both''. The specific situation determines
 which of the names is the right choice.
 
+\subsubsection{The Renaming Equality Judgment}
+Renaming equality is a structural equality on TT terms.
+\begin{center}
+  ${IE\vdash e \phieq e'}$
+\end{center}
+This rules reads: ``If $e$ and $e'$ are normalized terms in an inference environment $IE$,
+then $e$ is structurally equal to $e'$ after each name $n$ in
+$e$ has been substituted with their guarded name $_gn$, where ($n\mapsto\,_gn$) is in $\phi$''.
+
 \subsubsection{The Typing Judgment}
-The inference system operates with two different typing judgments.
+The inference system operates with a standard typing judgment.
 \begin{center}
   ${IE\vdash e : A}$
 \end{center}
-The first is standard, and reads: ``$e$ has type $A$ in the inference
+It reads: ``$e$ has type $A$ in the inference
 environment $IE$''. Here $e$ can be any term except for a type.
 
-Additionally, we have the following judgments for types.
-\begin{center}
-  ${IE\vdash A\, type}$
-\end{center}
-It reads: ``A is a type, i.e. its type is the type of types, in the inference
-environment $IE$''.
+% Additionally, we have the following judgment for types.
+% \begin{center}
+%   ${IE\vdash A\, type}$
+% \end{center}
+% It reads: ``A is a type, i.e. its type is the type of types, in the inference
+% environment $IE$''.
+
+\subsubsection{Side Conditions}
+Most of the rules have a side condition, comparing a term $e$ with the recursive
+reference, $\iota$. Whenever there is a side condition $e = \iota$, then $e$
+must be structurally equal to $\iota$ after normalization. The inverse holds when
+$e \not = \iota$.
+
+This concludes the reading guide. We now proceed to present the rules of the
+inference system.
 
 % In Figure~\ref{fig:epsilon_rules}, the $\Longrightarrow_{Next^\kappa}$ rule follows directly from the $Next$ rule in Figure~\ref{fig:guarded_recursion_rules_clocks}. The
 % $\Longrightarrow_{\Lambda\kappa}$ and $\Longrightarrow_{apply^\kappa}$ rules have a
@@ -1177,16 +1192,25 @@ closing the open clock by clock application.
 \subcaptionbox{
 This rule replaces one reference to a name with another. In particular, if the
 renaming context, $\phi$, contains an entry for the name referred to by $e$,
-then $_{g}e$ can be substituted for $e$.
+then $_{g}e$ must be substituted for $e$.
 }{\input{figures/epsilon_renaming_rule}}
 \end{figure}
 \begin{figure}[H]
 \centering
 \ContinuedFloat
 \subcaptionbox{
-Similar to the $\infer_{\phi}$-rule, this rules disambiguates between the
-guarded renaming and the forall-renaming for a term, when both are available.
-}{\input{figures/epsilon_renaming_rule_forall}}
+This rule renames a projection to its quantified version when both the result
+type and the argument type of the inferred projection term is expected to be quantified over clocks.
+}{\input{figures/epsilon_projection_rule_forall}}
+\end{figure}
+\begin{figure}[H]
+\ContinuedFloat
+\centering
+\subcaptionbox{
+Similar to the $\infer_{\Pi_{\forall}}$-rule, this rule renames a projection to
+its guarded version when both the result type and the argument type of the
+inferred projection term is \emph{not} expected to be quantified over clocks.
+}{\input{figures/epsilon_projection_rule_guarded}}
 \end{figure}
 \begin{figure}[H]
 \centering
@@ -1201,9 +1225,12 @@ of an application which is not expected to be in a $\laterkappa$ context.
 \ContinuedFloat
 \subcaptionbox{
 The $\infer_{\tensor^\kappa_n}$ rule is used when the guarded recursive version
-of an application is expected to be in a $\laterkappa$ context. Here, $n$ is a natural number denoting the
-required availability of both input. Specifically, ${\laterkappa_{\!\!1} B \cong \laterkappa B}, {\laterkappa_{\!\!2}
-\cong \laterkappa\laterkappa B}$ and so on. Note that as discussed in
+of an application is expected to be in a later ($\laterkappa$) context. Here, $n$ is a natural number denoting the
+required availability of both inputs. Specifically, $\laterkappa_{\!\!n}$B
+signifies and $n$-iterated application of the $\laterkappa$ type constructor,
+such that ${\laterkappa_{\!\!1} B \cong \laterkappa B}, {\laterkappa_{\!\!2}B
+\cong \laterkappa\laterkappa B}$ and so on. Therefore, $\tensor^{\kappa}_1$
+denotes the standard later application, as presented in Section~\ref{sec:guarded-recursion}. Note that as discussed in
 Section~\ref{sec:fixkappa-rule}, this rule does not apply to dependent function spaces.
 }{\input{figures/epsilon_tensor_rule}}
 \end{figure}
@@ -1279,6 +1306,9 @@ This rule ensures that a \texttt{Next} is always applied to any non-causal recur
   \label{fig:epsilon_rec_causal}
 \label{fig:epsilon_rules}
 \end{figure}
+
+\subsection{Choosing an Inference Rule}
+
 
 \subsection{An Example}
 As an example, we show how to infer the guarded recursive version of the
@@ -1528,6 +1558,9 @@ Although the system presented throughout this chapter can prove productive quite
 a few realistic programs (see Chapter~\ref{cha:evaluation}), it currently has
 several shortcomings and limitations.
 %\subsection{Guarded Recursion and Dependent Types}
+
+\subsection{Erasure}
+
 
 \subsection{Dependent Function Types and Fixed Point Elimination}
 \label{sec:depend-funct-types}
