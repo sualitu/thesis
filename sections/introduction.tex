@@ -34,11 +34,10 @@ coinductive definitions by construction, which has the side effect of allowing
 dependent pattern matching on coinductive data as well. Dependent pattern
 matching on coinductive data can lead to an
 unfortunate loss of subject reduction, even when our program is both well-typed
-and supposedly total. To avoid this situation, we therefore provide an
-implementation of copatterns in Idris, such that coinductive definitions may be
-given by \emph{observation}. Giving coinductive definitions by observation was
-pioneered by Hagino\,\citep{Hagino89}, who introduced the \emph{merge} construct
-for SymML, as shown in Figure~
+and supposedly total. To avoid this situation, we therefore need another method
+for providing coinductive definitions. Hagino\,\citep{Hagino89} pioneered of
+giving coinductive definitions by \emph{observation}. In SymML, he introduced
+the \emph{merge} construct, an example of which is shown in Figure~\ref{fig:merge_hagino}.
 
 %We choose guarded recursion
 
@@ -50,26 +49,39 @@ for SymML, as shown in Figure~
     fun iseq1() = merge head <= 1 & tail <= iseq1();
   \end{lstlisting}
   \caption{The \texttt{merge} construct introduced by Hagino for SymML.}
+  \label{fig:merge_hagino}
 \end{figure}
+
+In the wake of work done by Abel and Pientka\,\citep{Abel13Wellfounded} and
+Abel, Pientka, Thibodeau, and Setzer\,\citep{Abel13Copatterns}, a construct
+similar to Hagino's \texttt{merge} has recently been implemented in Agda. This
+construct is called a \emph{copattern}. By allowing projections on the left-hand
+side of function definitions, copatterns enable users to define corecursive
+functions in terms of observations. In effect, coinductive data no longer has to
+be analyzed with pattern matching, but can more naturally be expressed by the
+observations that can be made on it. Our goal is to bring copatterns to Idris.
 
 
 \subsection{Goals and Contributions}
+The goals of this work are as follows:
 
 \begin{itemize}
-\item To implement copatterns in Idris
+\item To implement copatterns in Idris.
 \item To implement a productivity checker for Idris which widens the range of
   programs that can be automatically proven productive by the Idris compiler.
 \end{itemize}
 
+As a result of pursuing these goals, our contributions are:
+
 \begin{itemize}
 \item An implementation of copatterns in Idris for (co)inductive record types,
-  implemented as high-level desugaring.
-\item An implementation of coindutive record types, where definitions can be
+  implemented as a high-level desugaring.
+\item An implementation of coindutive record types, where type definitions can be
   given by observations.
 \item An implementation of a productivity checker based on guarded recursion. 
   \begin{itemize}
     \item An inference system for inferring guarded recursive definitions
-      from user-written definitions, with a minimum of user involvement.
+      from user-written definitions, with a minimum amount of user involvement.
     \item A guarded recursion type checking system for ensuring that the
       inferred guarded recursive terms lead to productive definitions.
   \end{itemize}
