@@ -1,5 +1,120 @@
+\begin{landscape}
 \chapter{Checking of Guarded Recursion: Proofs}
 \label{app:check-guard-recurs}
+\newcommand{\inCE}[1]{$CE \vdash$ #1}
+
+\begin{figure}[h]
+\begin{prooftree}
+\AxiomC{(1)}
+\AxiomC{\inCE{$Nat \ \texttt{type}$}}
+\RightLabel{App}
+\BinaryInfC{\inCE{$ (_g::) Nat : Nat \to \later^\kappa_1 \onk{Stream}\ Nat \to
+    \onk{Stream}\ Nat$}}
+\AxiomC{}
+\RightLabel{Var}
+\UnaryInfC{\inCE{$ Z : Nat$}}
+\RightLabel{App}
+\BinaryInfC{\inCE{$ (_g::)\,Nat\,Z \  : \later ^\kappa_1  \onk{Stream}\,Nat \to \onk{Stream}\,Nat$}}
+\AxiomC{}
+\RightLabel{Var}
+\UnaryInfC{\inCE{$_gzeros : \forall \kappa . \onk{Stream}\ Nat$}}
+\RightLabel{$Ref_{\causal}$}
+\UnaryInfC{\inCE{$\onk{Next}\,
+  _gzeros[\kappa] : \later ^\kappa_1  \onk{Stream}\,Nat$}}
+\RightLabel{App}
+\BinaryInfC{\inCE{$  \,(_g::)\,Nat\,Z\,(\onk{Next}\,
+  _gzeros[\kappa]) : Stream^\kappa \,Nat$}}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\LeftLabel{(1)}
+\RightLabel{Var$_{1_\open}$}
+\UnaryInfC{\inCE{$(_g::) : (a : Type) \to a \to \later \kappa_1 \onk{Stream}\ a \to
+    \onk{Stream}\ a$}}
+\end{prooftree}
+
+$CE = _gzeros;\ \causal;\ \open; \ \Gamma,Z : Nat,\ _gzeros
+: \forallk{Stream} Nat$
+
+  \caption{Checking of zeros.}
+  \label{fig:check_zeros}
+\end{figure}
+
+\newpage
+
+\begin{figure}[h]
+  \begin{prooftree}
+\AxiomC{}
+
+\RightLabel{Var$_{1_\open}$}
+\UnaryInfC{\inCE{$(_g::) : (a : Type) \to a \to \later \kappa_1 \onk{Stream}\ a \to
+    \onk{Stream}\ a$}}
+\AxiomC{\inCE{$Nat \ \texttt{type}$}}
+\RightLabel{App}
+\BinaryInfC{\inCE{$ (_g::) Nat : Nat \to \later \kappa_1 \onk{Stream}\ Nat \to
+    \onk{Stream}\ Nat$}}
+\AxiomC{}
+\RightLabel{Var}
+\UnaryInfC{\inCE{$ Z : Nat$}}
+\RightLabel{App}
+\BinaryInfC{\inCE{$ (_g::)\,Nat\,Z \  : \later ^\kappa_1  \onk{Stream}\,Nat \to \onk{Stream}\,Nat$}}
+\AxiomC{(1)}
+\RightLabel{App}
+\BinaryInfC{\inCE{$(_g::)\,Nat\,Z\,(\onk{Next} ((\, _gmap[\kappa])\ Nat \ Nat\,S) \tensor^\kappa_1
+  \,(\onk{Next}(\, _gnats[\kappa]))) : \onk{Stream}\ Nat$}}
+  \end{prooftree}
+  
+  \begin{prooftree}
+    \AxiomC{(2)}
+    \AxiomC{}
+\RightLabel{Var}
+\UnaryInfC{\inCE{$S : Nat \to Nat$}}
+\RightLabel{App} 
+\BinaryInfC{\inCE{$(\, _gmap[\kappa])\ Nat\ Nat\ S : \onk{Stream}\ Nat \to
+    \onk{Stream}\ Nat$}}
+\RightLabel{$I_{\onk{Next}}$}
+\UnaryInfC{\inCE{$\onk{Next} ((\, _gmap[\kappa])\ Nat\ Nat\ S) : \later^\kappa_1 (\onk{Stream}\ Nat \to \onk{Stream}\ Nat)$}}
+\AxiomC{}
+\RightLabel{Var}
+\UnaryInfC{\inCE{$_gnats : \forall \kappa . \onk{Stream}\ Nat$}}
+\RightLabel{$Rec_{\causal}$}
+\UnaryInfC{\inCE{$(\onk{Next}(\, _gnats[\kappa])) : \onk{Stream}\ Nat$}}
+\LeftLabel{(1)}
+\RightLabel{$I_{\tensorkappan}$}
+\BinaryInfC{\inCE{$    \,\onk{Next} ((\, _gmap[\kappa])\ Nat \ Nat\,S) \tensor^\kappa_1 \,(\onk{Next}(\, _gnats[\kappa])) :
+    \later^\kappa_1 Stream^\kappa \,Nat$}}
+  \end{prooftree}
+
+  \begin{prooftree}
+\AxiomC{(3)}
+\AxiomC{\inCE{$Nat \ \texttt{type}$}}
+\RightLabel{App}
+    \BinaryInfC{\inCE{$(\, _gmap[\kappa])\ Nat : (b : Type) \to (Nat \to b) \to \onk{Stream}\ Nat \to \onk{Stream}\ b$}}
+\AxiomC{\inCE{$Nat \ \texttt{type}$}}
+\RightLabel{App}
+\LeftLabel{(2)}
+    \BinaryInfC{\inCE{$(\, _gmap[\kappa])\ Nat\ Nat : (Nat \to Nat) \to \onk{Stream}\ Nat \to \onk{Stream}\ Nat$}}
+  \end{prooftree}
+
+  \begin{prooftree}
+\AxiomC{}
+\RightLabel{Var}
+    \UnaryInfC{\inCE{$\ _gmap : \forall \kappa.((a : Type) \to (b : Type) \to
+        (a \to b) \to \onk{Stream}\ a \to \onk{Stream}\ b)$}}
+\RightLabel{$I_{[\kappa]}$}
+\LeftLabel{(3)}
+    \UnaryInfC{\inCE{$\, _gmap[\kappa] : (a : Type) \to (b : Type) \to (a \to b) \to \onk{Stream}\ a \to \onk{Stream}\ b$}}    
+  \end{prooftree}
+
+$CE =\ _gnats;\ \causal;\ \open; \ \Gamma,Z : Nat,\ _gnats :
+\forallk{Stream} Nat, \ _gmap : \forall \kappa.((a : Type) \to (b : Type) \to
+        (a \to b) \to \onk{Stream}\ a \to \onk{Stream}\ b)$
+
+  \caption{Checking of nats.}
+  \label{fig:check_nat}
+\end{figure}
+\end{landscape}
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "../../copatterns-thesis"

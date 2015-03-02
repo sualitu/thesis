@@ -16,10 +16,10 @@ be free in $\Gamma$ then no clock is allowed free in $\Gamma$.
 \BinaryInfC{$\Delta ; \Gamma \vdash \forall \kappa . A : Type$}
 \DisplayProof
 \quad
-    \AxiomC{$\CEopen \vdash A:Type$}
+    \AxiomC{$\CEopen \vdash A \ \texttt{type}$}
     \AxiomC{$nofc(\Gamma)$}
     \RightLabel{$I_\forall$}
-    \BinaryInfC{$\CEclosed \vdash \forall \kappa . A : Type$}
+    \BinaryInfC{$\CEclosed \vdash \forall \kappa . A \ \texttt{type}$}
 \DisplayProof
 }
 \end{figure}
@@ -36,9 +36,9 @@ open clock for this side condition to hold. This eliminates the side condition, 
 \BinaryInfC{$\Delta ; \Gamma \vdash \laterkappa A : Type$}
 \DisplayProof
 \quad
-    \AxiomC{$\CEopen \vdash A:Type$}
+    \AxiomC{$\CEopen \vdash A\ \texttt{type}$}
     \RightLabel{$I_{\laterkappan}$}
-    \UnaryInfC{$\CEopen \vdash \laterkappan A : Type$}
+    \UnaryInfC{$\CEopen \vdash \laterkappan A\ \texttt{type}$}
 \DisplayProof  
 }
 \end{figure}
