@@ -1,2 +1,75 @@
 %!TEX root = ../copatterns-thesis.tex
 \chapter{Conclusion}
+% Copatterns virker i princippet, men en desugaring var nok ikke den bedste
+% løsning
+% Subject reduction
+% Hvornår virker copatterns
+
+% Dependent types og guarded recursion
+% Fixed point elimination was a bad idea
+% Singleton clock var en succes
+% Modality var en succes
+% Opdeling mellem inferens og checking
+% Flere funktioner kan bevises at være totale i Idris
+
+% Et godt udgangspunkt for videre arbejde
+We set out to implement both copatterns and a better productivity checker for
+Idris than the existing implementation of the syntactic guardedness
+principle. To a certain degree, both of these goals were achieved.
+
+The addition of copatterns was motivated by examining
+dependent pattern matching on coinductive data in Idris. As it has been the case
+for Coq and Agda, Idris also loses subject reduction when faced with dependent
+pattern matching. Our implementation of copatterns was realized as a desugaring from \IdrisM{}
+definitions to \IdrisM{} definitions. While this decision seemed like the best
+solution at first, it does come with some limitations. Notably, we found that
+our transformation had to rely on a somewhat awkward notion of compatibility
+between pattern clauses. Also, since the desugaring happens prior to
+elaboration, the present implementation does not allow us to disambiguate names
+from types. Desugaring copatterns as a pre-elaboration step additionally means
+it may become difficult to make the \texttt{with}-rule work. Consequently, we
+conclude that an implementation of copatterns as a separate elaboration to TT is
+probably a better solution. However, our implementation of copatterns was, for
+the most part, a success, seeing as it is now possible to write definitions
+using copatterns in Idris.
+
+We implemented a productivity checker based on guarded recursion, which can
+automatically construct productivity proofs for programs which are not
+productive according to the syntactic guardedness principle. The productivity
+checker was implemented as two disjoint systems, an inference system an a
+checking system. The inference system is in charge of inferring guarded
+recursive definitions from user-written definitions. The checking system ensures
+that the inferred definition is well-typed according to the guarded recursive typing rules. This separation of concerns was a success, since it made
+the inference system simpler and increased our confidence in the correctness of our
+approach. 
+
+One of our goals was to provide a more expressive productivity
+analysis than the syntactic guardedness principle, while at the same time
+requiring as little user involvement as possible. This was quite successfully
+achieved, since users only have to specify the modality (i.e. causal or
+non-causal) of each function definition returning coinductive data. Also, we
+found that the use of a singleton clock greatly simplified the analysis, without
+any perceived loss of expressiveness. 
+
+The choice of eliminating the guarded
+recursive fixed point in order to generalize the productivity analysis turned
+out to be unfortunate, since this elimination may not be sound. However, for
+function definitions without dependent types, fixed point elimination does not
+seem to have an impact on the result of the analysis.
+
+In continuation of the above, we find that a dependently typed system does not
+fully benefit from the approach, since the theory behind guarded recursion
+is not expressive enough. In particular, the rule for later
+application does not (yet) hold for dependent function spaces.
+
+Although our productivity analysis has its flaws, our implementation has widened the range of
+programs that can be proven productive by the Idris compiler. In conclusion, we
+find that while our approach is not yet fully refined, it is a good starting
+point for further investigation into the area of automating productivity proofs
+based on guarded recursion.
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../copatterns-thesis"
+%%% End:

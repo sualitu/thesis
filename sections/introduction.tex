@@ -34,7 +34,7 @@ coinductive definitions by construction, which has the side effect of allowing
 dependent pattern matching on coinductive data as well. Dependent pattern
 matching on coinductive data can lead to an
 unfortunate loss of subject reduction, even when our program is both well-typed
-and supposedly total. To avoid this situation, we therefore need another method
+and supposedly total\,\citep{Gimenez96uncalcul,OuryCounterexampleCoq,OuryCounterexampleAgda}. To avoid this situation, we therefore need another method
 for providing coinductive definitions. Hagino\,\citep{Hagino89} pioneered of
 giving coinductive definitions by \emph{observation}. In SymML, he introduced
 the \emph{merge} construct, an example of which is shown in Figure~\ref{fig:merge_hagino}.
@@ -62,7 +62,7 @@ be analyzed with pattern matching, but can more naturally be expressed by the
 observations that can be made on it. Our goal is to bring copatterns to Idris.
 
 
-\subsection{Goals and Contributions}
+\section{Goals and Contributions}
 The goals of this work are as follows:
 
 \begin{itemize}
