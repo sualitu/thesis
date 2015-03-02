@@ -1,5 +1,6 @@
 
 \chapter{Motivation}
+\label{cha:motivation}
 In this chapter, we describe the motivations behind adding copatterns to
 Idris. We find that copatterns can be a means of recovering from an unfortunate
 loss of subject reduction. However, copatterns might not be the universal tool
@@ -83,7 +84,7 @@ expressiveness and avoided this particular loss of subject reduction.
 
 \begin{figure}[h]
 \begin{lstlisting}[mathescape]
-corecord A where
+corecord A : Type where
   out : A $\to$ A
 
 b : A
@@ -165,21 +166,18 @@ avoiding the problem seems superior to ignoring it.
 \label{sec:prod-vs.-copr}
 If we must disallow pattern matching on coinductive data to preserve subject
 reduction, how much expressiveness can we recover by using copatterns? At
-present, not as far as one might have hoped. Copatterns are well-suited for
+present, not as much as one might have hoped. Copatterns are well-suited for
 working with data that has a top-level product structure. In the general sense
 of recursive types, this means that copatterns can be readily used for types
 which has a product-of-sums structure, i.e.
 ${\mu X.\,A\times B\times\cdots\times X}$ or
 ${\nu X.\,A\times B\times\cdots\times X}$, since a well-defined projection
-exists for each $A,\,B,\,\cdots,\,X$. From the definition of coinductive types
-(Definition~\ref{sec:coinductive-types}), these are the types that can be
-defined from an endofunctor with a top-level product structure, allowing the
-structure map for the coalgebra to be defined as a product of projections. In
-Idris, this amounts exactly to the types which can be defined as (co)inductive
-record types. Consider the deterministic finite automaton defined in
-Figure~\ref{fig:state_machine}, which accepts strings of binary numbers that
-contain an even number of zeros (a graphical representation is given for
-reference in Figure~\ref{fig:state_machine_graphical}). Inspired by
+exists for each $A,\,B,\,\cdots,\,X$. In Idris, this amounts exactly to the
+types which can be defined as (co)inductive record types. Consider the
+deterministic finite automaton defined in Figure~\ref{fig:state_machine}, which
+accepts strings of binary numbers that contain an even number of zeros (a
+graphical representation is given for reference in
+Figure~\ref{fig:state_machine_graphical}). Inspired by
 Jacobs\,\citep{JacobsCoalgebra}, we define a state as a type
 ${\mu S. (A\,\to\,S)\times Bool}$, where $A\,\to\,S$ is the transition function
 (defined for each state) and $Bool$ indicates whether the state is a final
@@ -329,7 +327,7 @@ immediately available.
 \begin{lstlisting}[mathescape]
 corecord $_g$CoList a where
   isNil : Bool
-  elem  : if isNil then () else (a, $\laterkappa$($_g$CoList a))
+  elem  : if isNil then () else (a, $\laterkappa$(CoList a))
   constructor CoCons
 
 cons : $\forall\kappa.$ a $\to$ $_g$CoList a $\to$ $_g$CoList a

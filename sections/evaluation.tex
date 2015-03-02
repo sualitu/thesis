@@ -1,12 +1,13 @@
-\chapter{Evaluation}
+\chapter{Evaluation of the Productivity Checker}
 \label{cha:evaluation}
-\section{Guarded Recursion}
-In Section~\ref{sec:less-restr-prod} we discussed the motivation behind
+
+In Section~\ref{sec:less-restr-prod}, we discussed the motivation behind
 implementing a less restrictive productivity checker. In
-Chapter~\ref{cha:infer-guard-recurs} we introduced a system for
-productivity checking functions utilizing guarded recursion. In the following we
-present the result of implementing this system in Idris. We look into
-what can now be automatically proven total, but also what can not. The
+Chapter~\ref{cha:infer-guard-recurs}, we introduced a system for
+productivity checking functions by inferring guarded recursive definitions from
+user-written definitions. In the following, we evaluate our implementation of
+this system. We investigate both the kinds of functions that can now be automatically proven total by our
+system, and those that cannot. The
 implementation of all functions discussed in this section can be found in
 Appendix~\ref{app:example-programs}. 
 
@@ -21,7 +22,7 @@ The first class is self-explanatory. The second stems from our implementation. W
 we do indent to fully implement the system described in
 Chapter~\ref{cha:infer-guard-recurs}, our current implementation has not quite
 reached full coverage yet. The last covers functions that are productive, but that we
-can not infer a guarded recursive definition for.
+can not infer a guarded recursive definition for due to scoping restrictions.
 % Intro with link back to motivation.
 % Three classes of functions:
 % What we can check
@@ -32,12 +33,13 @@ can not infer a guarded recursive definition for.
 % Why should we not be able to check what we shouldn't?
 % Modality
 
-Figure~\ref{fig:productivity_table_1} shows examples of functions falling into the
-first category. While some functions are already proven productive under the current Idris
-syntactic guardedness principle, we can see that we have added to the set of
-Idris functions automatically proven productive. We can, for example, now prove
-productivity for functions where the recursive is given as an argument to
-another function.
+Figure~\ref{fig:productivity_table_1} shows examples of functions falling into
+the first category. While some functions can already be proven productive by the
+current productivity checker in Idris which uses the syntactic guardedness
+principle, we can see that we have added to the set of Idris functions
+automatically proven productive. We can, for example, now prove functions
+productive where the recursive reference is given as an argument to another
+function.
 
 \begin{figure}[h]
 \begin{center}
@@ -67,18 +69,17 @@ another function.
   \end{tabular}
 \end{center}
   \caption{Examples of functions we can prove productive using our guarded
-    recursive system. Note that the header ``Syntactic Guardedness'' referes to the current
-    Idris implementation of syntactic guardedness, and ``Guarded Recursion''
+    recursive system. The header ``Syntactic Guardedness'' refers to the current
+    implementation of the syntactic guardedness principle, and ``Guarded Recursion''
     refers to our implementation of guarded recursion in Idris.}
   \label{fig:productivity_table_1}
 \end{figure}
 
 Figure~\ref{fig:productivity_table_2} shows examples of functions falling into
 the second category. These are functions for which our implementation can not
-yet infer a guarded term. We are, however, convinced the problem lies within the
-implementation of our rules, and not the rules themselves. As such, a better
-implementation should judge these functions as productive. We will evaluate on
-our implementation in Section~\ref{sec:our-implementation}.
+yet infer a guarded term, although it should be able to in theory. As such, a better
+implementation would most likely show that these are, in fact, productive. We
+will evaluate our implementation further in Section~\ref{sec:our-implementation}.
 
 \begin{figure}[h]
 \begin{center}
@@ -96,18 +97,18 @@ our implementation in Section~\ref{sec:our-implementation}.
   \label{fig:productivity_table_2}
 \end{figure}
 
-The last class we described are functions that we do not think our system can
-prove productive. While only a few examples are listed in
-Figure~\ref{fig:productivity_table_3}, we expect for there to be more of such
-definitions. The problem with these functions is that they require a very specific
-type to be proven productive.
+The last class of functions are functions that we do not expect our system to be
+able to prove productive, not even in theory. While only a few examples are listed in
+Figure~\ref{fig:productivity_table_3}, we expect that there are many more of such
+definitions. The problem with these functions is that they are neither causal
+nor non-causal, and therefore require a very specific guarded recursive type to be proven productive.
 
-\subsection{Function Types}
+\section{Function Types}
 \label{sec:function-types}
-To simplify inference we categorized functions into causal and
-non-causal functions. We used this to help us infer the guarded type of a function. There
+To simplify the inference of guarded recursion, we chose to classify all
+function definitions as either causal or non-causal. We used this to help us infer the guarded type of a function. There
 are, however, functions for which the guarded type falls outside this
-categorization. The examples in Figure~\ref{fig:productivity_table_3} both need
+classification. The examples in Figure~\ref{fig:productivity_table_3} both need
 more sophisticated types to be proven total.
 
 \begin{figure}[h]
@@ -119,7 +120,7 @@ more sophisticated types to be proven total.
   \end{tabular}
 \end{center}
   \caption{Examples of functions that we can not prove productive. Productivity
-    of these functions should not be provable within our system.}
+    of these functions should not currently be provable within our system.}
   \label{fig:productivity_table_3}
 \end{figure}
 
@@ -130,10 +131,10 @@ changing the type of the input function. They alter it to be:
 mergef : (Nat $\to$ Nat $\to \laterkappan$Stream$^\kappa$ Nat $\to$ Stream$^\kappa$) $\to$
          Stream$^\kappa$ Nat $\to$ Stream$^\kappa$ Nat $\to$ Stream$^\kappa$ Nat
 mergef f s t = f (head s) (head t) 
-                (mergef $\tensorkappan$ (Next$^\kappa$ f) $\tensorkappan$ (tail s) $\tensorkappan$ (tail t))
+                 (mergef $\tensor^\kappa_1$ (Next$^\kappa$ f) $\tensor^{\kappa}_1$ (tail s) $\tensor^\kappa_1$ (tail t))
 \end{lstlisting}
 
-This follows the intuition that the \texttt{Stream} argument to \texttt{f} must be used in a
+This follows the intuition that the \texttt{Stream$^\kappa$} argument to \texttt{f} must be used in a
 later context. It allows us to give the recursive reference, which is always
 later, as an argument to \texttt{f}.
 
@@ -144,21 +145,20 @@ prove \texttt{paperfold'} productive by using a differently typed \texttt{interl
 interleave : Stream$^\kappa$ Nat $\to$ $\laterkappan$ Stream$^\kappa$ Nat $\to$ Stream$^\kappa$ Nat
 \end{lstlisting}
 
-This type captures that while the first argument is needed straight away, the
-second argument is always only needed later. With this type for interleave they
-can define a guarded \texttt{paperfolds'}:
+This type captures the intuition that while the first argument is needed straightaway, the
+second argument is always only needed later. With this type for interleave, \texttt{paperfolds'} can be defined by guarded recursion as
+follows:
 
 \begin{lstlisting}[mathescape, title=\idrisBlock]
 paperfolds' : Stream$^\kappa$ Nat
 paperfolds' = interleave toggle paperfolds'
 \end{lstlisting}
 
-Inferring these types would be no easy task, and has been deemed out of scope of
+Inferring these types would be no easy task, and has been deemed out of scope for
 this project. With better support for user interaction with the
 inference system, one could imagine a system where the user could specify these
-types instead of attempting to infer them. The inference system would still be
-inferring the term, but instead of attempting to infer a type, it will use the
-type defined by the user.
+types manually. The inference system would then still be
+inferring the term, but not the type.
 
 % \begin{figure}[h]
 % \begin{lstlisting}[mathescape]
@@ -179,25 +179,27 @@ type defined by the user.
 % \label{fig:semiinterleave}
 % \end{figure}
 
-\subsection{Our Implementation}
+\section{Our Implementation}
 \label{sec:our-implementation}
 As discussed, the implementation of our system is not yet complete. There are
-definitions that we should be able to check that we can not. The cause of this is
-simply a buggy implementation. In the later parts of the project we have
+definitions that we should be able to check, but can not. The cause of this is
+simply a flawed implementation. In the later parts of the project we have
 prioritized fine-tuning our system on a theoretical level, rather than ironing
 out bugs in our implementation. This has resulted in a stronger system, but a
 weaker implementation.
 
-Our implementation, while flawed, demonstrates that implementing
-the system described in Chapter~\ref{cha:infer-guard-recurs} is feasible. It
-shows that, through a set of inference rules, it is possible to infer a guarded
-term. This term is then checked against the guarded recursion rules, to ensure
-productivity.
+Our implementation, while flawed, demonstrates that implementing the system
+described in Chapter~\ref{cha:infer-guard-recurs} is feasible. It shows that,
+through a set of inference rules, it is possible to infer a guarded recursive TT
+term from a given input TT term. This term is then checked against the guarded
+recursion rules to ensure productivity.
 
-We are therefore convinced that it is possible to improve our implementation, to closer
-resemble our system. There are definitely improvements to be made, but what we
-have done thus far has already improved the productivity checker in Idris,
-allowing for more total definitions to be written.
+We are convinced that it is possible to improve our implementation, such that it
+resembles the system presented in Chapter~\ref{cha:infer-guard-recurs} more
+closely. There are improvements to be made, but what we have done
+thus far has already widened the range of function that the Idris compiler can
+prove productive, allowing for
+more total definitions to be written.
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "../copatterns-thesis"

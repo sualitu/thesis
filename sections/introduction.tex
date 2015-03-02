@@ -5,3 +5,76 @@
 %% Vi vælger at se på guarded recursion, frem for eksempelvis sized types
 
 %###########
+Total functional programming has gained an increasing amount of attention in the
+past decade. Especially with the advent of proof assistants such as
+Coq\,\citep{Coq:manual} and Agda\,\citep{Norell:thesis}, automating
+the construction of totality proofs has become more and more important. Combined
+with dependent types, total functional programming offers the compelling notion
+of programs being \emph{correct by construction}. In order to arrive at this
+point, however, we must first ensure that our programs are in fact
+\emph{total}. For programs resulting in inductive data, this can be done by constructing a proof of
+\emph{termination}. Dually, a proof of \emph{productivity}
+must be constructed for programs resulting in coinductive data. Among several
+different techniques for automating proofs of productivity, the principle of
+syntactic guardedness\,\citep{Coquand94} is arguably the most widely used. Although this principle
+is often criticised for being very conservative, it has the benefit of being easy
+to implement while requiring no user interaction. More expressive techniques,
+such as sized types\,\citep{Abel99terminationchecking} and guarded
+recursion\,\citep{Nakano:2000} have emerged as a consequence, but these often
+require the user to manually provide proofs of productivity. To bridge at least
+part of the gap between the user and the world of total functional programming,
+this work presents a productivity analysis in which guarded recursive definitions
+can be inferred from user-written definitions with only a minimum amount of user
+involvement.
+
+However, better automation of productivity proofs does not necessarily lead us
+all the way in terms of having total coinductive definitions. Some dependently
+typed languages with explicit coinductive types choose to provide the user with
+coinductive definitions by construction, which has the side effect of allowing
+dependent pattern matching on coinductive data as well. Dependent pattern
+matching on coinductive data can lead to an
+unfortunate loss of subject reduction, even when our program is both well-typed
+and supposedly total. To avoid this situation, we therefore provide an
+implementation of copatterns in Idris, such that coinductive definitions may be
+given by \emph{observation}. Giving coinductive definitions by observation was
+pioneered by Hagino\,\citep{Hagino89}, who introduced the \emph{merge} construct
+for SymML, as shown in Figure~
+
+%We choose guarded recursion
+
+\begin{figure}[H]
+  \centering
+  \begin{lstlisting}[mathescape]
+    codatatype 'a inflist = head is 'a & tail is 'a inflist;
+
+    fun iseq1() = merge head <= 1 & tail <= iseq1();
+  \end{lstlisting}
+  \caption{The \texttt{merge} construct introduced by Hagino for SymML.}
+\end{figure}
+
+
+\subsection{Goals and Contributions}
+
+\begin{itemize}
+\item To implement copatterns in Idris
+\item To implement a productivity checker for Idris which widens the range of
+  programs that can be automatically proven productive by the Idris compiler.
+\end{itemize}
+
+\begin{itemize}
+\item An implementation of copatterns in Idris for (co)inductive record types,
+  implemented as high-level desugaring.
+\item An implementation of coindutive record types, where definitions can be
+  given by observations.
+\item An implementation of a productivity checker based on guarded recursion. 
+  \begin{itemize}
+    \item An inference system for inferring guarded recursive definitions
+      from user-written definitions, with a minimum of user involvement.
+    \item A guarded recursion type checking system for ensuring that the
+      inferred guarded recursive terms lead to productive definitions.
+  \end{itemize}
+\end{itemize}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../copatterns-thesis"
+%%% End:
