@@ -6,7 +6,8 @@
 \begin{figure}[h]
 \begin{prooftree}
 \AxiomC{(1)}
-\AxiomC{\inCE{$Nat \ \texttt{type}$}}
+\AxiomC{}
+\UnaryInfC{\inCE{$Nat : Type$}}
 \RightLabel{App}
 \BinaryInfC{\inCE{$ (_g::) Nat : Nat \to \later^\kappa_1 \onk{Stream}\ Nat \to
     \onk{Stream}\ Nat$}}
@@ -35,7 +36,8 @@
 \end{prooftree}
 
 $CE = _gzeros;\ \causal;\ \open; \ \Gamma,Z : Nat,\ _gzeros
-: \forallk{Stream} Nat$
+: \forallk{Stream} Nat,\ (_g::) : (a : Type) \to a \to \later \kappa_1 \onk{Stream}\ a \to
+    \onk{Stream}\ a$
 
   \caption{Checking of zeros.}
   \label{fig:check_zeros}
@@ -50,7 +52,8 @@ $CE = _gzeros;\ \causal;\ \open; \ \Gamma,Z : Nat,\ _gzeros
 \RightLabel{Var$_{1_\open}$}
 \UnaryInfC{\inCE{$(_g::) : (a : Type) \to a \to \later \kappa_1 \onk{Stream}\ a \to
     \onk{Stream}\ a$}}
-\AxiomC{\inCE{$Nat \ \texttt{type}$}}
+\AxiomC{}
+\UnaryInfC{\inCE{$Nat : Type$}}
 \RightLabel{App}
 \BinaryInfC{\inCE{$ (_g::) Nat : Nat \to \later \kappa_1 \onk{Stream}\ Nat \to
     \onk{Stream}\ Nat$}}
@@ -88,10 +91,13 @@ $CE = _gzeros;\ \causal;\ \open; \ \Gamma,Z : Nat,\ _gzeros
 
   \begin{prooftree}
 \AxiomC{(3)}
-\AxiomC{\inCE{$Nat \ \texttt{type}$}}
+\AxiomC{}
+\UnaryInfC{\inCE{$Nat : Type$}}
 \RightLabel{App}
-    \BinaryInfC{\inCE{$(\, _gmap[\kappa])\ Nat : (b : Type) \to (Nat \to b) \to \onk{Stream}\ Nat \to \onk{Stream}\ b$}}
-\AxiomC{\inCE{$Nat \ \texttt{type}$}}
+    \BinaryInfC{\inCE{$(\, _gmap[\kappa])\ Nat : (b : Type) \to (Nat \to b) \to
+        \onk{Stream}\ Nat \to \onk{Stream}\ b$}}
+\AxiomC{}
+\UnaryInfC{\inCE{$Nat : Type$}}
 \RightLabel{App}
 \LeftLabel{(2)}
     \BinaryInfC{\inCE{$(\, _gmap[\kappa])\ Nat\ Nat : (Nat \to Nat) \to \onk{Stream}\ Nat \to \onk{Stream}\ Nat$}}
@@ -109,7 +115,8 @@ $CE = _gzeros;\ \causal;\ \open; \ \Gamma,Z : Nat,\ _gzeros
 
 $CE =\ _gnats;\ \causal;\ \open; \ \Gamma,Z : Nat,\ _gnats :
 \forallk{Stream} Nat, \ _gmap : \forall \kappa.((a : Type) \to (b : Type) \to
-        (a \to b) \to \onk{Stream}\ a \to \onk{Stream}\ b)$
+        (a \to b) \to \onk{Stream}\ a \to \onk{Stream}\ b),\ (_g::) : (a : Type) \to a \to \later \kappa_1 \onk{Stream}\ a \to
+    \onk{Stream}\ a$
 
   \caption{Checking of nats.}
   \label{fig:check_nat}

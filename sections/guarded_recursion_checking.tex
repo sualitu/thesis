@@ -10,7 +10,7 @@ gelberg\,\citep{Mogelberg:2014}, although they have been adjusted according to
 the restrictions imposed by the singleton clock. In Figure~\ref{fig:gr_rules_sin_clock}, we
 present the adjusted typing rules. Each rule is presented alongside the original
 rule, and the translation is explained. Note that the
-environment is expanded with a recursive reference, $\iota$, a modality, $\Psi$,
+checking environment(\emph{CE}) is expanded with a recursive reference, $\iota$, a modality, $\Psi$,
 and a singleton clock environment. These extensions to the environment 
 have the same definitions as those given for the inference environment in
 Section~\ref{sec:inference-system}. Also, the $fix^\kappa$-rule from M\o
@@ -27,10 +27,17 @@ recursion rule must be chosen in order to ensure that all side conditions are ch
 % rules\,\citep{BradyIdrisImpl13} do also apply, however the guarded recursive
 % rules take precedence and will be applied if possible.
 
+\subsubsection{The Typing Judgment}
+The checking system operates with a standard typing judgment.
+\begin{center}
+  ${CE\vdash e : A}$
+\end{center}
+It reads: ``$e$ has type $A$ in the checking environment $CE$''. 
+
 \input{figures/guarded_typing_rules}
 \subsection{An Example}
 In Figure~\ref{fig:repeat_inference_proof} an inference of the guarded recursive
-version of the function \texttt{repeat} was shown. In continuation of this, we
+version of the function \texttt{repeat}'s guarded-recursive counterpart was shown. In continuation of this, we
 show that $_g$\texttt{repeat} is productive according to the guarded recursion
 checking rules. The derivation is given in Figure~\ref{fig:repeat_typing_example}. Additional examples of such proofs can be found in Appendix~\ref{app:check-guard-recurs}.
 

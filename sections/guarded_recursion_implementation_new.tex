@@ -1217,12 +1217,10 @@ The first of these, and the arguably most interesting, is the inference judgment
 \end{center}
 
 The inference judgment reads as follows: ``If $e$ has type $A$ in a given
-inference environment $IE$, where $A$ is not
-the type of types, and our goal is to infer a term of type $B$, then
+inference environment $IE$, and our goal is to infer a term of type $B$, then
 $e'$ of type $B$ \emph{can be} the guarded recursive version $e$''. Since a
 given term may have more than one valid guarded recursive version, we stress
-that $e'$ \emph{can} be a solution. We restrict the use of the inference
-judgment to terms which are not types.
+that $e'$ \emph{can} be a solution. 
 % Inference (\infer) of a guarded recursive TT term $e'$ of type $B$ from an elaborated TT term $e$ of type $A$ is then defined as
 % ${IE\vdash e : A \infer e' : B}$.
 
@@ -1300,10 +1298,29 @@ the system simply tries all the applicable rules in succession until one of them
 % $\Longrightarrow_{Refl}$ rule is used. \todo{Say something about abstraction and
 % let-rules here, when they have been formulated.}
 
+
 \begin{figure}[H]
 \centering
 \textbf{The Inference System}$\hfill \boxed{IE\vdash e : A \infer e' : B}$
+
+\begin{figure}[H]
+
+\begin{mdframed}
+This is the only rule for which $A$ in $IE\vdash e : A \infer e' : B$ can be of
+the type of types. In every subsequent rule, it is assumed that $A$ is not be
+the type of types.
+\\
+
 \vspace{1em}
+\centering
+\ContinuedFloat
+\subcaptionbox{
+The reflexivity rule simply states that any term can be inferred to itself. This
+rule is used for terms which occur in both the elaborated TT term and the guarded
+recursive TT term, e.g. constants.
+}{\input{figures/epsilon_refl_rule}}
+\end{mdframed}
+\end{figure}
 \subcaptionbox{
 The rule for inferring \texttt{Next} applications.
 }{\input{figures/epsilon_next_rule}}
@@ -1372,16 +1389,6 @@ such that ${\laterkappa_{\!\!1} B \cong \laterkappa B}, {\laterkappa_{\!\!2}B
 denotes the standard later application, as presented in Section~\ref{sec:guarded-recursion}. Note that as discussed in
 Section~\ref{sec:fixkappa-rule}, this rule does not apply to dependent function spaces.
 }{\input{figures/epsilon_tensor_rule}}
-\end{figure}
-\begin{figure}[H]
-\centering
-\ContinuedFloat
-\subcaptionbox{
-The reflexivity rule simply states that any term can be inferred to itself. This
-rule is used for terms which occur in both the elaborated TT term and the guarded
-recursive TT term, e.g. constants.
-}{\input{figures/epsilon_refl_rule}}
-
 \end{figure}
 \begin{figure}[H]
 \centering
@@ -1512,13 +1519,13 @@ initially open (\open) due to preprocessing (see
 Section~\ref{sec:prepr-caus-funct}). Finally, the typing environment, $\Gamma$,
 is extended as shown.
 }{
-$\begin{matrix*}[l]IE = & \text{repeat\ a};
+$\begin{matrix*}[l]IE = & repeat\ a;
   \\ & \causal ;\\ &
-\phi, ((::),\ (_g::)), (\text{repeat},\, _g\text{repeat});\\ &
+\phi, ((::),\ (_g::)), (repeat,\, _grepeat);\\ &
  \open;\\ &
-\Gamma,\text{a} : \text{Type},\ \text{n} : \text{a},\,_g\text{repeat} : (\text{a}\ :\ \text{Type}) \to \forall \kappa.(\text{a} \to \onk{\text{Stream}}\ \text{a}),\ 
-\\ & \ \ \ (_{g}::)\ : (\text{a}\ :\ \text{Type})
-\to \text{a} \to \later^\kappa_1 \onk{\text{Stream}}\ \text{a} \to \onk{\text{Stream}}\ \text{a}
+\Gamma, a : Type,\ n : a,\,_grepeat : (a\ :\ Type) \to \forall \kappa.(a \to \onk{Stream}\ a),\ 
+\\ & \ \ \ (_{g}::)\ : (a\ :\ Type)
+\to a \to \later^\kappa_1 \onk{Stream}\ \text{a} \to \onk{Stream}\ a
 \end{matrix*}$
 }
 \end{figure}

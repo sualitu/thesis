@@ -1,0 +1,162 @@
+\chapter{Record Types by Observation in Idris}
+\label{app:record-types-observ}
+In Sections~\ref{sec:copatterns} and \ref{sec:coinductive-types} we discussed
+the concept of coinductive data defined by observations. In the following we
+discuss how we have implemented a new way of defining recod types. Our
+implementation allows the programmer to define records by observation, rather
+than by a single constructor. Our new record syntax replaces the old record
+syntax in Idris. We also explain how we have expanded the idea of records to
+also include coinductive records, or just \emph{corecords}.
+
+\section{Intuition}
+To understand our implementation, let us first look at the current
+implementation of records in Idris. In Figure~\ref{fig:records_in_idris} an
+example of a product type, here a \texttt{Pair}, is defined as a
+record. Syntactically, this looks a lot like a data declaration, except for the
+\texttt{record} keyword. Also, we are required to define exactly one
+constructor, unlike data declarations, where we can have zero or many.
+
+\begin{figure}[h]
+\begin{lstlisting}
+record Pair : Type -> Type -> Type where
+  MkPair : (fst : a) -> (snd : b) -> Pair a b
+\end{lstlisting}
+  \caption{Current record syntax in Idris.}
+  \label{fig:records_in_idris}
+\end{figure}
+
+The difference between a record and a data declaration does not appear until just
+before elaboration. Here the record is elaborated as a data declaration
+(literally Figure~\ref{fig:records_in_idris}, with the keyword \texttt{data}
+instead of \texttt{record}), and a set of functions generated. Both a
+\emph{projection} and an \emph{update} function is generated for each named
+parameter in the constructor, in the \texttt{Pair} example \texttt{fst} and
+\texttt{snd}. These update and projection functions are then placed in a namespace with the
+name of the type, in this case \texttt{Pair}. 
+
+\begin{figure}[h]
+\begin{lstlisting}
+data Pair : Type -> Type -> Type where
+  MkPair : (fst : a) -> (snd : b) -> Pair a b
+
+namespace Pair
+  fst : Pair a b -> a
+  fst (MkPair x _) = x
+
+  snd : Pair a b -> b
+  snd (MkPair _ y) = y
+
+  set_fst : Pair a b -> a -> Pair a b
+  set_fst (MkPair _ y) x = MkPair x y
+
+  set_snd : Pair a b -> b -> Pair a b
+  set_snd (MkPair x _) y = MkPair x y
+\end{lstlisting}
+  \caption{\texttt{Pair} from Figure~\ref{fig:records_in_idris} desugared. Note
+    that the above definitions differ slightly from what is actually inferred,
+    but they are essentially the same.}
+  \label{fig:pair_desugared}
+\end{figure}
+
+An example of how records are desugared can be seen in
+Figure~\ref{fig:pair_desugared}. Records are currently a high-level level
+purely syntactic construct. We aim for our implementation to be as similar as
+the current one, to reuse as much of the existing record infrastructure as
+possible. Therefore, our implementation should also be syntactic sugar.
+
+\subsection{Coinductive Records}
+Just as records are desugared to data declarations, coinductive records should be
+desugared to coinductive data, or \texttt{codata}, declarations. From the parser, the difference between data and
+codata declarations is a flag given to the elaborator. We can apply the same
+approach to coinductive records, with a flag denoting whether the declaration should be
+desugared to a data or codata declaration. 
+
+\section{Implementation}
+Our implementation is a syntactic desugaring. In the following we will describe
+how each component of the new syntax translates to what in a desugared
+version. So without further ado, we present the following record syntax: 
+
+\begin{lstlisting}[mathescape]
+record <name> <parameters> where
+  <field$_1$ name> : <field$_1$ type>
+  <field$_2$ name> : <field$_2$ type>
+  ...
+  <field$_n$ name> : <field$_n$ type>
+  constructor <constructor name>
+\end{lstlisting}
+
+\paragraph{Parameters}
+The parameters, or indices, desugar to the type constructor declaration. A parameter can be either (1) a
+name bound to a type, e.g. \texttt{(n : Nat)} or (2) a name by itself,
+e.g. \texttt{a}. If a name is not given a specific type it is assumed to be of type
+\texttt{Type}, the type of types. 
+
+The parameters are explicit arguments to the type
+constructor and implicit arguments to the data constructor. A parameter can be
+marked as implicit by surrounding it with curly braces, replacing any existing
+parentheses.
+
+\paragraph{Fields}
+The new records fields are specified as any number of colon-separated name-type pairs. All
+fields are explicit arguments to the data constructor. Similar to the original Idris-record implementation, projection and
+update functions are generated for each field.
+\paragraph{Data Constructor}
+The last line of the declaration is an, optional, custom data constructor
+name. This allows the programmer to define a specific name for the data
+constructor. This can be omitted, in which case a name is generated during
+elaboration. The elaborator will try to make a sensible constructor name based
+on the type name, for example \texttt{MkT} for a type with name \texttt{T}.
+
+\begin{figure}[h]
+\begin{lstlisting}
+record Pair a b where
+  fst : a
+  snd : b
+
+record Foo (param : Nat) where
+  num : Int
+
+record C {a} (n : Nat) where
+  {unhelpful : a}
+  xs : Vect n a
+
+corecord Stream a where
+  head : a
+  tail : Stream a
+  constructor (::) 
+
+\end{lstlisting}
+  \caption{Record examples.}
+  \label{fig:new_record_examples}
+\end{figure}
+
+\begin{figure}[h]
+\begin{lstlisting}
+data Pair : (a : Type) -> (b : Type) -> Type where
+  MkPair : {a : Type} -> {b : Type} -> 
+                (fst : a) -> (snd : b) -> Pair a b
+
+data Foo : (param : Nat) -> Type where
+  MkFoo : {param : Nat} -> (num : Int) -> Foo param
+
+data C : {a : Type} -> (n : Nat) -> Type where
+  MkC {a : Type} -> {unhelpful : a} -> 
+           (n : Nat) -> (xs : Vect n a) -> C {a=a} n
+
+codata Stream : (a : Type) -> Type where
+  (::) : {a : Type} -> (head : a) -> (tail : Stream a) -> Stream a
+\end{lstlisting}
+  \caption{The (co)data declaration resulting from desugaring the (co)record
+    declarations from Figure~\ref{fig:new_record_examples}}
+  \label{fig:new_record_examples_desugared}
+\end{figure}
+
+In Figure~\ref{fig:new_record_examples} a few examples of the above described
+syntax can be seen, and Figure~\ref{fig:new_record_examples_desugared} depicts how
+they desugar. For the sake of simplicity only the desugared data and codata
+declarations are shown, and the generated projection and update functions are omitted.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../copatterns-thesis"
+%%% End:
